@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}検証テストスケジュール - バックアップ管理システム{% endblock %}
+{% block extra_css %}
+<style>
+.calendar-event { padding: 5px; border-radius: 3px; margin: 2px 0; cursor: pointer; }
+.event-passed { background: #d4edda; border-left: 3px solid #28a745; }
+.event-failed { background: #f8d7da; border-left: 3px solid #dc3545; }
+.event-scheduled { background: #d1ecf1; border-left: 3px solid #0dcaf0; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3"><i class="bi bi-calendar3"></i> 検証テストスケジュール</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">ホーム</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('verification.list') }}">検証テスト一覧</a></li>
+                    <li class="breadcrumb-item active">スケジュール</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-9">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-week"></i> カレンダー表示</h5>
+                </div>
+                <div class="card-body">
+                    <div id="calendar"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-list-check"></i> 今後の予定</h5>
+                </div>
+                <div class="card-body">
+                    {% for schedule in upcoming_tests %}
+                    <div class="calendar-event event-scheduled">
+                        <strong>{{ schedule.job_name }}</strong><br>
+                        <small>{{ schedule.scheduled_date.strftime('%m/%d %H:%M') }}</small>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">予定されたテストはありません</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'ja',
+        events: '/api/verification/schedule',
+        eventClick: function(info) {
+            window.location.href = '/verification/' + info.event.id;
+        }
+    });
+    calendar.render();
+});
+</script>
+{% endblock %}

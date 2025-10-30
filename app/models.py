@@ -45,6 +45,12 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), nullable=False, index=True)  # admin/operator/viewer/auditor
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     last_login = db.Column(db.DateTime)
+
+    # Login attempt tracking
+    failed_login_attempts = db.Column(db.Integer, default=0, nullable=False)
+    last_failed_login = db.Column(db.DateTime)
+    account_locked_until = db.Column(db.DateTime)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

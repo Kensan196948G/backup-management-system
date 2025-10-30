@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}レポート一覧 - バックアップ管理システム{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3"><i class="bi bi-file-earmark-bar-graph"></i> レポート管理</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">ホーム</a></li>
+                            <li class="breadcrumb-item active">レポート一覧</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{{ url_for('reports.generate') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> 新規レポート生成
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Types -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-calendar-range fs-1 text-primary"></i>
+                    <h5 class="mt-3">定期レポート</h5>
+                    <p class="text-muted">日次・週次・月次の定期レポート</p>
+                    <a href="{{ url_for('reports.generate') }}?type=periodic" class="btn btn-outline-primary">
+                        生成
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-shield-check fs-1 text-success"></i>
+                    <h5 class="mt-3">コンプライアンスレポート</h5>
+                    <p class="text-muted">3-2-1ルール準拠状況</p>
+                    <a href="{{ url_for('reports.generate') }}?type=compliance" class="btn btn-outline-success">
+                        生成
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-bar-chart fs-1 text-info"></i>
+                    <h5 class="mt-3">カスタムレポート</h5>
+                    <p class="text-muted">期間・条件指定のカスタムレポート</p>
+                    <a href="{{ url_for('reports.generate') }}?type=custom" class="btn btn-outline-info">
+                        生成
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-funnel"></i> フィルター</h5>
+        </div>
+        <div class="card-body">
+            <form id="filter-form" class="row g-3">
+                <div class="col-md-3">
+                    <label for="filter-type" class="form-label">レポートタイプ</label>
+                    <select class="form-select" id="filter-type">
+                        <option value="">全て</option>
+                        <option value="periodic">定期レポート</option>
+                        <option value="compliance">コンプライアンス</option>
+                        <option value="custom">カスタム</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-date-from" class="form-label">期間（開始）</label>
+                    <input type="date" class="form-control" id="filter-date-from">
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-date-to" class="form-label">期間（終了）</label>
+                    <input type="date" class="form-control" id="filter-date-to">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> 検索
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-table"></i> 生成済みレポート</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="reports-table" class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>レポートID</th>
+                            <th>タイプ</th>
+                            <th>対象期間</th>
+                            <th>生成日時</th>
+                            <th>生成者</th>
+                            <th>ファイル形式</th>
+                            <th>アクション</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in reports %}
+                        <tr>
+                            <td><strong>{{ report.id }}</strong></td>
+                            <td>
+                                {% if report.report_type == 'periodic' %}
+                                <span class="badge bg-primary">定期</span>
+                                {% elif report.report_type == 'compliance' %}
+                                <span class="badge bg-success">コンプライアンス</span>
+                                {% else %}
+                                <span class="badge bg-info">カスタム</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ report.period_start.strftime('%Y/%m/%d') }} - {{ report.period_end.strftime('%Y/%m/%d') }}</td>
+                            <td>{{ report.generated_at.strftime('%Y/%m/%d %H:%M') }}</td>
+                            <td>{{ report.generated_by }}</td>
+                            <td>
+                                <i class="bi bi-file-earmark-pdf text-danger"></i> PDF
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('reports.view', report_id=report.id) }}" class="btn btn-outline-info">
+                                        <i class="bi bi-eye"></i> 表示
+                                    </a>
+                                    <a href="{{ url_for('reports.download', report_id=report.id) }}" class="btn btn-outline-primary">
+                                        <i class="bi bi-download"></i> DL
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('#reports-table').DataTable({
+        language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/ja.json' },
+        order: [[3, 'desc']]
+    });
+});
+</script>
+{% endblock %}

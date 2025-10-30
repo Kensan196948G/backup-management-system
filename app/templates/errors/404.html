@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}404 Not Found - バックアップ管理システム{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6 text-center">
+            <i class="bi bi-question-circle text-secondary" style="font-size: 5rem;"></i>
+            <h1 class="display-1 fw-bold">404</h1>
+            <h2 class="mb-4">Page Not Found</h2>
+            <p class="lead mb-4">
+                お探しのページが見つかりませんでした。<br>
+                URLが正しいか確認してください。
+            </p>
+            <div class="mb-4">
+                <p class="text-muted">以下のページをお探しですか？</p>
+                <div class="d-grid gap-2 d-md-flex justify-content-center">
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-speedometer2"></i> ダッシュボード
+                    </a>
+                    <a href="{{ url_for('jobs.list') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-journal-code"></i> ジョブ一覧
+                    </a>
+                    <a href="{{ url_for('media.list') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-hdd-stack"></i> メディア一覧
+                    </a>
+                </div>
+            </div>
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary btn-lg">
+                <i class="bi bi-house"></i> ホームに戻る
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

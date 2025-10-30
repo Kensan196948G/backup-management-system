@@ -1,0 +1,511 @@
+{% extends "base.html" %}
+
+{% block title %}メディア詳細: {{ media.label_name }} - バックアップ管理システム{% endblock %}
+
+{% block extra_css %}
+<style>
+    .qr-code-large {
+        width: 200px;
+        height: 200px;
+        object-fit: contain;
+        border: 2px solid #ddd;
+        padding: 10px;
+        background: white;
+    }
+    .info-card {
+        border-left: 4px solid #0d6efd;
+    }
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 10px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -24px;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #0d6efd;
+        border: 2px solid white;
+    }
+    .health-meter {
+        height: 30px;
+        background: linear-gradient(to right, #dc3545, #ffc107, #198754);
+        border-radius: 15px;
+        position: relative;
+    }
+    .health-indicator {
+        position: absolute;
+        top: -5px;
+        width: 40px;
+        height: 40px;
+        background: white;
+        border: 3px solid #0d6efd;
+        border-radius: 50%;
+        transition: left 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-2">
+                        <i class="bi bi-hdd-stack"></i> メディア詳細
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">ホーム</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('media.list') }}">メディア一覧</a></li>
+                            <li class="breadcrumb-item active">{{ media.media_id }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{{ url_for('media.edit', media_id=media.id) }}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> 編集
+                    </a>
+                    <a href="{{ url_for('media.lend', media_id=media.id) }}" class="btn btn-warning">
+                        <i class="bi bi-box-arrow-right"></i> 貸出/返却
+                    </a>
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <i class="bi bi-trash"></i> 削除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Basic Information -->
+        <div class="col-lg-8">
+            <!-- Basic Info Card -->
+            <div class="card info-card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle"></i> 基本情報
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted mb-1">メディアID</label>
+                            <h5>{{ media.media_id }}</h5>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted mb-1">ラベル名</label>
+                            <h5>{{ media.label_name }}</h5>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted mb-1">メディアタイプ</label>
+                            <div>
+                                {% if media.media_type == 'tape' %}
+                                <span class="badge bg-primary fs-6">
+                                    <i class="bi bi-cassette"></i> テープ (LTO)
+                                </span>
+                                {% elif media.media_type == 'disk' %}
+                                <span class="badge bg-success fs-6">
+                                    <i class="bi bi-device-hdd"></i> ディスク (HDD/SSD)
+                                </span>
+                                {% elif media.media_type == 'optical' %}
+                                <span class="badge bg-info fs-6">
+                                    <i class="bi bi-disc"></i> 光学メディア
+                                </span>
+                                {% elif media.media_type == 'cloud' %}
+                                <span class="badge bg-warning fs-6">
+                                    <i class="bi bi-cloud"></i> クラウドストレージ
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted mb-1">ステータス</label>
+                            <div>
+                                {% if media.status == 'available' %}
+                                <span class="badge bg-success fs-6">使用可能</span>
+                                {% elif media.status == 'in_use' %}
+                                <span class="badge bg-primary fs-6">使用中</span>
+                                {% elif media.status == 'lent' %}
+                                <span class="badge bg-warning fs-6">貸出中</span>
+                                {% elif media.status == 'maintenance' %}
+                                <span class="badge bg-info fs-6">メンテナンス中</span>
+                                {% elif media.status == 'retired' %}
+                                <span class="badge bg-danger fs-6">破棄予定</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted mb-1">容量</label>
+                            <h5>{{ media.capacity_gb }} GB</h5>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted mb-1">使用容量</label>
+                            <div>
+                                <h5>{{ media.used_capacity_gb|default(0) }} GB</h5>
+                                <div class="progress" style="height: 20px;">
+                                    {% set usage_percent = (media.used_capacity_gb / media.capacity_gb * 100)|round(1) if media.capacity_gb > 0 else 0 %}
+                                    <div class="progress-bar {% if usage_percent > 90 %}bg-danger{% elif usage_percent > 75 %}bg-warning{% else %}bg-success{% endif %}"
+                                         role="progressbar"
+                                         style="width: {{ usage_percent }}%"
+                                         aria-valuenow="{{ usage_percent }}"
+                                         aria-valuemin="0"
+                                         aria-valuemax="100">
+                                        {{ usage_percent }}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted mb-1">保管場所</label>
+                            <h5>
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi bi-geo-alt"></i> {{ media.location }}
+                                </span>
+                            </h5>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted mb-1">購入日</label>
+                            <h5>{{ media.purchase_date.strftime('%Y年%m月%d日') if media.purchase_date else '未登録' }}</h5>
+                        </div>
+                        {% if media.notes %}
+                        <div class="col-12 mb-3">
+                            <label class="text-muted mb-1">備考</label>
+                            <p class="mb-0">{{ media.notes }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Health Status Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-heart-pulse"></i> ヘルスステータス
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="text-muted mb-2">健全性スコア</label>
+                        <div class="health-meter">
+                            <div class="health-indicator" style="left: {{ media.health_score|default(100) }}%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2">
+                            <small class="text-danger">不良</small>
+                            <small class="text-warning">注意</small>
+                            <small class="text-success">良好</small>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <h4 class="text-primary mb-0">{{ media.read_errors|default(0) }}</h4>
+                                <small class="text-muted">読み取りエラー</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <h4 class="text-success mb-0">{{ media.write_count|default(0) }}</h4>
+                                <small class="text-muted">書き込み回数</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <h4 class="text-warning mb-0">{{ media.rotation_count|default(0) }}</h4>
+                                <small class="text-muted">ローテーション回数</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rotation History -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-arrow-repeat"></i> ローテーション履歴
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if rotation_history %}
+                    <div class="timeline">
+                        {% for rotation in rotation_history %}
+                        <div class="timeline-item">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">
+                                                <i class="bi bi-calendar-event"></i>
+                                                {{ rotation.rotation_date.strftime('%Y年%m月%d日 %H:%M') }}
+                                            </h6>
+                                            <p class="mb-1">
+                                                <strong>操作:</strong> {{ rotation.action }}
+                                            </p>
+                                            {% if rotation.from_location or rotation.to_location %}
+                                            <p class="mb-1">
+                                                <strong>移動:</strong>
+                                                {{ rotation.from_location|default('不明') }}
+                                                <i class="bi bi-arrow-right"></i>
+                                                {{ rotation.to_location|default('不明') }}
+                                            </p>
+                                            {% endif %}
+                                            {% if rotation.notes %}
+                                            <p class="mb-0 text-muted">
+                                                <small>{{ rotation.notes }}</small>
+                                            </p>
+                                            {% endif %}
+                                        </div>
+                                        <span class="badge bg-secondary">
+                                            {{ rotation.performed_by }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p class="mt-2">ローテーション履歴がありません</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: QR Code and Actions -->
+        <div class="col-lg-4">
+            <!-- QR Code Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-qr-code"></i> QRコード
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    {% if media.qr_code_path %}
+                    <img src="{{ url_for('static', filename=media.qr_code_path) }}"
+                         alt="QR Code"
+                         class="qr-code-large mb-3">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('static', filename=media.qr_code_path) }}"
+                           download="{{ media.media_id }}_qr.png"
+                           class="btn btn-primary">
+                            <i class="bi bi-download"></i> ダウンロード
+                        </a>
+                        <button type="button" class="btn btn-secondary" onclick="printQRCode()">
+                            <i class="bi bi-printer"></i> 印刷
+                        </button>
+                    </div>
+                    {% else %}
+                    <div class="text-muted py-4">
+                        <i class="bi bi-qr-code fs-1"></i>
+                        <p class="mt-2">QRコードが生成されていません</p>
+                        <button type="button" class="btn btn-primary" onclick="generateQRCode()">
+                            <i class="bi bi-plus-circle"></i> 生成
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Lending Information -->
+            {% if media.current_lending %}
+            <div class="card mb-4 border-warning">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">
+                        <i class="bi bi-box-arrow-right"></i> 貸出情報
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>貸出先:</strong> {{ media.current_lending.borrower }}</p>
+                    <p><strong>貸出日:</strong> {{ media.current_lending.lend_date.strftime('%Y/%m/%d') }}</p>
+                    <p><strong>返却予定日:</strong> {{ media.current_lending.expected_return_date.strftime('%Y/%m/%d') }}</p>
+                    {% if media.current_lending.purpose %}
+                    <p><strong>目的:</strong> {{ media.current_lending.purpose }}</p>
+                    {% endif %}
+                    <div class="d-grid">
+                        <a href="{{ url_for('media.lend', media_id=media.id) }}" class="btn btn-warning">
+                            <i class="bi bi-box-arrow-left"></i> 返却処理
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightning"></i> クイックアクション
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('jobs.create') }}?media_id={{ media.id }}" class="btn btn-outline-primary">
+                            <i class="bi bi-play-circle"></i> バックアップジョブ作成
+                        </a>
+                        <a href="{{ url_for('verification.create') }}?media_id={{ media.id }}" class="btn btn-outline-success">
+                            <i class="bi bi-check2-circle"></i> 検証テスト実施
+                        </a>
+                        <button type="button" class="btn btn-outline-info" onclick="updateLocation()">
+                            <i class="bi bi-geo-alt"></i> 保管場所変更
+                        </button>
+                        <button type="button" class="btn btn-outline-warning" onclick="maintenanceMode()">
+                            <i class="bi bi-tools"></i> メンテナンスモード
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle"></i> 削除確認
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>このメディアを削除してもよろしいですか？</p>
+                <p class="text-danger mb-0">
+                    <strong>警告:</strong> この操作は取り消せません。
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <form action="{{ url_for('media.delete', media_id=media.id) }}" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">削除</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function printQRCode() {
+    const qrImage = document.querySelector('.qr-code-large');
+    if (qrImage) {
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>QRコード印刷 - {{ media.media_id }}</title>
+                <style>
+                    body { text-align: center; padding: 20px; }
+                    img { max-width: 300px; }
+                    .info { margin-top: 20px; font-family: Arial, sans-serif; }
+                </style>
+            </head>
+            <body>
+                <img src="${qrImage.src}" alt="QR Code">
+                <div class="info">
+                    <h3>{{ media.media_id }}</h3>
+                    <p>{{ media.label_name }}</p>
+                </div>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+}
+
+function generateQRCode() {
+    if (confirm('QRコードを生成しますか？')) {
+        fetch('{{ url_for("media.generate_qr", media_id=media.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('QRコード生成に失敗しました: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('エラーが発生しました: ' + error);
+        });
+    }
+}
+
+function updateLocation() {
+    const newLocation = prompt('新しい保管場所を入力してください:', '{{ media.location }}');
+    if (newLocation && newLocation !== '{{ media.location }}') {
+        fetch('{{ url_for("media.update_location", media_id=media.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ location: newLocation })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('保管場所の更新に失敗しました: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('エラーが発生しました: ' + error);
+        });
+    }
+}
+
+function maintenanceMode() {
+    if (confirm('メンテナンスモードに変更しますか？')) {
+        fetch('{{ url_for("media.set_status", media_id=media.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'maintenance' })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('ステータス変更に失敗しました: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('エラーが発生しました: ' + error);
+        });
+    }
+}
+</script>
+{% endblock %}
