@@ -38,8 +38,8 @@ class TestUserModel:
     def test_create_user(self, app):
         """Test creating a new user."""
         with app.app_context():
-            user = User(username="testuser", email="test@example.com", role="operator")
-            user.set_password("password123")
+            user = User(username="testuser", email="test@example.com", full_name="Test User", role="operator", is_active=True)
+            user.set_password("Test123!@#")
             db.session.add(user)
             db.session.commit()
 
@@ -54,12 +54,14 @@ class TestUserModel:
     def test_password_hashing(self, app):
         """Test password hashing and verification."""
         with app.app_context():
-            user = User(username="testuser", email="test@example.com")
-            user.set_password("mypassword")
+            user = User(username="testuser", email="test@example.com", full_name="Test User", role="viewer", is_active=True)
+            user.set_password("MyPass123!@#")
+            db.session.add(user)
+            db.session.commit()
 
             assert user.password_hash is not None
-            assert user.password_hash != "mypassword"
-            assert user.check_password("mypassword") is True
+            assert user.password_hash != "MyPass123!@#"
+            assert user.check_password("MyPass123!@#") is True
             assert user.check_password("wrongpassword") is False
 
     def test_user_roles(self, app, admin_user, operator_user, auditor_user):
@@ -72,7 +74,7 @@ class TestUserModel:
 
             # Test admin
             assert admin.is_admin() is True
-            assert admin.is_operator() is False
+            assert admin.is_operator() is True  # Admin has operator permissions
             assert admin.is_auditor() is False
             assert admin.can_edit() is True
             assert admin.can_view() is True
@@ -95,12 +97,15 @@ class TestUserModel:
         """Test user string representation."""
         with app.app_context():
             user = db.session.get(User, admin_user.id)
-            assert repr(user) == f"<User {user.username}>"
+            assert repr(user) == f"<User {user.username} ({user.role})>"
 
     def test_inactive_user(self, app):
         """Test inactive user creation."""
         with app.app_context():
-            user = User(username="inactive", email="inactive@example.com", role="operator", is_active=False)
+            user = User(
+                username="inactive", email="inactive@example.com", full_name="Inactive User", role="operator", is_active=False
+            )
+            user.set_password("Inactive123!@#")
             db.session.add(user)
             db.session.commit()
 
@@ -110,23 +115,28 @@ class TestUserModel:
 class TestBackupJobModel:
     """Test cases for BackupJob model."""
 
-    def test_create_backup_job(self, app):
+    def test_create_backup_job(self, app, admin_user):
         """Test creating a backup job."""
         with app.app_context():
+            user = db.session.get(User, admin_user.id)
+
             job = BackupJob(
-                name="Test Job",
+                job_name="Test Job",
+                job_type="file",
+                backup_tool="custom",
                 description="Test Description",
-                source_path="/data/test",
+                target_path="/data/test",
                 schedule_type="daily",
-                schedule_time="02:00",
                 retention_days=30,
+                owner_id=user.id,
+                is_active=True,
             )
             db.session.add(job)
             db.session.commit()
 
             assert job.id is not None
-            assert job.name == "Test Job"
-            assert job.source_path == "/data/test"
+            assert job.job_name == "Test Job"
+            assert job.target_path == "/data/test"
             assert job.schedule_type == "daily"
             assert job.is_active is True
 
@@ -135,13 +145,23 @@ class TestBackupJobModel:
         with app.app_context():
             job = db.session.get(BackupJob, backup_job.id)
 
-            assert len(job.copies) == 4
+            assert len(list(job.copies)) == 4
             assert all(copy.job_id == job.id for copy in job.copies)
 
-    def test_backup_job_default_values(self, app):
+    def test_backup_job_default_values(self, app, admin_user):
         """Test BackupJob default values."""
         with app.app_context():
-            job = BackupJob(name="Minimal Job", source_path="/data/minimal")
+            user = db.session.get(User, admin_user.id)
+
+            job = BackupJob(
+                job_name="Minimal Job",
+                job_type="file",
+                backup_tool="custom",
+                target_path="/data/minimal",
+                schedule_type="manual",
+                retention_days=30,
+                owner_id=user.id,
+            )
             db.session.add(job)
             db.session.commit()
 
@@ -153,7 +173,7 @@ class TestBackupJobModel:
         """Test BackupJob string representation."""
         with app.app_context():
             job = db.session.get(BackupJob, backup_job.id)
-            assert repr(job) == f"<BackupJob {job.name}>"
+            assert repr(job) == f"<BackupJob {job.job_name} ({job.job_type})>"
 
 
 class TestBackupCopyModel:
@@ -162,25 +182,24 @@ class TestBackupCopyModel:
     def test_create_backup_copy(self, app, backup_job):
         """Test creating a backup copy."""
         with app.app_context():
+            job = db.session.get(BackupJob, backup_job.id)
+
             copy = BackupCopy(
-                job_id=backup_job.id,
-                copy_number=1,
-                storage_location="Test Storage",
+                job_id=job.id,
+                copy_type="primary",
+                storage_path="Test Storage",
                 media_type="disk",
-                is_offsite=False,
-                is_offline=False,
                 is_encrypted=True,
                 is_compressed=True,
-                size_bytes=1024,
-                checksum="abc123",
+                last_backup_size=1024,
                 status="success",
             )
             db.session.add(copy)
             db.session.commit()
 
             assert copy.id is not None
-            assert copy.job_id == backup_job.id
-            assert copy.copy_number == 1
+            assert copy.job_id == job.id
+            assert copy.copy_type == "primary"
             assert copy.is_encrypted is True
 
     def test_backup_copy_3_2_1_1_0_fields(self, app, backup_copies):
@@ -193,11 +212,11 @@ class TestBackupCopyModel:
             assert len(media_types) >= 2
 
             # Check offsite copy (requirement: 1 offsite)
-            offsite_copies = [c for c in copies if c.is_offsite]
+            offsite_copies = [c for c in copies if c.copy_type == "offsite"]
             assert len(offsite_copies) >= 1
 
             # Check offline copy (requirement: 1 offline)
-            offline_copies = [c for c in copies if c.is_offline]
+            offline_copies = [c for c in copies if c.copy_type == "offline"]
             assert len(offline_copies) >= 1
 
     def test_backup_copy_relationship(self, app, backup_job, backup_copies):
@@ -211,7 +230,7 @@ class TestBackupCopyModel:
         """Test BackupCopy string representation."""
         with app.app_context():
             copy = db.session.get(BackupCopy, backup_copies[0].id)
-            expected = f"<BackupCopy Job:{copy.job_id} Copy:{copy.copy_number}>"
+            expected = f"<BackupCopy job_id={copy.job_id} type={copy.copy_type} media={copy.media_type}>"
             assert repr(copy) == expected
 
 
@@ -223,10 +242,9 @@ class TestOfflineMediaModel:
         with app.app_context():
             media = OfflineMedia(
                 media_type="tape",
-                media_label="TAPE-001",
-                barcode="BC001",
-                capacity_bytes=2000000000000,
-                location="Vault A",
+                media_id="TAPE-001",
+                capacity_gb=2000,
+                storage_location="Vault A",
                 current_status="available",
             )
             db.session.add(media)
@@ -241,15 +259,15 @@ class TestOfflineMediaModel:
         with app.app_context():
             media = db.session.get(OfflineMedia, offline_media[0].id)
 
-            assert media.capacity_bytes > 0
-            assert media.used_bytes is not None
-            assert media.used_bytes <= media.capacity_bytes
+            assert media.capacity_gb > 0
+            # Test that media exists and has expected attributes
+            assert media.media_type == "tape"
 
     def test_offline_media_repr(self, app, offline_media):
         """Test OfflineMedia string representation."""
         with app.app_context():
             media = db.session.get(OfflineMedia, offline_media[0].id)
-            assert repr(media) == f"<OfflineMedia {media.media_label}>"
+            assert repr(media) == f"<OfflineMedia {media.media_id} ({media.media_type})>"
 
 
 class TestMediaRotationScheduleModel:
@@ -259,19 +277,27 @@ class TestMediaRotationScheduleModel:
         """Test creating a media rotation schedule."""
         with app.app_context():
             schedule = MediaRotationSchedule(
-                media_id=offline_media[0].id, rotation_type="weekly", rotation_day="Monday", notes="Weekly rotation schedule"
+                offline_media_id=offline_media[0].id,
+                rotation_type="gfs",
+                rotation_cycle="weekly",
+                next_rotation_date=(datetime.utcnow() + timedelta(days=7)).date(),
             )
             db.session.add(schedule)
             db.session.commit()
 
             assert schedule.id is not None
-            assert schedule.rotation_type == "weekly"
+            assert schedule.rotation_type == "gfs"
             assert schedule.is_active is True
 
     def test_rotation_schedule_relationship(self, app, offline_media):
         """Test MediaRotationSchedule relationship with OfflineMedia."""
         with app.app_context():
-            schedule = MediaRotationSchedule(media_id=offline_media[0].id, rotation_type="daily")
+            schedule = MediaRotationSchedule(
+                offline_media_id=offline_media[0].id,
+                rotation_type="gfs",
+                rotation_cycle="weekly",
+                next_rotation_date=(datetime.utcnow() + timedelta(days=1)).date(),
+            )
             db.session.add(schedule)
             db.session.commit()
 
@@ -282,73 +308,85 @@ class TestMediaRotationScheduleModel:
 class TestMediaLendingModel:
     """Test cases for MediaLending model."""
 
-    def test_create_media_lending(self, app, offline_media):
+    def test_create_media_lending(self, app, offline_media, admin_user):
         """Test creating a media lending record."""
         with app.app_context():
             lending = MediaLending(
-                media_id=offline_media[0].id,
-                lent_to="John Doe",
-                lent_date=datetime.utcnow(),
-                purpose="Backup verification",
-                expected_return_date=datetime.utcnow() + timedelta(days=7),
+                offline_media_id=offline_media[0].id,
+                borrower_id=admin_user.id,
+                borrow_date=datetime.utcnow(),
+                borrow_purpose="Backup verification",
+                expected_return=(datetime.utcnow() + timedelta(days=7)).date(),
             )
             db.session.add(lending)
             db.session.commit()
 
             assert lending.id is not None
-            assert lending.lent_to == "John Doe"
-            assert lending.return_date is None
+            assert lending.borrower_id == admin_user.id
+            assert lending.actual_return is None
 
-    def test_media_lending_return(self, app, offline_media):
+    def test_media_lending_return(self, app, offline_media, admin_user):
         """Test returning lent media."""
         with app.app_context():
             lending = MediaLending(
-                media_id=offline_media[0].id, lent_to="Jane Doe", lent_date=datetime.utcnow(), purpose="Testing"
+                offline_media_id=offline_media[0].id,
+                borrower_id=admin_user.id,
+                borrow_date=datetime.utcnow(),
+                borrow_purpose="Testing",
+                expected_return=(datetime.utcnow() + timedelta(days=1)).date(),
             )
             db.session.add(lending)
             db.session.commit()
 
             # Return the media
-            lending.return_date = datetime.utcnow()
+            lending.actual_return = datetime.utcnow()
             db.session.commit()
 
-            assert lending.return_date is not None
+            assert lending.actual_return is not None
 
 
 class TestVerificationTestModel:
     """Test cases for VerificationTest model."""
 
-    def test_create_verification_test(self, app, backup_copies):
+    def test_create_verification_test(self, app, backup_job, admin_user):
         """Test creating a verification test."""
         with app.app_context():
+            job = db.session.get(BackupJob, backup_job.id)
+            user = db.session.get(User, admin_user.id)
+
             test = VerificationTest(
-                copy_id=backup_copies[0].id,
-                test_type="checksum",
-                status="success",
-                result_message="Checksum verified successfully",
+                job_id=job.id,
+                test_type="integrity",
+                test_date=datetime.utcnow(),
+                tester_id=user.id,
+                test_result="success",
             )
             db.session.add(test)
             db.session.commit()
 
             assert test.id is not None
-            assert test.test_type == "checksum"
-            assert test.status == "success"
+            assert test.test_type == "integrity"
+            assert test.test_result == "success"
 
-    def test_verification_test_with_error(self, app, backup_copies):
+    def test_verification_test_with_error(self, app, backup_job, admin_user):
         """Test verification test with error details."""
         with app.app_context():
+            job = db.session.get(BackupJob, backup_job.id)
+            user = db.session.get(User, admin_user.id)
+
             test = VerificationTest(
-                copy_id=backup_copies[0].id,
-                test_type="restore",
-                status="failed",
-                result_message="Restore failed",
-                error_details="Checksum mismatch detected",
+                job_id=job.id,
+                test_type="full_restore",
+                test_date=datetime.utcnow(),
+                tester_id=user.id,
+                test_result="failed",
+                issues_found="Checksum mismatch detected",
             )
             db.session.add(test)
             db.session.commit()
 
-            assert test.status == "failed"
-            assert test.error_details is not None
+            assert test.test_result == "failed"
+            assert test.issues_found is not None
 
 
 class TestVerificationScheduleModel:
@@ -358,13 +396,13 @@ class TestVerificationScheduleModel:
         """Test creating a verification schedule."""
         with app.app_context():
             schedule = VerificationSchedule(
-                job_id=backup_job.id, test_type="checksum", frequency_days=7, next_run=datetime.utcnow() + timedelta(days=7)
+                job_id=backup_job.id, test_frequency="weekly", next_test_date=(datetime.utcnow() + timedelta(days=7)).date()
             )
             db.session.add(schedule)
             db.session.commit()
 
             assert schedule.id is not None
-            assert schedule.frequency_days == 7
+            assert schedule.test_frequency == "weekly"
             assert schedule.is_active is True
 
 
@@ -376,29 +414,28 @@ class TestBackupExecutionModel:
         with app.app_context():
             execution = BackupExecution(
                 job_id=backup_job.id,
-                status="success",
-                start_time=datetime.utcnow() - timedelta(hours=1),
-                end_time=datetime.utcnow(),
-                total_size=1024000,
-                total_files=100,
+                execution_result="success",
+                execution_date=datetime.utcnow(),
+                backup_size_bytes=1024000,
+                duration_seconds=3600,
             )
             db.session.add(execution)
             db.session.commit()
 
             assert execution.id is not None
-            assert execution.status == "success"
-            assert execution.total_files == 100
+            assert execution.execution_result == "success"
+            assert execution.backup_size_bytes == 1024000
 
     def test_backup_execution_with_error(self, app, backup_job):
         """Test backup execution with error."""
         with app.app_context():
             execution = BackupExecution(
-                job_id=backup_job.id, status="failed", start_time=datetime.utcnow(), error_message="Disk full"
+                job_id=backup_job.id, execution_result="failed", execution_date=datetime.utcnow(), error_message="Disk full"
             )
             db.session.add(execution)
             db.session.commit()
 
-            assert execution.status == "failed"
+            assert execution.execution_result == "failed"
             assert execution.error_message is not None
 
 
@@ -410,36 +447,38 @@ class TestComplianceStatusModel:
         with app.app_context():
             status = ComplianceStatus(
                 job_id=backup_job.id,
-                is_compliant=True,
-                total_copies=4,
+                check_date=datetime.utcnow(),
+                copies_count=4,
                 media_types_count=3,
                 has_offsite=True,
                 has_offline=True,
-                details={"rule": "3-2-1-1-0", "status": "compliant"},
+                has_errors=False,
+                overall_status="compliant",
             )
             db.session.add(status)
             db.session.commit()
 
             assert status.id is not None
-            assert status.is_compliant is True
-            assert status.total_copies == 4
+            assert status.overall_status == "compliant"
+            assert status.copies_count == 4
 
     def test_non_compliant_status(self, app, backup_job):
         """Test non-compliant status."""
         with app.app_context():
             status = ComplianceStatus(
                 job_id=backup_job.id,
-                is_compliant=False,
-                total_copies=2,
+                check_date=datetime.utcnow(),
+                copies_count=2,
                 media_types_count=1,
                 has_offsite=False,
                 has_offline=False,
-                details={"missing": "offsite and offline copies"},
+                has_errors=True,
+                overall_status="non_compliant",
             )
             db.session.add(status)
             db.session.commit()
 
-            assert status.is_compliant is False
+            assert status.overall_status == "non_compliant"
             assert status.has_offsite is False
 
 
@@ -453,8 +492,8 @@ class TestAlertModel:
                 job_id=backup_job.id,
                 alert_type="compliance",
                 severity="high",
-                message="Backup compliance violation",
-                details={"issue": "Missing offsite copy"},
+                title="Compliance Violation",
+                message="Backup compliance violation: Missing offsite copy",
             )
             db.session.add(alert)
             db.session.commit()
@@ -466,7 +505,13 @@ class TestAlertModel:
     def test_acknowledge_alert(self, app, backup_job):
         """Test acknowledging an alert."""
         with app.app_context():
-            alert = Alert(job_id=backup_job.id, alert_type="warning", severity="medium", message="Low disk space")
+            alert = Alert(
+                job_id=backup_job.id,
+                alert_type="warning",
+                severity="medium",
+                title="Low Disk Space",
+                message="Low disk space detected on backup storage",
+            )
             db.session.add(alert)
             db.session.commit()
 
@@ -488,23 +533,26 @@ class TestAuditLogModel:
         with app.app_context():
             log = AuditLog(
                 user_id=admin_user.id,
-                action="create_backup_job",
+                action_type="create",
                 resource_type="BackupJob",
                 resource_id=1,
-                details={"job_name": "Test Job"},
+                action_result="success",
+                details='{"job_name": "Test Job"}',
                 ip_address="192.168.1.1",
             )
             db.session.add(log)
             db.session.commit()
 
             assert log.id is not None
-            assert log.action == "create_backup_job"
+            assert log.action_type == "create"
             assert log.user_id == admin_user.id
 
     def test_audit_log_without_user(self, app):
         """Test audit log for system actions."""
         with app.app_context():
-            log = AuditLog(action="system_backup", resource_type="System", details={"automated": True})
+            log = AuditLog(
+                action_type="backup", resource_type="System", action_result="success", details='{"automated": true}'
+            )
             db.session.add(log)
             db.session.commit()
 
@@ -514,35 +562,40 @@ class TestAuditLogModel:
 class TestReportModel:
     """Test cases for Report model."""
 
-    def test_create_report(self, app):
+    def test_create_report(self, app, admin_user):
         """Test creating a report."""
         with app.app_context():
             report = Report(
                 report_type="daily",
-                title="Daily Backup Report",
-                period_start=datetime.utcnow() - timedelta(days=1),
-                period_end=datetime.utcnow(),
-                data={"total_jobs": 10, "successful": 9, "failed": 1},
+                report_title="Daily Backup Report",
+                date_from=(datetime.utcnow() - timedelta(days=1)).date(),
+                date_to=datetime.utcnow().date(),
                 file_path="/reports/daily_2025.pdf",
-                generated_by="system",
+                file_format="pdf",
+                generated_by=admin_user.id,
             )
             db.session.add(report)
             db.session.commit()
 
             assert report.id is not None
             assert report.report_type == "daily"
-            assert report.data is not None
+            assert report.report_title == "Daily Backup Report"
 
-    def test_report_repr(self, app):
+    def test_report_repr(self, app, admin_user):
         """Test Report string representation."""
         with app.app_context():
             report = Report(
-                report_type="weekly", title="Weekly Report", period_start=datetime.utcnow(), period_end=datetime.utcnow()
+                report_type="weekly",
+                report_title="Weekly Report",
+                date_from=datetime.utcnow().date(),
+                date_to=datetime.utcnow().date(),
+                file_format="html",
+                generated_by=admin_user.id,
             )
             db.session.add(report)
             db.session.commit()
 
-            assert repr(report) == f"<Report {report.report_type}>"
+            assert repr(report) == f"<Report {report.report_type} from={report.date_from} to={report.date_to}>"
 
 
 class TestSystemSettingModel:
@@ -552,19 +605,24 @@ class TestSystemSettingModel:
         """Test creating a system setting."""
         with app.app_context():
             setting = SystemSetting(
-                category="backup", key="min_copies", value="3", description="Minimum number of backup copies"
+                setting_key="backup.min_copies",
+                setting_value="3",
+                value_type="int",
+                description="Minimum number of backup copies",
             )
             db.session.add(setting)
             db.session.commit()
 
             assert setting.id is not None
-            assert setting.category == "backup"
-            assert setting.key == "min_copies"
+            assert setting.setting_key == "backup.min_copies"
+            assert setting.setting_value == "3"
 
     def test_encrypted_setting(self, app):
         """Test encrypted system setting."""
         with app.app_context():
-            setting = SystemSetting(category="credentials", key="api_key", value="secret_key_value", is_encrypted=True)
+            setting = SystemSetting(
+                setting_key="credentials.api_key", setting_value="secret_key_value", value_type="string", is_encrypted=True
+            )
             db.session.add(setting)
             db.session.commit()
 
@@ -573,9 +631,9 @@ class TestSystemSettingModel:
     def test_system_setting_repr(self, app):
         """Test SystemSetting string representation."""
         with app.app_context():
-            setting = SystemSetting(category="test", key="test_key", value="test_value")
+            setting = SystemSetting(setting_key="test.test_key", setting_value="test_value", value_type="string")
             db.session.add(setting)
             db.session.commit()
 
-            expected = f"<SystemSetting {setting.category}.{setting.key}>"
+            expected = f"<SystemSetting {setting.setting_key}={setting.setting_value}>"
             assert repr(setting) == expected

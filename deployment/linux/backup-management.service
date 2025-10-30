@@ -1,0 +1,37 @@
+[Unit]
+Description=3-2-1-1-0 Backup Management System
+Documentation=https://github.com/your-org/backup-management-system
+After=network.target
+
+[Service]
+Type=simple
+User=backup
+Group=backup
+WorkingDirectory=/var/lib/backup-system
+Environment="PATH=/var/lib/backup-system/venv/bin"
+Environment="FLASK_ENV=production"
+ExecStart=/var/lib/backup-system/venv/bin/python /var/lib/backup-system/run.py --host 0.0.0.0 --port 5000 --production
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/backup-system/stdout.log
+StandardError=append:/var/log/backup-system/stderr.log
+SyslogIdentifier=backup-management
+
+# セキュリティ設定
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/backup-system/data
+ReadWritePaths=/var/lib/backup-system/logs
+ReadWritePaths=/var/lib/backup-system/reports
+ReadWritePaths=/var/log/backup-system
+
+# リソース制限
+LimitNOFILE=65536
+MemoryMax=2G
+CPUQuota=200%
+
+[Install]
+WantedBy=multi-user.target

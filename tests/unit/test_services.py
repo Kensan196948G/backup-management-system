@@ -36,8 +36,8 @@ class TestComplianceChecker:
             result = checker.check_3_2_1_1_0(backup_job.id)
 
             assert result is not None
-            assert result["is_compliant"] is True
-            assert result["total_copies"] >= 3
+            assert result["compliant"] is True
+            assert result["copies_count"] >= 3
             assert result["media_types_count"] >= 2
             assert result["has_offsite"] is True
             assert result["has_offline"] is True
@@ -76,8 +76,8 @@ class TestComplianceChecker:
             checker = ComplianceChecker()
             result = checker.check_3_2_1_1_0(backup_job.id)
 
-            assert result["is_compliant"] is False
-            assert result["total_copies"] < 3
+            assert result["compliant"] is False
+            assert result["copies_count"] < 3
             assert "insufficient copies" in result["issues"][0].lower()
 
     def test_check_3_2_1_1_0_insufficient_media_types(self, app, backup_job):
@@ -104,7 +104,7 @@ class TestComplianceChecker:
             checker = ComplianceChecker()
             result = checker.check_3_2_1_1_0(backup_job.id)
 
-            assert result["is_compliant"] is False
+            assert result["compliant"] is False
             assert result["media_types_count"] < 2
 
     def test_check_3_2_1_1_0_missing_offsite(self, app, backup_job):
@@ -152,7 +152,7 @@ class TestComplianceChecker:
             checker = ComplianceChecker()
             result = checker.check_3_2_1_1_0(backup_job.id)
 
-            assert result["is_compliant"] is False
+            assert result["compliant"] is False
             assert result["has_offsite"] is False
 
     def test_check_3_2_1_1_0_missing_offline(self, app, backup_job):
@@ -200,7 +200,7 @@ class TestComplianceChecker:
             checker = ComplianceChecker()
             result = checker.check_3_2_1_1_0(backup_job.id)
 
-            assert result["is_compliant"] is False
+            assert result["compliant"] is False
             assert result["has_offline"] is False
 
     def test_check_3_2_1_1_0_nonexistent_job(self, app):
@@ -210,7 +210,7 @@ class TestComplianceChecker:
             result = checker.check_3_2_1_1_0(99999)
 
             assert result is not None
-            assert result["is_compliant"] is False
+            assert result["compliant"] is False
             assert "not found" in result["issues"][0].lower()
 
     def test_check_all_jobs(self, app, multiple_backup_jobs, backup_copies):
@@ -232,7 +232,9 @@ class TestComplianceChecker:
             # Check if ComplianceStatus record was created
             status = ComplianceStatus.query.filter_by(job_id=backup_job.id).first()
             assert status is not None
-            assert status.is_compliant == result["is_compliant"]
+            # overall_status is 'compliant', 'non_compliant', or 'warning'
+            is_compliant = status.overall_status == "compliant"
+            assert is_compliant == result["compliant"]
 
 
 class TestAlertManager:
@@ -243,11 +245,12 @@ class TestAlertManager:
         with app.app_context():
             manager = AlertManager()
             alert = manager.create_alert(
-                job_id=backup_job.id,
                 alert_type="compliance",
                 severity="high",
+                title="Compliance Alert",
                 message="Test alert message",
-                details={"test": "data"},
+                job_id=backup_job.id,
+                notify=False,
             )
 
             assert alert is not None

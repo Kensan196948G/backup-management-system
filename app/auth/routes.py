@@ -138,7 +138,7 @@ def login():
 
         # Set session timeout
         session.permanent = True
-        current_app.permanent_session_lifetime = timedelta(minutes=current_app.config.get("PERMANENT_SESSION_LIFETIME", 30))
+        current_app.permanent_session_lifetime = current_app.config.get("PERMANENT_SESSION_LIFETIME")
 
         # Log successful login
         log_audit("login", action_result="success", details=f"User logged in: {username}")
@@ -367,7 +367,7 @@ def api_login():
                 "access_token": access_token,
                 "refresh_token": refresh_token,
                 "token_type": "Bearer",
-                "expires_in": current_app.config.get("JWT_ACCESS_TOKEN_EXPIRES", 3600),
+                "expires_in": int(current_app.config.get("JWT_ACCESS_TOKEN_EXPIRES").total_seconds()),
                 "user": {
                     "id": user.id,
                     "username": user.username,
@@ -411,7 +411,7 @@ def api_refresh_token():
             {
                 "access_token": access_token,
                 "token_type": "Bearer",
-                "expires_in": current_app.config.get("JWT_ACCESS_TOKEN_EXPIRES", 3600),
+                "expires_in": int(current_app.config.get("JWT_ACCESS_TOKEN_EXPIRES").total_seconds()),
             }
         ),
         200,

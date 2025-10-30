@@ -1,0 +1,207 @@
+========================================================================
+3-2-1-1-0 Backup Management System
+Linux本番環境デプロイメント - インストール手順
+========================================================================
+
+【システム要件】
+- OS: Ubuntu 20.04 LTS以上 / Debian 11以上
+- CPU: 2コア以上
+- メモリ: 4GB以上
+- ディスク: 50GB以上
+- Python: 3.9以上
+
+【インストール前の準備】
+
+1. リポジトリをクローン
+   cd /tmp
+   git clone https://github.com/your-org/backup-management-system.git
+   cd backup-management-system
+
+2. デプロイメントスクリプトを確認
+   ls -la deployment/linux/
+
+【インストール手順 - 初回セットアップ】
+
+ステップ1: セットアップスクリプト実行（10～15分）
+
+   sudo bash deployment/linux/setup.sh
+
+   このスクリプトが行う処理:
+   - OS互換性チェック
+   - システムパッケージインストール（python3-venv, nginx等）
+   - ユーザー作成（backupmgmt）
+   - ディレクトリ作成
+   - Python仮想環境構築
+   - 依存パッケージインストール
+   - データベース初期化
+   - systemdユニット登録
+   - nginx設定
+
+ステップ2: 環境変数設定（5分）
+
+   sudo nano /opt/backup-management-system/.env
+
+   重要な設定項目:
+   - BACKUP_DIR: バックアップストレージのパス
+   - RETENTION_DAYS: 保持日数
+   - LOG_FILE: ログファイルパス
+   - メール設定（オプション）
+
+ステップ3: サービス起動（1分）
+
+   sudo systemctl start backup-management.service
+   sudo systemctl enable backup-management.service
+   sudo systemctl status backup-management.service
+
+ステップ4: アクセス確認（1分）
+
+   # ローカルからのアクセス
+   curl http://127.0.0.1:5000
+
+   # ブラウザから
+   http://localhost または http://<server-ip>
+
+【SSL証明書設定 - 本番環境の場合】
+
+ステップ5: SSL証明書取得（5～10分）
+
+   sudo bash deployment/linux/setup_ssl.sh
+
+   入力項目:
+   - ドメイン名: backup.example.com
+   - メールアドレス: admin@example.com
+
+ステップ6: HTTPS確認（1分）
+
+   https://backup.example.com
+
+【トラブルシューティング】
+
+問題1: サービスが起動しない
+→ sudo journalctl -u backup-management.service -f
+
+問題2: ポートが使用中
+→ sudo netstat -tulpn | grep 5000
+
+問題3: ディスク容量不足
+→ df -h
+→ sudo bash deployment/linux/maintenance.sh
+
+【日常の運用管理】
+
+メンテナンス・運用管理スクリプト:
+
+   sudo bash deployment/linux/maintenance.sh
+
+メニュー選択:
+1. ステータス確認
+2. ログローテーション
+3. データベースバックアップ
+4. データベース最適化
+5. SSL証明書確認
+6. システムアップデート
+7. ディスク空き容量確認
+8. サービス再起動
+9. セキュリティチェック
+10. ヘルスチェック
+11. パフォーマンス分析
+12. 古いファイルをクリーンアップ
+13. レポート生成
+
+【アンインストール】
+
+   sudo bash deployment/linux/uninstall.sh
+
+【ファイル一覧】
+
+deployment/linux/
+├── setup.sh                    - メインセットアップスクリプト
+├── setup_ssl.sh               - SSL証明書取得スクリプト
+├── maintenance.sh             - メンテナンス・運用管理スクリプト
+├── uninstall.sh               - アンインストールスクリプト
+├── README.md                  - 詳細ドキュメント（50ページ以上）
+├── QUICKSTART.md              - 5分クイックスタートガイド
+├── DEPLOYMENT_CHECKLIST.md    - デプロイメントチェックリスト
+├── INSTALL.txt                - このファイル
+├── systemd/
+│   └── backup-management.service   - systemdユニットファイル
+└── nginx/
+    └── backup-management.conf      - nginxリバースプロキシ設定
+
+【重要な設定ファイルパス】
+
+- アプリケーション: /opt/backup-management-system
+- 設定ファイル: /opt/backup-management-system/.env
+- データベース: /var/lib/backup-management-system/backup_management.db
+- ログ: /var/log/backup-management-system/app.log
+- systemdユニット: /etc/systemd/system/backup-management.service
+- nginx設定: /etc/nginx/sites-available/backup-management.conf
+- SSL証明書: /etc/letsencrypt/live/<domain>/
+
+【推奨コマンド】
+
+# サービス管理
+sudo systemctl start backup-management.service
+sudo systemctl stop backup-management.service
+sudo systemctl restart backup-management.service
+sudo systemctl status backup-management.service
+
+# ログ確認
+sudo journalctl -u backup-management.service -f
+sudo tail -f /var/log/backup-management-system/app.log
+
+# nginx確認
+sudo nginx -t
+sudo systemctl status nginx
+
+# ディスク確認
+df -h
+du -sh /opt/backup-management-system
+
+# プロセス確認
+ps aux | grep backup-management
+
+【ドキュメント】
+
+詳細な手順は以下のドキュメントを参照してください:
+
+1. README.md - 完全なデプロイメントガイド（50ページ以上）
+   - システム要件の詳細
+   - ステップバイステップ手順
+   - トラブルシューティング
+   - セキュリティ設定
+   - バックアップと復旧
+   - パフォーマンスチューニング
+   - 監視とアラート
+
+2. QUICKSTART.md - 5分で完了するクイックスタート
+   - 最短セットアップ手順
+   - よくある質問
+   - 次のステップ
+
+3. DEPLOYMENT_CHECKLIST.md - デプロイメント前後のチェックリスト
+   - 事前確認項目
+   - セットアップチェック
+   - 動作確認項目
+   - セキュリティ確認
+   - 署名欄
+
+【サポート】
+
+問題が発生した場合:
+1. deployment/linux/README.md のトラブルシューティングセクションを確認
+2. ログファイルを確認
+3. GitHub Issues で報告
+
+【次のステップ】
+
+セットアップ完了後:
+1. 日常の運用管理スクリプトの実行方法を学ぶ
+2. バックアップ・復旧手順を確認
+3. ログ監視・アラート設定を構築
+4. セキュリティ監査を実施
+
+========================================================================
+最終更新: 2024年1月15日
+バージョン: 1.0.0
+========================================================================
