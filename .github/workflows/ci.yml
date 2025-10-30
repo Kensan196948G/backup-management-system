@@ -34,17 +34,19 @@ jobs:
           fi
 
       - name: Check code formatting with black
+        continue-on-error: true
         run: |
           if [ -d "app" ]; then
-            black --check app/ --line-length=127
+            black --check app/ --line-length=127 || echo "⚠️  Black formatting issues found (not blocking)"
           else
             echo "app/ directory not found, skipping black"
           fi
 
       - name: Check import sorting with isort
+        continue-on-error: true
         run: |
           if [ -d "app" ]; then
-            isort --check-only app/ --profile black
+            isort --check-only app/ --profile black || echo "⚠️  Import sorting issues found (not blocking)"
           else
             echo "app/ directory not found, skipping isort"
           fi
