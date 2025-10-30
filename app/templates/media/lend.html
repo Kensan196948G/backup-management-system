@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}貸出/返却管理: {{ media.label_name }} - バックアップ管理システム{% endblock %}
+
+{% block extra_css %}
+<style>
+    .lending-card {
+        border-left: 4px solid #ffc107;
+    }
+    .history-item {
+        border-left: 3px solid #dee2e6;
+        padding-left: 15px;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-2">
+                <i class="bi bi-box-arrow-right"></i> 貸出/返却管理
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">ホーム</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('media.list') }}">メディア一覧</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('media.detail', media_id=media.id) }}">{{ media.media_id }}</a></li>
+                    <li class="breadcrumb-item active">貸出/返却</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Media Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-hdd-stack"></i> メディア情報
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <p class="mb-2"><strong>メディアID:</strong> {{ media.media_id }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="mb-2"><strong>ラベル名:</strong> {{ media.label_name }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="mb-2">
+                                <strong>ステータス:</strong>
+                                {% if media.status == 'lent' %}
+                                <span class="badge bg-warning">貸出中</span>
+                                {% else %}
+                                <span class="badge bg-success">使用可能</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if media.status == 'lent' and current_lending %}
+            <!-- Current Lending Information -->
+            <div class="card lending-card mb-4">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> 現在の貸出情報
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted mb-1">貸出先</label>
+                            <h6>{{ current_lending.borrower }}</h6>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted mb-1">連絡先</label>
+                            <h6>{{ current_lending.contact_info or '未登録' }}</h6>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted mb-1">貸出日</label>
+                            <h6>{{ current_lending.lend_date.strftime('%Y年%m月%d日') }}</h6>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted mb-1">返却予定日</label>
+                            <h6>{{ current_lending.expected_return_date.strftime('%Y年%m月%d日') }}</h6>
+                            {% if current_lending.expected_return_date < now %}
+                            <span class="badge bg-danger">期限超過</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if current_lending.purpose %}
+                    <div class="mb-3">
+                        <label class="text-muted mb-1">貸出目的</label>
+                        <p class="mb-0">{{ current_lending.purpose }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Return Form -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-box-arrow-in-left"></i> 返却処理
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('media.return_media', media_id=media.id) }}" id="return-form">
+                        <div class="mb-3">
+                            <label for="return_date" class="form-label">返却日</label>
+                            <input type="date" class="form-control" id="return_date" name="return_date"
+                                   value="{{ now.strftime('%Y-%m-%d') }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="condition" class="form-label">返却時の状態</label>
+                            <select class="form-select" id="condition" name="condition" required>
+                                <option value="good">良好 - 問題なし</option>
+                                <option value="minor_damage">軽微な損傷あり</option>
+                                <option value="damaged">損傷あり</option>
+                                <option value="broken">破損</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="return_notes" class="form-label">返却時メモ</label>
+                            <textarea class="form-control" id="return_notes" name="return_notes" rows="3"
+                                      placeholder="返却時の状態や特記事項を入力してください"></textarea>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-check-circle"></i> 返却処理を実行
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% else %}
+            <!-- Lend Form -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-box-arrow-right"></i> 貸出処理
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('media.lend_media', media_id=media.id) }}" id="lend-form" novalidate>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="borrower" class="form-label">貸出先 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="borrower" name="borrower"
+                                       required placeholder="例: 山田太郎">
+                                <div class="invalid-feedback">貸出先を入力してください</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="contact_info" class="form-label">連絡先</label>
+                                <input type="text" class="form-control" id="contact_info" name="contact_info"
+                                       placeholder="例: yamada@example.com">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="lend_date" class="form-label">貸出日 <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="lend_date" name="lend_date"
+                                       value="{{ now.strftime('%Y-%m-%d') }}" required>
+                                <div class="invalid-feedback">貸出日を入力してください</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="expected_return_date" class="form-label">返却予定日 <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="expected_return_date" name="expected_return_date" required>
+                                <div class="invalid-feedback">返却予定日を入力してください</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="purpose" class="form-label">貸出目的</label>
+                            <textarea class="form-control" id="purpose" name="purpose" rows="3"
+                                      placeholder="貸出の目的や用途を入力してください"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="lend_notes" class="form-label">備考</label>
+                            <textarea class="form-control" id="lend_notes" name="lend_notes" rows="2"
+                                      placeholder="特記事項があれば入力してください"></textarea>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="send_notification" name="send_notification" checked>
+                            <label class="form-check-label" for="send_notification">
+                                貸出先にメール通知を送信する
+                            </label>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> 貸出処理を実行
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Lending History -->
+        <div class="col-lg-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history"></i> 貸出履歴
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if lending_history %}
+                    <div style="max-height: 500px; overflow-y: auto;">
+                        {% for lending in lending_history %}
+                        <div class="history-item">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0">{{ lending.borrower }}</h6>
+                                {% if lending.return_date %}
+                                <span class="badge bg-success">返却済</span>
+                                {% else %}
+                                <span class="badge bg-warning">貸出中</span>
+                                {% endif %}
+                            </div>
+                            <p class="mb-1 small text-muted">
+                                <i class="bi bi-calendar-event"></i>
+                                {{ lending.lend_date.strftime('%Y/%m/%d') }}
+                                {% if lending.return_date %}
+                                - {{ lending.return_date.strftime('%Y/%m/%d') }}
+                                {% endif %}
+                            </p>
+                            {% if lending.purpose %}
+                            <p class="mb-1 small">{{ lending.purpose }}</p>
+                            {% endif %}
+                            {% if lending.return_notes %}
+                            <p class="mb-0 small text-info">
+                                <i class="bi bi-info-circle"></i> {{ lending.return_notes }}
+                            </p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p class="mt-2">貸出履歴がありません</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+
+    // Set minimum return date to today
+    const today = new Date().toISOString().split('T')[0];
+    const expectedReturnInput = document.getElementById('expected_return_date');
+    if (expectedReturnInput) {
+        expectedReturnInput.min = today;
+        // Set default to 7 days from now
+        const defaultReturn = new Date();
+        defaultReturn.setDate(defaultReturn.getDate() + 7);
+        expectedReturnInput.value = defaultReturn.toISOString().split('T')[0];
+    }
+
+    // Form validation for lend form
+    const lendForm = document.getElementById('lend-form');
+    if (lendForm) {
+        lendForm.addEventListener('submit', function(event) {
+            if (!lendForm.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            } else {
+                const submitBtn = lendForm.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>処理中...';
+            }
+            lendForm.classList.add('was-validated');
+        }, false);
+    }
+
+    // Form validation for return form
+    const returnForm = document.getElementById('return-form');
+    if (returnForm) {
+        returnForm.addEventListener('submit', function(event) {
+            const condition = document.getElementById('condition').value;
+            if (condition === 'damaged' || condition === 'broken') {
+                if (!confirm('メディアが損傷している状態で返却します。よろしいですか？')) {
+                    event.preventDefault();
+                    return;
+                }
+            }
+
+            const submitBtn = returnForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>処理中...';
+        }, false);
+    }
+})();
+</script>
+{% endblock %}

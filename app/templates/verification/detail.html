@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}検証テスト詳細 - バックアップ管理システム{% endblock %}
+
+{% block extra_css %}
+<style>
+    .test-metric {
+        text-align: center;
+        padding: 20px;
+        border-radius: 8px;
+        background: #f8f9fa;
+    }
+    .issue-card {
+        border-left: 4px solid #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-2">
+                        <i class="bi bi-check2-circle"></i> 検証テスト詳細
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">ホーム</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('verification.list') }}">検証テスト一覧</a></li>
+                            <li class="breadcrumb-item active">テストID: {{ test.id }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    {% if test.result == 'failed' %}
+                    <button class="btn btn-warning" onclick="retryTest()">
+                        <i class="bi bi-arrow-repeat"></i> 再実行
+                    </button>
+                    {% endif %}
+                    <a href="{{ url_for('verification.list') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> 一覧に戻る
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Test Summary -->
+            <div class="card mb-4">
+                <div class="card-header {% if test.result == 'passed' %}bg-success{% elif test.result == 'failed' %}bg-danger{% elif test.result == 'warning' %}bg-warning{% else %}bg-info{% endif %} text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clipboard-data"></i> テストサマリー
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>テストID:</strong> {{ test.id }}</p>
+                            <p><strong>テストタイプ:</strong>
+                                {% if test.test_type == 'full' %}完全検証
+                                {% elif test.test_type == 'partial' %}部分検証
+                                {% elif test.test_type == 'quick' %}クイック検証
+                                {% endif %}
+                            </p>
+                            <p><strong>実施日時:</strong> {{ test.test_date.strftime('%Y年%m月%d日 %H:%M') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>ジョブ:</strong>
+                                {% if test.job %}
+                                <a href="{{ url_for('jobs.detail', job_id=test.job.id) }}">{{ test.job.job_name }}</a>
+                                {% else %}N/A{% endif %}
+                            </p>
+                            <p><strong>メディア:</strong>
+                                {% if test.media %}
+                                <a href="{{ url_for('media.detail', media_id=test.media.id) }}">{{ test.media.media_id }}</a>
+                                {% else %}N/A{% endif %}
+                            </p>
+                            <p><strong>実施者:</strong> {{ test.performed_by }}</p>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="test-metric">
+                                <h4 class="{% if test.result == 'passed' %}text-success{% elif test.result == 'failed' %}text-danger{% else %}text-warning{% endif %}">
+                                    {% if test.result == 'passed' %}
+                                    <i class="bi bi-check-circle"></i>
+                                    {% elif test.result == 'failed' %}
+                                    <i class="bi bi-x-circle"></i>
+                                    {% else %}
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    {% endif %}
+                                </h4>
+                                <h6 class="text-muted">テスト結果</h6>
+                                <h5>
+                                    {% if test.result == 'passed' %}成功
+                                    {% elif test.result == 'failed' %}失敗
+                                    {% elif test.result == 'warning' %}警告
+                                    {% else %}実施中{% endif %}
+                                </h5>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="test-metric">
+                                <h4 class="text-primary">{{ test.files_verified|default(0) }}</h4>
+                                <h6 class="text-muted">検証済ファイル数</h6>
+                                <small>/ {{ test.total_files|default(0) }} ファイル</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="test-metric">
+                                <h4 class="text-info">{{ test.duration_minutes|default(0) }}</h4>
+                                <h6 class="text-muted">所要時間</h6>
+                                <small>分</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="test-metric">
+                                <h4 class="text-danger">{{ test.errors_found|default(0) }}</h4>
+                                <h6 class="text-muted">検出エラー数</h6>
+                                <small>件</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Results Chart -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bar-chart"></i> 検証結果グラフ
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="verificationChart" height="100"></canvas>
+                </div>
+            </div>
+
+            <!-- Issues Found -->
+            {% if test.issues %}
+            <div class="card issue-card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-octagon"></i> 検出された問題点
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for issue in test.issues %}
+                    <div class="alert alert-danger" role="alert">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-bug"></i> {{ issue.severity|upper }}: {{ issue.title }}
+                        </h6>
+                        <p class="mb-1">{{ issue.description }}</p>
+                        <hr>
+                        <p class="mb-0">
+                            <small><strong>ファイル:</strong> {{ issue.file_path }}</small><br>
+                            <small><strong>検出時刻:</strong> {{ issue.detected_at.strftime('%Y/%m/%d %H:%M:%S') }}</small>
+                        </p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Test Log -->
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-terminal"></i> テストログ
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <pre class="bg-dark text-light p-3" style="max-height: 400px; overflow-y: auto;">{{ test.log_content|default('ログデータがありません') }}</pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightning"></i> クイックアクション
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="downloadReport()">
+                            <i class="bi bi-download"></i> レポートダウンロード
+                        </button>
+                        <button class="btn btn-outline-info" onclick="exportLog()">
+                            <i class="bi bi-file-earmark-text"></i> ログエクスポート
+                        </button>
+                        <a href="{{ url_for('verification.create') }}?job_id={{ test.job.id if test.job else '' }}"
+                           class="btn btn-outline-success">
+                            <i class="bi bi-plus-circle"></i> 新規テスト実施
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Information -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-link-45deg"></i> 関連情報
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if test.job %}
+                    <h6 class="mb-2">関連ジョブ</h6>
+                    <p class="mb-3">
+                        <a href="{{ url_for('jobs.detail', job_id=test.job.id) }}">
+                            {{ test.job.job_name }}
+                        </a>
+                    </p>
+                    {% endif %}
+
+                    {% if test.media %}
+                    <h6 class="mb-2">使用メディア</h6>
+                    <p class="mb-3">
+                        <a href="{{ url_for('media.detail', media_id=test.media.id) }}">
+                            {{ test.media.media_id }} - {{ test.media.label_name }}
+                        </a>
+                    </p>
+                    {% endif %}
+
+                    <h6 class="mb-2">推奨アクション</h6>
+                    <ul class="list-unstyled">
+                        {% if test.result == 'failed' %}
+                        <li><i class="bi bi-arrow-right text-danger"></i> テストを再実行してください</li>
+                        <li><i class="bi bi-arrow-right text-danger"></i> メディアの健全性を確認してください</li>
+                        {% elif test.result == 'warning' %}
+                        <li><i class="bi bi-arrow-right text-warning"></i> 警告内容を確認してください</li>
+                        {% else %}
+                        <li><i class="bi bi-arrow-right text-success"></i> 問題ありません</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Verification Results Chart
+const ctx = document.getElementById('verificationChart').getContext('2d');
+const verificationChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: ['検証成功', 'エラー検出', '未検証'],
+        datasets: [{
+            data: [
+                {{ test.files_verified - test.errors_found }},
+                {{ test.errors_found }},
+                {{ test.total_files - test.files_verified }}
+            ],
+            backgroundColor: ['#198754', '#dc3545', '#6c757d']
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+function retryTest() {
+    if (confirm('このテストを再実行しますか？')) {
+        fetch('/verification/{{ test.id }}/retry', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('テストを再実行しました');
+                location.reload();
+            } else {
+                alert('エラー: ' + data.message);
+            }
+        });
+    }
+}
+
+function downloadReport() {
+    window.location.href = '/verification/{{ test.id }}/report/download';
+}
+
+function exportLog() {
+    window.location.href = '/verification/{{ test.id }}/log/export';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block title %}検証テスト一覧 - バックアップ管理システム{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        font-size: 0.85rem;
+        padding: 0.35em 0.65em;
+    }
+    .result-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-2">
+                        <i class="bi bi-check2-circle"></i> 検証テスト管理
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">ホーム</a></li>
+                            <li class="breadcrumb-item active">検証テスト一覧</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{{ url_for('verification.schedule') }}" class="btn btn-secondary me-2">
+                        <i class="bi bi-calendar3"></i> スケジュール
+                    </a>
+                    <a href="{{ url_for('verification.create') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> 新規テスト記録
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">総テスト数</h6>
+                            <h3 class="mb-0">{{ test_stats.total|default(0) }}</h3>
+                        </div>
+                        <div class="text-primary">
+                            <i class="bi bi-list-check fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">成功</h6>
+                            <h3 class="mb-0 text-success">{{ test_stats.passed|default(0) }}</h3>
+                        </div>
+                        <div class="text-success">
+                            <i class="bi bi-check-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">失敗</h6>
+                            <h3 class="mb-0 text-danger">{{ test_stats.failed|default(0) }}</h3>
+                        </div>
+                        <div class="text-danger">
+                            <i class="bi bi-x-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">成功率</h6>
+                            <h3 class="mb-0 text-info">{{ test_stats.success_rate|default(0) }}%</h3>
+                        </div>
+                        <div class="text-info">
+                            <i class="bi bi-graph-up fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel"></i> フィルター・検索
+            </h5>
+        </div>
+        <div class="card-body">
+            <form id="filter-form" class="row g-3">
+                <div class="col-md-3">
+                    <label for="filter-status" class="form-label">テスト結果</label>
+                    <select class="form-select" id="filter-status" name="status">
+                        <option value="">全て</option>
+                        <option value="passed">成功</option>
+                        <option value="failed">失敗</option>
+                        <option value="warning">警告あり</option>
+                        <option value="in_progress">実施中</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-type" class="form-label">テストタイプ</label>
+                    <select class="form-select" id="filter-type" name="test_type">
+                        <option value="">全て</option>
+                        <option value="full">完全検証</option>
+                        <option value="partial">部分検証</option>
+                        <option value="quick">クイック検証</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-date-from" class="form-label">実施日（開始）</label>
+                    <input type="date" class="form-control" id="filter-date-from" name="date_from">
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-date-to" class="form-label">実施日（終了）</label>
+                    <input type="date" class="form-control" id="filter-date-to" name="date_to">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> 検索
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="reset-filter">
+                        <i class="bi bi-arrow-counterclockwise"></i> リセット
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Test List Table -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="bi bi-table"></i> テスト一覧
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="verification-table" class="table table-hover table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>テストID</th>
+                            <th>ジョブ名</th>
+                            <th>メディア</th>
+                            <th>テストタイプ</th>
+                            <th>実施日時</th>
+                            <th>所要時間</th>
+                            <th>結果</th>
+                            <th>検証済ファイル数</th>
+                            <th>実施者</th>
+                            <th>アクション</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for test in verification_tests %}
+                        <tr>
+                            <td>
+                                <strong>{{ test.id }}</strong>
+                            </td>
+                            <td>
+                                {% if test.job %}
+                                <a href="{{ url_for('jobs.detail', job_id=test.job.id) }}">
+                                    {{ test.job.job_name }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if test.media %}
+                                <a href="{{ url_for('media.detail', media_id=test.media.id) }}">
+                                    {{ test.media.media_id }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if test.test_type == 'full' %}
+                                <span class="badge bg-primary">完全検証</span>
+                                {% elif test.test_type == 'partial' %}
+                                <span class="badge bg-info">部分検証</span>
+                                {% elif test.test_type == 'quick' %}
+                                <span class="badge bg-secondary">クイック</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ test.test_date.strftime('%Y/%m/%d %H:%M') }}</td>
+                            <td>
+                                {% if test.duration_minutes %}
+                                {{ test.duration_minutes }} 分
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if test.result == 'passed' %}
+                                <span class="result-indicator bg-success"></span>
+                                <span class="badge bg-success status-badge">成功</span>
+                                {% elif test.result == 'failed' %}
+                                <span class="result-indicator bg-danger"></span>
+                                <span class="badge bg-danger status-badge">失敗</span>
+                                {% elif test.result == 'warning' %}
+                                <span class="result-indicator bg-warning"></span>
+                                <span class="badge bg-warning status-badge">警告あり</span>
+                                {% elif test.result == 'in_progress' %}
+                                <span class="result-indicator bg-info"></span>
+                                <span class="badge bg-info status-badge">実施中</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ test.files_verified|default(0) }} / {{ test.total_files|default(0) }}
+                                {% if test.total_files > 0 %}
+                                <div class="progress mt-1" style="height: 5px;">
+                                    <div class="progress-bar bg-success" role="progressbar"
+                                         style="width: {{ (test.files_verified / test.total_files * 100)|round(1) }}%"></div>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>{{ test.performed_by }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('verification.detail', test_id=test.id) }}"
+                                       class="btn btn-outline-info" title="詳細">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if test.result == 'failed' %}
+                                    <button type="button" class="btn btn-outline-warning" title="再実行"
+                                            onclick="retryTest({{ test.id }})">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize DataTable
+    const table = $('#verification-table').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/ja.json'
+        },
+        order: [[4, 'desc']], // Sort by test date
+        pageLength: 25,
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'copy',
+                text: '<i class="bi bi-clipboard"></i> コピー',
+                className: 'btn btn-sm btn-secondary'
+            },
+            {
+                extend: 'csv',
+                text: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
+                className: 'btn btn-sm btn-success'
+            },
+            {
+                extend: 'excel',
+                text: '<i class="bi bi-file-earmark-excel"></i> Excel',
+                className: 'btn btn-sm btn-success'
+            },
+            {
+                extend: 'pdf',
+                text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
+                className: 'btn btn-sm btn-danger'
+            },
+            {
+                extend: 'print',
+                text: '<i class="bi bi-printer"></i> 印刷',
+                className: 'btn btn-sm btn-info'
+            }
+        ],
+        columnDefs: [
+            { orderable: false, targets: [9] }
+        ]
+    });
+
+    // Filter form submission
+    $('#filter-form').on('submit', function(e) {
+        e.preventDefault();
+
+        const status = $('#filter-status').val();
+        const testType = $('#filter-type').val();
+
+        // Apply filters
+        table.column(6).search(status);
+        table.column(3).search(testType);
+        table.draw();
+    });
+
+    // Reset filter
+    $('#reset-filter').on('click', function() {
+        $('#filter-form')[0].reset();
+        table.search('').columns().search('').draw();
+    });
+});
+
+function retryTest(testId) {
+    if (confirm('このテストを再実行しますか？')) {
+        fetch(`/verification/${testId}/retry`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('テストを再実行しました');
+                location.reload();
+            } else {
+                alert('テストの再実行に失敗しました: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('エラーが発生しました: ' + error);
+        });
+    }
+}
+</script>
+{% endblock %}

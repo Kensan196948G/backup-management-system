@@ -30,9 +30,9 @@ ISO 27001/19650に準拠したコンプライアンス監視機能を提供し�
 - ✅ コンプライアンスレポート自動生成
 
 ### 🔍 対応バックアップツール
-- **Veeam Backup & Replication**
-- **Windows Server Backup**
-- **AOMEI Backupper**
+- **Veeam Backup & Replication** - PowerShell統合による自動ステータス送信
+- **Windows Server Backup** - タスクスケジューラー連携
+- **AOMEI Backupper** - ログ監視・解析による自動連携
 
 ### 📊 レポート機能
 - 日次/週次/月次バックアップレポート
@@ -107,6 +107,13 @@ flask run
 
 - [MCP設定ガイド](docs/MCP_SETUP_GUIDE.md) - MCPサーバーのセットアップ手順
 - [MCP設定要件](docs/MCP設定要件.txt) - 詳細な技術仕様
+- [インストールガイド](INSTALLATION.md) - システム全体のインストール手順
+
+### PowerShell統合ドキュメント
+
+- [PowerShell統合 README](scripts/powershell/README.md) - Windows環境向けバックアップツール連携
+- [テスト手順書](scripts/powershell/TESTING_GUIDE.md) - 動作テストとトラブルシューティング
+- [実装サマリー](scripts/powershell/IMPLEMENTATION_SUMMARY.md) - 実装詳細と技術仕様
 
 ### 技術ドキュメント
 
@@ -192,6 +199,15 @@ backup-management-system/
 │   └── windows/          # Windows用スクリプト
 ├── migrations/            # データベースマイグレーション
 ├── scripts/               # 開発用スクリプト
+│   └── powershell/       # Windows統合スクリプト
+│       ├── common_functions.ps1    # 共通関数
+│       ├── veeam_integration.ps1   # Veeam連携
+│       ├── wsb_integration.ps1     # WSB連携
+│       ├── aomei_integration.ps1   # AOMEI連携
+│       ├── register_scheduled_tasks.ps1  # タスク管理
+│       ├── install.ps1             # インストーラー
+│       ├── config.json             # 設定ファイル
+│       └── README.md               # 詳細ドキュメント
 ├── tests/                 # テストコード
 ├── .claude/               # Claude Code設定
 ├── .env.example           # 環境変数テンプレート

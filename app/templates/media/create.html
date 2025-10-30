@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}メディア登録 - バックアップ管理システム{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+    }
+    .qr-preview {
+        width: 200px;
+        height: 200px;
+        border: 2px dashed #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-2">
+                <i class="bi bi-plus-circle"></i> 新規メディア登録
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">ホーム</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('media.list') }}">メディア一覧</a></li>
+                    <li class="breadcrumb-item active">新規登録</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <form id="media-form" method="POST" action="{{ url_for('media.create') }}" novalidate>
+                <!-- Basic Information -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-info-circle"></i> 基本情報
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="media_id" class="form-label required-field">メディアID</label>
+                                <input type="text" class="form-control" id="media_id" name="media_id" required
+                                       placeholder="例: LTO-001">
+                                <div class="invalid-feedback">メディアIDを入力してください</div>
+                                <small class="form-text text-muted">
+                                    一意の識別子を入力してください
+                                </small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="label_name" class="form-label required-field">ラベル名</label>
+                                <input type="text" class="form-control" id="label_name" name="label_name" required
+                                       placeholder="例: 営業部バックアップ用">
+                                <div class="invalid-feedback">ラベル名を入力してください</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="media_type" class="form-label required-field">メディアタイプ</label>
+                                <select class="form-select" id="media_type" name="media_type" required>
+                                    <option value="">選択してください</option>
+                                    <option value="tape">テープ (LTO)</option>
+                                    <option value="disk">ディスク (HDD/SSD)</option>
+                                    <option value="optical">光学メディア (DVD/BD)</option>
+                                    <option value="cloud">クラウドストレージ</option>
+                                </select>
+                                <div class="invalid-feedback">メディアタイプを選択してください</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="capacity_gb" class="form-label required-field">容量 (GB)</label>
+                                <input type="number" class="form-control" id="capacity_gb" name="capacity_gb"
+                                       min="1" step="1" required placeholder="例: 1000">
+                                <div class="invalid-feedback">容量を入力してください</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label required-field">ステータス</label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="available" selected>使用可能</option>
+                                    <option value="in_use">使用中</option>
+                                    <option value="lent">貸出中</option>
+                                    <option value="maintenance">メンテナンス中</option>
+                                    <option value="retired">破棄予定</option>
+                                </select>
+                                <div class="invalid-feedback">ステータスを選択してください</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="location" class="form-label required-field">保管場所</label>
+                                <input type="text" class="form-control" id="location" name="location" required
+                                       placeholder="例: 倉庫A-1" list="location-list">
+                                <datalist id="location-list">
+                                    <option value="倉庫A-1">
+                                    <option value="倉庫A-2">
+                                    <option value="倉庫B-1">
+                                    <option value="サーバールーム">
+                                    <option value="オフィス金庫">
+                                </datalist>
+                                <div class="invalid-feedback">保管場所を入力してください</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="purchase_date" class="form-label">購入日</label>
+                                <input type="date" class="form-control" id="purchase_date" name="purchase_date">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="warranty_end_date" class="form-label">保証期限</label>
+                                <input type="date" class="form-control" id="warranty_end_date" name="warranty_end_date">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Technical Details -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-gear"></i> 技術詳細（オプション）
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="manufacturer" class="form-label">製造元</label>
+                                <input type="text" class="form-control" id="manufacturer" name="manufacturer"
+                                       placeholder="例: IBM, HP">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="model" class="form-label">モデル</label>
+                                <input type="text" class="form-control" id="model" name="model"
+                                       placeholder="例: LTO-8">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="serial_number" class="form-label">シリアル番号</label>
+                                <input type="text" class="form-control" id="serial_number" name="serial_number">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="firmware_version" class="form-label">ファームウェアバージョン</label>
+                                <input type="text" class="form-control" id="firmware_version" name="firmware_version">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-file-text"></i> 追加情報
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">備考</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="4"
+                                      placeholder="メディアに関する追加情報を入力してください"></textarea>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="generate_qr" name="generate_qr" checked>
+                            <label class="form-check-label" for="generate_qr">
+                                QRコードを自動生成する
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="notify_admin" name="notify_admin">
+                            <label class="form-check-label" for="notify_admin">
+                                管理者に通知メールを送信する
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('media.list') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> キャンセル
+                            </a>
+                            <div>
+                                <button type="reset" class="btn btn-outline-secondary me-2">
+                                    <i class="bi bi-arrow-counterclockwise"></i> リセット
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="submit-btn">
+                                    <i class="bi bi-check-circle"></i> 登録
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="col-lg-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-eye"></i> プレビュー
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-muted">QRコードプレビュー</h6>
+                        <div class="qr-preview mx-auto" id="qr-preview">
+                            <span class="text-muted">
+                                <i class="bi bi-qr-code fs-1"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6 class="text-muted">入力サマリー</h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <p class="mb-1">
+                                    <strong>メディアID:</strong>
+                                    <span id="preview-media-id" class="text-muted">未入力</span>
+                                </p>
+                                <p class="mb-1">
+                                    <strong>ラベル名:</strong>
+                                    <span id="preview-label" class="text-muted">未入力</span>
+                                </p>
+                                <p class="mb-1">
+                                    <strong>タイプ:</strong>
+                                    <span id="preview-type" class="text-muted">未選択</span>
+                                </p>
+                                <p class="mb-1">
+                                    <strong>容量:</strong>
+                                    <span id="preview-capacity" class="text-muted">未入力</span>
+                                </p>
+                                <p class="mb-0">
+                                    <strong>保管場所:</strong>
+                                    <span id="preview-location" class="text-muted">未入力</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>ヒント:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>必須項目は * マークで表示されています</li>
+                            <li>メディアIDは一意である必要があります</li>
+                            <li>QRコードは登録後に自動生成されます</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+(function() {
+    'use strict';
+
+    const form = document.getElementById('media-form');
+
+    // Live preview updates
+    document.getElementById('media_id').addEventListener('input', function(e) {
+        document.getElementById('preview-media-id').textContent = e.target.value || '未入力';
+    });
+
+    document.getElementById('label_name').addEventListener('input', function(e) {
+        document.getElementById('preview-label').textContent = e.target.value || '未入力';
+    });
+
+    document.getElementById('media_type').addEventListener('change', function(e) {
+        const typeMap = {
+            'tape': 'テープ (LTO)',
+            'disk': 'ディスク (HDD/SSD)',
+            'optical': '光学メディア',
+            'cloud': 'クラウドストレージ'
+        };
+        document.getElementById('preview-type').textContent = typeMap[e.target.value] || '未選択';
+    });
+
+    document.getElementById('capacity_gb').addEventListener('input', function(e) {
+        document.getElementById('preview-capacity').textContent = e.target.value ? e.target.value + ' GB' : '未入力';
+    });
+
+    document.getElementById('location').addEventListener('input', function(e) {
+        document.getElementById('preview-location').textContent = e.target.value || '未入力';
+    });
+
+    // Form submission
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        } else {
+            // Show loading state
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>登録中...';
+        }
+
+        form.classList.add('was-validated');
+    }, false);
+
+    // Auto-generate media ID suggestion
+    document.getElementById('media_type').addEventListener('change', function(e) {
+        const mediaIdInput = document.getElementById('media_id');
+        if (!mediaIdInput.value) {
+            const typePrefix = {
+                'tape': 'LTO',
+                'disk': 'HDD',
+                'optical': 'DVD',
+                'cloud': 'CLD'
+            };
+            const prefix = typePrefix[e.target.value];
+            if (prefix) {
+                const timestamp = new Date().getTime().toString().slice(-6);
+                mediaIdInput.value = prefix + '-' + timestamp;
+                document.getElementById('preview-media-id').textContent = mediaIdInput.value;
+            }
+        }
+    });
+
+    // Capacity suggestions based on media type
+    document.getElementById('media_type').addEventListener('change', function(e) {
+        const capacityInput = document.getElementById('capacity_gb');
+        const suggestions = {
+            'tape': [1000, 2000, 5000, 12000],
+            'disk': [500, 1000, 2000, 4000],
+            'optical': [25, 50, 100, 128],
+            'cloud': [100, 500, 1000, 5000]
+        };
+
+        const capacities = suggestions[e.target.value];
+        if (capacities && !capacityInput.value) {
+            // You could show suggestions in a dropdown
+            console.log('Suggested capacities:', capacities);
+        }
+    });
+})();
+</script>
+{% endblock %}

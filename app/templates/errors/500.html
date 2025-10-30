@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}500 Internal Server Error - バックアップ管理システム{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6 text-center">
+            <i class="bi bi-x-octagon text-danger" style="font-size: 5rem;"></i>
+            <h1 class="display-1 fw-bold">500</h1>
+            <h2 class="mb-4">Internal Server Error</h2>
+            <p class="lead mb-4">
+                サーバーでエラーが発生しました。<br>
+                しばらくしてから再度お試しください。
+            </p>
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle"></i>
+                <strong>サポートが必要な場合:</strong>
+                <p class="mb-0 mt-2">
+                    システム管理者にお問い合わせください。<br>
+                    Email: <a href="mailto:support@example.com">support@example.com</a><br>
+                    Tel: 03-XXXX-XXXX
+                </p>
+            </div>
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary btn-lg">
+                <i class="bi bi-house"></i> ホームに戻る
+            </a>
+            <button onclick="location.reload()" class="btn btn-secondary btn-lg">
+                <i class="bi bi-arrow-clockwise"></i> ページを再読み込み
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

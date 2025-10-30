@@ -1,0 +1,48 @@
+{
+  "api_url": "http://localhost:5000",
+  "api_token": "",
+  "backup_tools": {
+    "veeam": {
+      "enabled": true,
+      "job_ids": [1, 2],
+      "description": "Veeam Backup & Replication統合",
+      "notes": "Veeamジョブのポストジョブスクリプトとして設定してください"
+    },
+    "wsb": {
+      "enabled": true,
+      "job_ids": [3],
+      "description": "Windows Server Backup統合",
+      "check_interval_minutes": 60
+    },
+    "aomei": {
+      "enabled": true,
+      "job_ids": [4],
+      "description": "AOMEI Backupper統合",
+      "log_path": "",
+      "check_interval_minutes": 60
+    }
+  },
+  "logging": {
+    "enabled": true,
+    "level": "INFO",
+    "retention_days": 30,
+    "event_log_enabled": true
+  },
+  "notifications": {
+    "email_enabled": false,
+    "email_on_failure_only": true,
+    "smtp_server": "",
+    "smtp_port": 587,
+    "smtp_username": "",
+    "smtp_password": "",
+    "email_from": "",
+    "email_to": []
+  },
+  "retry": {
+    "enabled": true,
+    "max_retries": 3,
+    "retry_interval_seconds": 60
+  },
+  "version": "1.0.0",
+  "last_updated": "2025-10-30"
+}

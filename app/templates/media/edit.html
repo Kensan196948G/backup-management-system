@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}メディア編集: {{ media.label_name }} - バックアップ管理システム{% endblock %}
+
+{% block extra_css %}
+<style>
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-2">
+                <i class="bi bi-pencil"></i> メディア編集
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">ホーム</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('media.list') }}">メディア一覧</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('media.detail', media_id=media.id) }}">{{ media.media_id }}</a></li>
+                    <li class="breadcrumb-item active">編集</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <form id="media-form" method="POST" action="{{ url_for('media.edit', media_id=media.id) }}" novalidate>
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Basic Information -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-info-circle"></i> 基本情報
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="media_id" class="form-label required-field">メディアID</label>
+                                <input type="text" class="form-control" id="media_id" name="media_id"
+                                       value="{{ media.media_id }}" readonly>
+                                <small class="form-text text-muted">メディアIDは変更できません</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="label_name" class="form-label required-field">ラベル名</label>
+                                <input type="text" class="form-control" id="label_name" name="label_name"
+                                       value="{{ media.label_name }}" required>
+                                <div class="invalid-feedback">ラベル名を入力してください</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="media_type" class="form-label required-field">メディアタイプ</label>
+                                <select class="form-select" id="media_type" name="media_type" required>
+                                    <option value="tape" {% if media.media_type == 'tape' %}selected{% endif %}>テープ (LTO)</option>
+                                    <option value="disk" {% if media.media_type == 'disk' %}selected{% endif %}>ディスク (HDD/SSD)</option>
+                                    <option value="optical" {% if media.media_type == 'optical' %}selected{% endif %}>光学メディア</option>
+                                    <option value="cloud" {% if media.media_type == 'cloud' %}selected{% endif %}>クラウドストレージ</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="capacity_gb" class="form-label required-field">容量 (GB)</label>
+                                <input type="number" class="form-control" id="capacity_gb" name="capacity_gb"
+                                       value="{{ media.capacity_gb }}" min="1" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label required-field">ステータス</label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="available" {% if media.status == 'available' %}selected{% endif %}>使用可能</option>
+                                    <option value="in_use" {% if media.status == 'in_use' %}selected{% endif %}>使用中</option>
+                                    <option value="lent" {% if media.status == 'lent' %}selected{% endif %}>貸出中</option>
+                                    <option value="maintenance" {% if media.status == 'maintenance' %}selected{% endif %}>メンテナンス中</option>
+                                    <option value="retired" {% if media.status == 'retired' %}selected{% endif %}>破棄予定</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="location" class="form-label required-field">保管場所</label>
+                                <input type="text" class="form-control" id="location" name="location"
+                                       value="{{ media.location }}" required list="location-list">
+                                <datalist id="location-list">
+                                    <option value="倉庫A-1">
+                                    <option value="倉庫A-2">
+                                    <option value="倉庫B-1">
+                                    <option value="サーバールーム">
+                                    <option value="オフィス金庫">
+                                </datalist>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="purchase_date" class="form-label">購入日</label>
+                                <input type="date" class="form-control" id="purchase_date" name="purchase_date"
+                                       value="{{ media.purchase_date.strftime('%Y-%m-%d') if media.purchase_date else '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="warranty_end_date" class="form-label">保証期限</label>
+                                <input type="date" class="form-control" id="warranty_end_date" name="warranty_end_date"
+                                       value="{{ media.warranty_end_date.strftime('%Y-%m-%d') if media.warranty_end_date else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Technical Details -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-gear"></i> 技術詳細
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="manufacturer" class="form-label">製造元</label>
+                                <input type="text" class="form-control" id="manufacturer" name="manufacturer"
+                                       value="{{ media.manufacturer or '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="model" class="form-label">モデル</label>
+                                <input type="text" class="form-control" id="model" name="model"
+                                       value="{{ media.model or '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="serial_number" class="form-label">シリアル番号</label>
+                                <input type="text" class="form-control" id="serial_number" name="serial_number"
+                                       value="{{ media.serial_number or '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="firmware_version" class="form-label">ファームウェアバージョン</label>
+                                <input type="text" class="form-control" id="firmware_version" name="firmware_version"
+                                       value="{{ media.firmware_version or '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-file-text"></i> 追加情報
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">備考</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="4">{{ media.notes or '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('media.detail', media_id=media.id) }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> キャンセル
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submit-btn">
+                                <i class="bi bi-check-circle"></i> 更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Change History -->
+            <div class="col-lg-4">
+                <div class="card sticky-top" style="top: 20px;">
+                    <div class="card-header bg-warning">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history"></i> 変更履歴
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <small class="text-muted">作成日時</small>
+                            <p class="mb-0">{{ media.created_at.strftime('%Y/%m/%d %H:%M') }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">最終更新</small>
+                            <p class="mb-0">{{ media.updated_at.strftime('%Y/%m/%d %H:%M') if media.updated_at else '未更新' }}</p>
+                        </div>
+                        <hr>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>注意:</strong>
+                            <p class="mb-0 mt-2 small">
+                                変更内容は即座に反映されます。特にステータスや保管場所の変更は慎重に行ってください。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+
+    const form = document.getElementById('media-form');
+
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        } else {
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>更新中...';
+        }
+
+        form.classList.add('was-validated');
+    }, false);
+})();
+</script>
+{% endblock %}

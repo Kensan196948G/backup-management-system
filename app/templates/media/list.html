@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}オフラインメディア一覧 - バックアップ管理システム{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        font-size: 0.85rem;
+        padding: 0.35em 0.65em;
+    }
+    .qr-code-small {
+        width: 50px;
+        height: 50px;
+        object-fit: contain;
+    }
+    .location-badge {
+        background-color: #e7f3ff;
+        color: #0066cc;
+        border: 1px solid #b3d9ff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-2">
+                        <i class="bi bi-hdd-stack"></i> オフラインメディア管理
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">ホーム</a></li>
+                            <li class="breadcrumb-item active">メディア一覧</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{{ url_for('media.create') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> 新規メディア登録
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">総メディア数</h6>
+                            <h3 class="mb-0" id="total-media-count">{{ media_stats.total|default(0) }}</h3>
+                        </div>
+                        <div class="text-primary">
+                            <i class="bi bi-hdd-stack fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">使用中</h6>
+                            <h3 class="mb-0 text-success" id="in-use-count">{{ media_stats.in_use|default(0) }}</h3>
+                        </div>
+                        <div class="text-success">
+                            <i class="bi bi-check-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">貸出中</h6>
+                            <h3 class="mb-0 text-warning" id="lent-count">{{ media_stats.lent|default(0) }}</h3>
+                        </div>
+                        <div class="text-warning">
+                            <i class="bi bi-box-arrow-right fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">破棄予定</h6>
+                            <h3 class="mb-0 text-danger" id="retired-count">{{ media_stats.retired|default(0) }}</h3>
+                        </div>
+                        <div class="text-danger">
+                            <i class="bi bi-trash fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter and Search -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel"></i> フィルター・検索
+            </h5>
+        </div>
+        <div class="card-body">
+            <form id="filter-form" class="row g-3">
+                <div class="col-md-3">
+                    <label for="filter-type" class="form-label">メディアタイプ</label>
+                    <select class="form-select" id="filter-type" name="media_type">
+                        <option value="">全て</option>
+                        <option value="tape">テープ (LTO)</option>
+                        <option value="disk">ディスク (HDD/SSD)</option>
+                        <option value="optical">光学メディア (DVD/BD)</option>
+                        <option value="cloud">クラウドストレージ</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-status" class="form-label">ステータス</label>
+                    <select class="form-select" id="filter-status" name="status">
+                        <option value="">全て</option>
+                        <option value="available">使用可能</option>
+                        <option value="in_use">使用中</option>
+                        <option value="lent">貸出中</option>
+                        <option value="maintenance">メンテナンス中</option>
+                        <option value="retired">破棄予定</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-location" class="form-label">保管場所</label>
+                    <input type="text" class="form-control" id="filter-location" name="location" placeholder="例: 倉庫A-1">
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-search" class="form-label">キーワード検索</label>
+                    <input type="text" class="form-control" id="filter-search" name="search" placeholder="メディアID、ラベル名">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> 検索
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="reset-filter">
+                        <i class="bi bi-arrow-counterclockwise"></i> リセット
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Media List Table -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="bi bi-table"></i> メディア一覧
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="media-table" class="table table-hover table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>QRコード</th>
+                            <th>メディアID</th>
+                            <th>ラベル名</th>
+                            <th>タイプ</th>
+                            <th>容量</th>
+                            <th>ステータス</th>
+                            <th>保管場所</th>
+                            <th>最終ローテーション</th>
+                            <th>アクション</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for media in media_list %}
+                        <tr>
+                            <td class="text-center">
+                                {% if media.qr_code_path %}
+                                <img src="{{ url_for('static', filename=media.qr_code_path) }}"
+                                     alt="QR Code" class="qr-code-small">
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ media.media_id }}</strong>
+                            </td>
+                            <td>{{ media.label_name }}</td>
+                            <td>
+                                {% if media.media_type == 'tape' %}
+                                <i class="bi bi-cassette text-primary"></i> テープ
+                                {% elif media.media_type == 'disk' %}
+                                <i class="bi bi-device-hdd text-success"></i> ディスク
+                                {% elif media.media_type == 'optical' %}
+                                <i class="bi bi-disc text-info"></i> 光学
+                                {% elif media.media_type == 'cloud' %}
+                                <i class="bi bi-cloud text-warning"></i> クラウド
+                                {% endif %}
+                            </td>
+                            <td>{{ media.capacity_gb }} GB</td>
+                            <td>
+                                {% if media.status == 'available' %}
+                                <span class="badge bg-success status-badge">使用可能</span>
+                                {% elif media.status == 'in_use' %}
+                                <span class="badge bg-primary status-badge">使用中</span>
+                                {% elif media.status == 'lent' %}
+                                <span class="badge bg-warning status-badge">貸出中</span>
+                                {% elif media.status == 'maintenance' %}
+                                <span class="badge bg-info status-badge">メンテナンス</span>
+                                {% elif media.status == 'retired' %}
+                                <span class="badge bg-danger status-badge">破棄予定</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge location-badge">
+                                    <i class="bi bi-geo-alt"></i> {{ media.location }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if media.last_rotation_date %}
+                                {{ media.last_rotation_date.strftime('%Y/%m/%d') }}
+                                {% else %}
+                                <span class="text-muted">未実施</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('media.detail', media_id=media.id) }}"
+                                       class="btn btn-outline-info" title="詳細">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('media.edit', media_id=media.id) }}"
+                                       class="btn btn-outline-primary" title="編集">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{{ url_for('media.lend', media_id=media.id) }}"
+                                       class="btn btn-outline-warning" title="貸出/返却">
+                                        <i class="bi bi-box-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize DataTable
+    const table = $('#media-table').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/ja.json'
+        },
+        order: [[1, 'asc']],
+        pageLength: 25,
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'copy',
+                text: '<i class="bi bi-clipboard"></i> コピー',
+                className: 'btn btn-sm btn-secondary'
+            },
+            {
+                extend: 'csv',
+                text: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
+                className: 'btn btn-sm btn-success'
+            },
+            {
+                extend: 'excel',
+                text: '<i class="bi bi-file-earmark-excel"></i> Excel',
+                className: 'btn btn-sm btn-success'
+            },
+            {
+                extend: 'pdf',
+                text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
+                className: 'btn btn-sm btn-danger'
+            },
+            {
+                extend: 'print',
+                text: '<i class="bi bi-printer"></i> 印刷',
+                className: 'btn btn-sm btn-info'
+            }
+        ],
+        columnDefs: [
+            { orderable: false, targets: [0, 8] }
+        ]
+    });
+
+    // Filter form submission
+    $('#filter-form').on('submit', function(e) {
+        e.preventDefault();
+
+        const mediaType = $('#filter-type').val();
+        const status = $('#filter-status').val();
+        const location = $('#filter-location').val();
+        const search = $('#filter-search').val();
+
+        // Apply filters to DataTable
+        table.column(3).search(mediaType);
+        table.column(5).search(status);
+        table.column(6).search(location);
+        table.search(search).draw();
+    });
+
+    // Reset filter
+    $('#reset-filter').on('click', function() {
+        $('#filter-form')[0].reset();
+        table.search('').columns().search('').draw();
+    });
+});
+</script>
+{% endblock %}
