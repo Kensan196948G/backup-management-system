@@ -1,0 +1,56 @@
+# Flask Web Framework
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+Flask-Cors==4.0.0
+
+# Database
+SQLAlchemy==2.0.23
+alembic==1.13.0
+
+# Authentication & Security
+bcrypt==4.1.2
+PyJWT==2.8.0
+cryptography==41.0.7
+
+# Scheduler
+APScheduler==3.10.4
+
+# WSGI Server
+waitress==2.1.2
+
+# Email
+Flask-Mail==0.9.1
+
+# Forms & Validation
+WTForms==3.1.1
+email-validator==2.1.0
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0
+qrcode[pil]==7.4.2
+Pillow==10.1.0
+
+# Date/Time
+python-dateutil==2.8.2
+pytz==2023.3
+
+# Excel/CSV
+openpyxl==3.1.2
+pandas==2.1.4
+
+# PDF Generation
+reportlab==4.0.8
+WeasyPrint==60.1
+
+# Logging
+python-json-logger==2.0.7
+
+# HTTP Client
+httpx==0.25.2
+
+# Environment Detection
+python-decouple==3.8

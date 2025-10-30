@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}バックアップ管理システム{% endblock %}</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('dashboard.index') }}">
+                <i class="bi bi-shield-check"></i> バックアップ管理システム
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                {% if current_user.is_authenticated %}
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint and 'dashboard' in request.endpoint %}active{% endif %}"
+                           href="{{ url_for('dashboard.index') }}">
+                            <i class="bi bi-speedometer2"></i> ダッシュボード
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint and 'jobs' in request.endpoint %}active{% endif %}"
+                           href="{{ url_for('jobs.list') }}">
+                            <i class="bi bi-journal-code"></i> バックアップジョブ
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint and 'media' in request.endpoint %}active{% endif %}"
+                           href="{{ url_for('media.list') }}">
+                            <i class="bi bi-hdd-stack"></i> オフラインメディア
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint and 'verification' in request.endpoint %}active{% endif %}"
+                           href="{{ url_for('verification.list') }}">
+                            <i class="bi bi-check2-circle"></i> 検証テスト
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint and 'reports' in request.endpoint %}active{% endif %}"
+                           href="{{ url_for('reports.list') }}">
+                            <i class="bi bi-file-earmark-bar-graph"></i> レポート
+                        </a>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav">
+                    <!-- Alert Notification -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link position-relative" href="#" id="alertDropdown"
+                           role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-bell fs-5"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  id="alert-count" style="display: none;">
+                                0
+                            </span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="alertDropdown"
+                            style="width: 350px; max-height: 400px; overflow-y: auto;">
+                            <li><h6 class="dropdown-header">通知</h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li id="alert-list">
+                                <div class="text-center text-muted p-3">
+                                    <small>通知はありません</small>
+                                </div>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- User Menu -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown"
+                           role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i> {{ current_user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                    <i class="bi bi-person"></i> プロフィール
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('auth.change_password') }}">
+                                    <i class="bi bi-key"></i> パスワード変更
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <span class="dropdown-item-text">
+                                    <small class="text-muted">
+                                        Role: <span class="badge bg-secondary">{{ current_user.role }}</span>
+                                    </small>
+                                </span>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+                                    <i class="bi bi-box-arrow-right"></i> ログアウト
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {% if category == 'danger' %}
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        {% elif category == 'success' %}
+                            <i class="bi bi-check-circle-fill"></i>
+                        {% elif category == 'warning' %}
+                            <i class="bi bi-exclamation-circle-fill"></i>
+                        {% elif category == 'info' %}
+                            <i class="bi bi-info-circle-fill"></i>
+                        {% endif %}
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <span class="text-muted">
+                        &copy; 2025 バックアップ管理システム v3.2.1.1.0
+                    </span>
+                </div>
+                <div class="col-md-6 text-end">
+                    <span class="text-muted">
+                        <a href="#" class="text-decoration-none">ヘルプ</a> |
+                        <a href="#" class="text-decoration-none">サポート</a> |
+                        <a href="#" class="text-decoration-none">プライバシーポリシー</a>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- jQuery (required for DataTables) -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <!-- Alert Notification Script -->
+    {% if current_user.is_authenticated %}
+    <script>
+        // Load alerts on page load
+        function loadAlerts() {
+            fetch('/api/alerts/unacknowledged')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.alerts && data.alerts.length > 0) {
+                        updateAlertBadge(data.alerts.length);
+                        updateAlertList(data.alerts);
+                    } else {
+                        updateAlertBadge(0);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading alerts:', error);
+                });
+        }
+
+        function updateAlertBadge(count) {
+            const badge = document.getElementById('alert-count');
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function updateAlertList(alerts) {
+            const alertList = document.getElementById('alert-list');
+            if (alerts.length === 0) {
+                alertList.innerHTML = '<div class="text-center text-muted p-3"><small>通知はありません</small></div>';
+                return;
+            }
+
+            let html = '';
+            alerts.slice(0, 10).forEach(alert => {
+                const severityClass = alert.severity === 'critical' ? 'danger' :
+                                     alert.severity === 'warning' ? 'warning' : 'info';
+                const icon = alert.severity === 'critical' ? 'exclamation-triangle-fill' :
+                            alert.severity === 'warning' ? 'exclamation-circle-fill' : 'info-circle-fill';
+
+                html += `
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="acknowledgeAlert(${alert.id})">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-${icon} text-${severityClass} me-2"></i>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">${alert.alert_type}</div>
+                                    <small class="text-muted">${alert.message}</small>
+                                    <br>
+                                    <small class="text-muted">${new Date(alert.created_at).toLocaleString('ja-JP')}</small>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                `;
+            });
+
+            alertList.innerHTML = html;
+        }
+
+        function acknowledgeAlert(alertId) {
+            fetch(`/api/alerts/${alertId}/acknowledge`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadAlerts(); // Reload alerts
+            })
+            .catch(error => {
+                console.error('Error acknowledging alert:', error);
+            });
+        }
+
+        // Load alerts on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAlerts();
+            // Refresh alerts every 60 seconds
+            setInterval(loadAlerts, 60000);
+        });
+    </script>
+    {% endif %}
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

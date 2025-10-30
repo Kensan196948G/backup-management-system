@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+
+{% block title %}{{ job.job_name }} - バックアップジョブ詳細{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('jobs.list') }}">ジョブ一覧</a></li>
+                            <li class="breadcrumb-item active">{{ job.job_name }}</li>
+                        </ol>
+                    </nav>
+                    <h1 class="h2">
+                        <i class="bi bi-journal-code"></i> {{ job.job_name }}
+                    </h1>
+                </div>
+                <div>
+                    {% if current_user.can_edit() %}
+                        <a href="{{ url_for('jobs.edit', job_id=job.id) }}" class="btn btn-primary">
+                            <i class="bi bi-pencil"></i> 編集
+                        </a>
+                        <form action="{{ url_for('jobs.toggle_active', job_id=job.id) }}" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-{% if job.is_active %}warning{% else %}success{% endif %}">
+                                <i class="bi bi-{% if job.is_active %}pause{% else %}play{% endif %}-circle"></i>
+                                {% if job.is_active %}無効化{% else %}有効化{% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
+                    {% if current_user.is_admin() %}
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <i class="bi bi-trash"></i> 削除
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Basic Information -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> 基本情報</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tbody>
+                            <tr>
+                                <th style="width: 200px;">ジョブID</th>
+                                <td>{{ job.id }}</td>
+                            </tr>
+                            <tr>
+                                <th>ジョブ名</th>
+                                <td>{{ job.job_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>種別</th>
+                                <td><span class="badge bg-secondary">{{ job.job_type }}</span></td>
+                            </tr>
+                            <tr>
+                                <th>対象サーバー</th>
+                                <td>{{ job.target_server }}</td>
+                            </tr>
+                            <tr>
+                                <th>対象パス</th>
+                                <td><code>{{ job.target_path }}</code></td>
+                            </tr>
+                            <tr>
+                                <th>バックアップツール</th>
+                                <td>{{ job.backup_tool }}</td>
+                            </tr>
+                            <tr>
+                                <th>スケジュール</th>
+                                <td>{{ job.schedule_type }} - {{ job.schedule_time }}</td>
+                            </tr>
+                            <tr>
+                                <th>保持期間</th>
+                                <td>{{ job.retention_days }} 日</td>
+                            </tr>
+                            <tr>
+                                <th>担当者</th>
+                                <td>{{ job.owner.username if job.owner else 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>ステータス</th>
+                                <td>
+                                    {% if job.is_active %}
+                                        <span class="badge bg-success">有効</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">無効</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>説明</th>
+                                <td>{{ job.description or '-' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compliance Status -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-3">
+                <div class="card-header {% if compliance and compliance.is_compliant %}bg-success text-white{% else %}bg-danger text-white{% endif %}">
+                    <h5 class="mb-0">
+                        <i class="bi bi-shield-check"></i> 3-2-1-1-0ルール準拠状況
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if compliance %}
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>3コピー以上</span>
+                                {% if compliance.three_copies %}
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                    <i class="bi bi-x-circle-fill text-danger"></i>
+                                {% endif %}
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>2種類のメディア</span>
+                                {% if compliance.two_media_types %}
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                    <i class="bi bi-x-circle-fill text-danger"></i>
+                                {% endif %}
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>1オフサイト</span>
+                                {% if compliance.one_offsite %}
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                    <i class="bi bi-x-circle-fill text-danger"></i>
+                                {% endif %}
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>1オフライン</span>
+                                {% if compliance.one_offline %}
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                    <i class="bi bi-x-circle-fill text-danger"></i>
+                                {% endif %}
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>0エラー</span>
+                                {% if compliance.zero_errors %}
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                    <i class="bi bi-x-circle-fill text-danger"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <form action="{{ url_for('jobs.check_compliance', job_id=job.id) }}" method="POST">
+                                <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                                    <i class="bi bi-arrow-clockwise"></i> 再チェック
+                                </button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">準拠状況が確認されていません</p>
+                        <form action="{{ url_for('jobs.check_compliance', job_id=job.id) }}" method="POST" class="mt-2">
+                            <button type="submit" class="btn btn-sm btn-primary w-100">
+                                <i class="bi bi-play-circle"></i> チェック実行
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Related Alerts -->
+            {% if alerts %}
+                <div class="card shadow mb-3">
+                    <div class="card-header bg-warning">
+                        <h5 class="mb-0"><i class="bi bi-bell"></i> 関連アラート</h5>
+                    </div>
+                    <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                        {% for alert in alerts %}
+                            <div class="alert alert-{% if alert.severity == 'critical' %}danger{% elif alert.severity == 'warning' %}warning{% else %}info{% endif %} alert-sm">
+                                <strong>{{ alert.alert_type }}</strong><br>
+                                <small>{{ alert.message }}</small><br>
+                                <small class="text-muted">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Backup Copies -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-files"></i> バックアップコピー一覧</h5>
+                </div>
+                <div class="card-body">
+                    {% if copies %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>コピー種別</th>
+                                        <th>保存先</th>
+                                        <th>ストレージパス</th>
+                                        <th>メディアタイプ</th>
+                                        <th>最終更新</th>
+                                        <th>ステータス</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for copy in copies %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-{% if copy.copy_type == 'primary' %}primary{% elif copy.copy_type == 'secondary' %}info{% elif copy.copy_type == 'offsite' %}warning{% else %}secondary{% endif %}">
+                                                    {{ copy.copy_type }}
+                                                </span>
+                                            </td>
+                                            <td>{{ copy.storage_location }}</td>
+                                            <td><code>{{ copy.storage_path }}</code></td>
+                                            <td>{{ copy.media_type }}</td>
+                                            <td>
+                                                {% if copy.last_updated %}
+                                                    {{ copy.last_updated.strftime('%Y-%m-%d %H:%M') }}
+                                                {% else %}
+                                                    <span class="text-muted">未更新</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if copy.is_verified %}
+                                                    <span class="badge bg-success">検証済</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">未検証</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">バックアップコピーが登録されていません</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Execution History -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> 実行履歴</h5>
+                </div>
+                <div class="card-body">
+                    {% if executions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>実行ID</th>
+                                        <th>開始時刻</th>
+                                        <th>終了時刻</th>
+                                        <th>ステータス</th>
+                                        <th>データサイズ</th>
+                                        <th>エラーメッセージ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for execution in executions %}
+                                        <tr>
+                                            <td>{{ execution.id }}</td>
+                                            <td>{{ execution.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                            <td>
+                                                {% if execution.end_time %}
+                                                    {{ execution.end_time.strftime('%Y-%m-%d %H:%M:%S') }}
+                                                {% else %}
+                                                    <span class="text-muted">実行中</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if execution.status == 'success' %}
+                                                    <span class="badge bg-success">成功</span>
+                                                {% elif execution.status == 'failed' %}
+                                                    <span class="badge bg-danger">失敗</span>
+                                                {% elif execution.status == 'running' %}
+                                                    <span class="badge bg-primary">実行中</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ execution.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if execution.backup_size_mb %}
+                                                    {{ "%.2f"|format(execution.backup_size_mb) }} MB
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if execution.error_message %}
+                                                    <span class="text-danger">{{ execution.error_message[:50] }}...</span>
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">実行履歴がありません</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verification Tests -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-check2-circle"></i> 検証テスト履歴</h5>
+                </div>
+                <div class="card-body">
+                    {% if verifications %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>テストID</th>
+                                        <th>テスト日時</th>
+                                        <th>テスト種別</th>
+                                        <th>結果</th>
+                                        <th>担当者</th>
+                                        <th>備考</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for test in verifications %}
+                                        <tr>
+                                            <td>{{ test.id }}</td>
+                                            <td>{{ test.test_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>{{ test.test_type }}</td>
+                                            <td>
+                                                {% if test.result == 'success' %}
+                                                    <span class="badge bg-success">成功</span>
+                                                {% elif test.result == 'failed' %}
+                                                    <span class="badge bg-danger">失敗</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ test.result }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ test.tester.username if test.tester else 'N/A' }}</td>
+                                            <td>{{ test.notes[:50] if test.notes else '-' }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">検証テスト履歴がありません</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="bi bi-exclamation-triangle"></i> 削除確認
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>本当にこのバックアップジョブを削除しますか?</p>
+                <p class="text-danger"><strong>この操作は元に戻せません。</strong></p>
+                <p>ジョブ名: <strong>{{ job.job_name }}</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <form action="{{ url_for('jobs.delete', job_id=job.id) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> 削除
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

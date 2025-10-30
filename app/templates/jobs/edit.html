@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}{{ job.job_name }} - 編集{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('jobs.list') }}">ジョブ一覧</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('jobs.detail', job_id=job.id) }}">{{ job.job_name }}</a></li>
+                    <li class="breadcrumb-item active">編集</li>
+                </ol>
+            </nav>
+            <h1 class="h2">
+                <i class="bi bi-pencil"></i> ジョブ編集: {{ job.job_name }}
+            </h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">ジョブ情報</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('jobs.edit', job_id=job.id) }}" class="needs-validation" novalidate>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <!-- Job Name -->
+                                <div class="mb-3">
+                                    <label for="job_name" class="form-label">ジョブ名 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="job_name" name="job_name"
+                                           value="{{ job.job_name }}" required>
+                                </div>
+
+                                <!-- Job Type -->
+                                <div class="mb-3">
+                                    <label for="job_type" class="form-label">種別 <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="job_type" name="job_type" required>
+                                        <option value="system_image" {% if job.job_type == 'system_image' %}selected{% endif %}>システムイメージ</option>
+                                        <option value="file" {% if job.job_type == 'file' %}selected{% endif %}>ファイル</option>
+                                        <option value="database" {% if job.job_type == 'database' %}selected{% endif %}>データベース</option>
+                                        <option value="vm" {% if job.job_type == 'vm' %}selected{% endif %}>仮想マシン</option>
+                                    </select>
+                                </div>
+
+                                <!-- Target Server -->
+                                <div class="mb-3">
+                                    <label for="target_server" class="form-label">対象サーバー <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="target_server" name="target_server"
+                                           value="{{ job.target_server }}" required>
+                                </div>
+
+                                <!-- Target Path -->
+                                <div class="mb-3">
+                                    <label for="target_path" class="form-label">対象パス</label>
+                                    <input type="text" class="form-control" id="target_path" name="target_path"
+                                           value="{{ job.target_path or '' }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <!-- Backup Tool -->
+                                <div class="mb-3">
+                                    <label for="backup_tool" class="form-label">バックアップツール</label>
+                                    <select class="form-select" id="backup_tool" name="backup_tool">
+                                        <option value="veeam" {% if job.backup_tool == 'veeam' %}selected{% endif %}>Veeam Backup & Replication</option>
+                                        <option value="wsb" {% if job.backup_tool == 'wsb' %}selected{% endif %}>Windows Server Backup</option>
+                                        <option value="aomei" {% if job.backup_tool == 'aomei' %}selected{% endif %}>AOMEI Backupper</option>
+                                        <option value="robocopy" {% if job.backup_tool == 'robocopy' %}selected{% endif %}>Robocopy</option>
+                                        <option value="custom" {% if job.backup_tool == 'custom' %}selected{% endif %}>カスタム</option>
+                                    </select>
+                                </div>
+
+                                <!-- Schedule Type -->
+                                <div class="mb-3">
+                                    <label for="schedule_type" class="form-label">スケジュール種別</label>
+                                    <select class="form-select" id="schedule_type" name="schedule_type">
+                                        <option value="daily" {% if job.schedule_type == 'daily' %}selected{% endif %}>毎日</option>
+                                        <option value="weekly" {% if job.schedule_type == 'weekly' %}selected{% endif %}>毎週</option>
+                                        <option value="monthly" {% if job.schedule_type == 'monthly' %}selected{% endif %}>毎月</option>
+                                        <option value="manual" {% if job.schedule_type == 'manual' %}selected{% endif %}>手動</option>
+                                    </select>
+                                </div>
+
+                                <!-- Schedule Time -->
+                                <div class="mb-3">
+                                    <label for="schedule_time" class="form-label">実行時刻</label>
+                                    <input type="time" class="form-control" id="schedule_time" name="schedule_time"
+                                           value="{{ job.schedule_time or '03:00' }}">
+                                </div>
+
+                                <!-- Retention Days -->
+                                <div class="mb-3">
+                                    <label for="retention_days" class="form-label">保持期間 (日)</label>
+                                    <input type="number" class="form-control" id="retention_days" name="retention_days"
+                                           value="{{ job.retention_days }}" min="1" max="3650">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">説明</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ job.description or '' }}</textarea>
+                        </div>
+
+                        <!-- Active Status -->
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="is_active" name="is_active"
+                                   {% if job.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="is_active">
+                                ジョブを有効にする
+                            </label>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('jobs.detail', job_id=job.id) }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> キャンセル
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> 更新
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Form validation
+    (function () {
+        'use strict'
+        const forms = document.querySelectorAll('.needs-validation')
+        Array.from(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+</script>
+{% endblock %}

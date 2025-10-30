@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}バックアップジョブ作成 - バックアップ管理システム{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('jobs.list') }}">ジョブ一覧</a></li>
+                    <li class="breadcrumb-item active">新規作成</li>
+                </ol>
+            </nav>
+            <h1 class="h2">
+                <i class="bi bi-plus-circle"></i> バックアップジョブ作成
+            </h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">ジョブ情報</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('jobs.create') }}" class="needs-validation" novalidate>
+                        <!-- Job Name -->
+                        <div class="mb-3">
+                            <label for="job_name" class="form-label">ジョブ名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="job_name" name="job_name" required>
+                            <div class="invalid-feedback">ジョブ名を入力してください</div>
+                        </div>
+
+                        <!-- Job Type -->
+                        <div class="mb-3">
+                            <label for="job_type" class="form-label">種別 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="job_type" name="job_type" required>
+                                <option value="">選択してください</option>
+                                <option value="system_image">システムイメージ</option>
+                                <option value="file">ファイル</option>
+                                <option value="database">データベース</option>
+                                <option value="vm">仮想マシン</option>
+                            </select>
+                            <div class="invalid-feedback">種別を選択してください</div>
+                        </div>
+
+                        <!-- Target Server -->
+                        <div class="mb-3">
+                            <label for="target_server" class="form-label">対象サーバー <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="target_server" name="target_server" required>
+                            <div class="invalid-feedback">対象サーバーを入力してください</div>
+                        </div>
+
+                        <!-- Target Path -->
+                        <div class="mb-3">
+                            <label for="target_path" class="form-label">対象パス</label>
+                            <input type="text" class="form-control" id="target_path" name="target_path"
+                                   placeholder="C:\Data または /data">
+                        </div>
+
+                        <!-- Backup Tool -->
+                        <div class="mb-3">
+                            <label for="backup_tool" class="form-label">バックアップツール</label>
+                            <select class="form-select" id="backup_tool" name="backup_tool">
+                                <option value="veeam">Veeam Backup & Replication</option>
+                                <option value="wsb">Windows Server Backup</option>
+                                <option value="aomei">AOMEI Backupper</option>
+                                <option value="robocopy">Robocopy</option>
+                                <option value="custom">カスタム</option>
+                            </select>
+                        </div>
+
+                        <!-- Schedule Type -->
+                        <div class="mb-3">
+                            <label for="schedule_type" class="form-label">スケジュール種別</label>
+                            <select class="form-select" id="schedule_type" name="schedule_type">
+                                <option value="daily">毎日</option>
+                                <option value="weekly">毎週</option>
+                                <option value="monthly">毎月</option>
+                                <option value="manual">手動</option>
+                            </select>
+                        </div>
+
+                        <!-- Schedule Time -->
+                        <div class="mb-3">
+                            <label for="schedule_time" class="form-label">実行時刻</label>
+                            <input type="time" class="form-control" id="schedule_time" name="schedule_time" value="03:00">
+                        </div>
+
+                        <!-- Retention Days -->
+                        <div class="mb-3">
+                            <label for="retention_days" class="form-label">保持期間 (日)</label>
+                            <input type="number" class="form-control" id="retention_days" name="retention_days"
+                                   value="30" min="1" max="3650">
+                            <div class="form-text">バックアップデータの保持期間を指定してください</div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">説明</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+
+                        <!-- Active Status -->
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
+                            <label class="form-check-label" for="is_active">
+                                ジョブを有効にする
+                            </label>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('jobs.list') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> キャンセル
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> 作成
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Panel -->
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> ヘルプ</h5>
+                </div>
+                <div class="card-body">
+                    <h6>ジョブ作成のガイド</h6>
+                    <ul class="small">
+                        <li><strong>ジョブ名:</strong> わかりやすい名前をつけてください</li>
+                        <li><strong>種別:</strong> バックアップ対象の種類を選択</li>
+                        <li><strong>対象サーバー:</strong> バックアップ対象のサーバー名またはIP</li>
+                        <li><strong>スケジュール:</strong> バックアップの実行頻度と時刻</li>
+                        <li><strong>保持期間:</strong> バックアップデータを保管する日数</li>
+                    </ul>
+
+                    <hr>
+
+                    <h6>3-2-1-1-0ルール</h6>
+                    <ul class="small">
+                        <li><strong>3:</strong> データのコピーを3つ以上</li>
+                        <li><strong>2:</strong> 2種類の異なるメディアに保存</li>
+                        <li><strong>1:</strong> 1つはオフサイトに保管</li>
+                        <li><strong>1:</strong> 1つはオフライン(エアギャップ)</li>
+                        <li><strong>0:</strong> エラーなしで検証済み</li>
+                    </ul>
+
+                    <div class="alert alert-warning alert-sm mt-3">
+                        <small>
+                            <i class="bi bi-lightbulb"></i>
+                            ジョブ作成後、バックアップコピーを追加してルール準拠を達成してください
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Form validation
+    (function () {
+        'use strict'
+        const forms = document.querySelectorAll('.needs-validation')
+        Array.from(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+</script>
+{% endblock %}

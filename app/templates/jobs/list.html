@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}バックアップジョブ一覧 - バックアップ管理システム{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h2">
+                    <i class="bi bi-journal-code"></i> バックアップジョブ一覧
+                </h1>
+                {% if current_user.can_edit() %}
+                <a href="{{ url_for('jobs.create') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> 新規ジョブ作成
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('jobs.list') }}" class="row g-3">
+                <div class="col-md-3">
+                    <label for="search" class="form-label">検索</label>
+                    <input type="text" class="form-control" id="search" name="search"
+                           value="{{ filters.search }}" placeholder="ジョブ名、サーバー名...">
+                </div>
+                <div class="col-md-2">
+                    <label for="type" class="form-label">種別</label>
+                    <select class="form-select" id="type" name="type">
+                        <option value="">すべて</option>
+                        <option value="system_image" {% if filters.type == 'system_image' %}selected{% endif %}>システムイメージ</option>
+                        <option value="file" {% if filters.type == 'file' %}selected{% endif %}>ファイル</option>
+                        <option value="database" {% if filters.type == 'database' %}selected{% endif %}>データベース</option>
+                        <option value="vm" {% if filters.type == 'vm' %}selected{% endif %}>仮想マシン</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="status" class="form-label">ステータス</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">すべて</option>
+                        <option value="active" {% if filters.status == 'active' %}selected{% endif %}>有効</option>
+                        <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>無効</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="compliance" class="form-label">準拠状況</label>
+                    <select class="form-select" id="compliance" name="compliance">
+                        <option value="">すべて</option>
+                        <option value="compliant" {% if filters.compliance == 'compliant' %}selected{% endif %}>準拠</option>
+                        <option value="non_compliant" {% if filters.compliance == 'non_compliant' %}selected{% endif %}>非準拠</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="owner" class="form-label">担当者</label>
+                    <select class="form-select" id="owner" name="owner">
+                        <option value="">すべて</option>
+                        {% for owner in owners %}
+                            <option value="{{ owner.id }}" {% if filters.owner == owner.id|string %}selected{% endif %}>
+                                {{ owner.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> 検索
+                    </button>
+                    <a href="{{ url_for('jobs.list') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> クリア
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Jobs Table -->
+    <div class="card shadow">
+        <div class="card-body">
+            {% if jobs %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="jobsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>ジョブ名</th>
+                                <th>種別</th>
+                                <th>対象サーバー</th>
+                                <th>担当者</th>
+                                <th>最終実行</th>
+                                <th>ステータス</th>
+                                <th>準拠</th>
+                                <th>アクション</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in jobs %}
+                                <tr>
+                                    <td>{{ job.id }}</td>
+                                    <td>
+                                        <a href="{{ url_for('jobs.detail', job_id=job.id) }}" class="text-decoration-none">
+                                            <strong>{{ job.job_name }}</strong>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ job.job_type }}</span>
+                                    </td>
+                                    <td>{{ job.target_server }}</td>
+                                    <td>{{ job.owner.username if job.owner else 'N/A' }}</td>
+                                    <td>
+                                        {% if job.last_run %}
+                                            {{ job.last_run.strftime('%Y-%m-%d %H:%M') }}
+                                        {% else %}
+                                            <span class="text-muted">未実行</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if job.is_active %}
+                                            <span class="badge bg-success">有効</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">無効</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if job.compliance_status %}
+                                            {% if job.compliance_status[0].is_compliant %}
+                                                <i class="bi bi-check-circle-fill text-success" title="準拠"></i>
+                                            {% else %}
+                                                <i class="bi bi-x-circle-fill text-danger" title="非準拠"></i>
+                                            {% endif %}
+                                        {% else %}
+                                            <i class="bi bi-question-circle-fill text-warning" title="未確認"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('jobs.detail', job_id=job.id) }}"
+                                               class="btn btn-sm btn-outline-primary" title="詳細">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            {% if current_user.can_edit() %}
+                                                <a href="{{ url_for('jobs.edit', job_id=job.id) }}"
+                                                   class="btn btn-sm btn-outline-secondary" title="編集">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if pagination.pages > 1 %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('jobs.list', page=pagination.prev_num, **filters) }}">
+                                    前へ
+                                </a>
+                            </li>
+                            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                                {% if page_num %}
+                                    <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                        <a class="page-link" href="{{ url_for('jobs.list', page=page_num, **filters) }}">
+                                            {{ page_num }}
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('jobs.list', page=pagination.next_num, **filters) }}">
+                                    次へ
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                {% endif %}
+
+                <div class="text-muted text-center">
+                    全{{ pagination.total }}件中 {{ pagination.per_page * (pagination.page - 1) + 1 }}～{{ min(pagination.per_page * pagination.page, pagination.total) }}件を表示
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center" role="alert">
+                    <i class="bi bi-info-circle"></i> バックアップジョブが見つかりませんでした
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize DataTables
+        $('#jobsTable').DataTable({
+            paging: false,
+            searching: false,
+            info: false,
+            order: [[0, 'desc']],
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/ja.json'
+            }
+        });
+    });
+</script>
+{% endblock %}

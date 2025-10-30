@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+
+{% block title %}ダッシュボード - バックアップ管理システム{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h2 mb-4">
+                <i class="bi bi-speedometer2"></i> ダッシュボード
+            </h1>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                3-2-1-1-0ルール準拠率
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ stats.compliance_rate }}%
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-shield-check text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            準拠: {{ stats.compliant_jobs }} / {{ stats.total_jobs }} ジョブ
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                バックアップ成功率 (7日間)
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ stats.success_rate }}%
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            成功: {{ stats.successful_executions }} / {{ stats.total_executions }} 実行
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                未確認アラート
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ stats.total_alerts }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-danger">重大: {{ stats.critical_alerts }}</small> |
+                        <small class="text-warning">警告: {{ stats.warning_alerts }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                オフラインメディア
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ stats.total_media }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-hdd-stack text-info" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            使用中: {{ stats.in_use_media }} | 利用可能: {{ stats.available_media }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Compliance Chart -->
+        <div class="col-xl-4 col-lg-6 mb-3">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-pie-chart"></i> 3-2-1-1-0ルール準拠状況
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="complianceChart" style="max-height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Rate Chart -->
+        <div class="col-xl-8 col-lg-6 mb-3">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="bi bi-graph-up"></i> バックアップ成功率推移 (直近7日間)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="successRateChart" style="max-height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Storage and Alerts Row -->
+    <div class="row mb-4">
+        <!-- Storage Usage Chart -->
+        <div class="col-xl-6 col-lg-6 mb-3">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="bi bi-bar-chart"></i> ストレージ使用状況
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="storageChart" style="max-height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Alerts -->
+        <div class="col-xl-6 col-lg-6 mb-3">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="bi bi-bell"></i> 未確認アラート
+                    </h6>
+                    <a href="#" class="btn btn-sm btn-outline-primary">すべて表示</a>
+                </div>
+                <div class="card-body" style="max-height: 350px; overflow-y: auto;">
+                    {% if recent_alerts %}
+                        <div class="list-group list-group-flush">
+                            {% for alert in recent_alerts %}
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex align-items-start">
+                                        <i class="bi bi-{% if alert.severity == 'critical' %}exclamation-triangle-fill text-danger{% elif alert.severity == 'warning' %}exclamation-circle-fill text-warning{% else %}info-circle-fill text-info{% endif %} me-2 mt-1"></i>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">{{ alert.alert_type }}</h6>
+                                            <p class="mb-1 small">{{ alert.message }}</p>
+                                            <small class="text-muted">
+                                                {{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center mb-0">未確認のアラートはありません</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Jobs and Recent Executions -->
+    <div class="row mb-4">
+        <!-- Upcoming Jobs -->
+        <div class="col-xl-6 col-lg-6 mb-3">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-calendar-event"></i> 次回実行予定ジョブ
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_jobs %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ジョブ名</th>
+                                        <th>種別</th>
+                                        <th>予定時刻</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for job in upcoming_jobs %}
+                                        <tr>
+                                            <td>
+                                                <a href="{{ url_for('jobs.detail', job_id=job.id) }}">
+                                                    {{ job.job_name }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ job.job_type }}</span>
+                                            </td>
+                                            <td>
+                                                {% if job.next_run %}
+                                                    {{ job.next_run.strftime('%Y-%m-%d %H:%M') }}
+                                                {% else %}
+                                                    <span class="text-muted">未設定</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center mb-0">予定されているジョブはありません</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Executions -->
+        <div class="col-xl-6 col-lg-6 mb-3">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="bi bi-clock-history"></i> 最近の実行履歴
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_executions %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ジョブ名</th>
+                                        <th>ステータス</th>
+                                        <th>実行時刻</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for execution in recent_executions %}
+                                        <tr>
+                                            <td>
+                                                <a href="{{ url_for('jobs.detail', job_id=execution.job_id) }}">
+                                                    {{ execution.job.job_name if execution.job else 'N/A' }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                {% if execution.status == 'success' %}
+                                                    <span class="badge bg-success">成功</span>
+                                                {% elif execution.status == 'failed' %}
+                                                    <span class="badge bg-danger">失敗</span>
+                                                {% elif execution.status == 'running' %}
+                                                    <span class="badge bg-primary">実行中</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ execution.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {{ execution.start_time.strftime('%Y-%m-%d %H:%M') }}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center mb-0">実行履歴がありません</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Compliance Chart
+    fetch('{{ url_for("dashboard.api_compliance_chart") }}')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('complianceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error loading compliance chart:', error));
+
+    // Success Rate Chart
+    fetch('{{ url_for("dashboard.api_success_rate_chart") }}')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('successRateChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error loading success rate chart:', error));
+
+    // Storage Chart
+    fetch('{{ url_for("dashboard.api_storage_chart") }}')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('storageChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error loading storage chart:', error));
+</script>
+{% endblock %}
