@@ -49,24 +49,18 @@ class TestComplianceChecker:
             copies = [
                 BackupCopy(
                     job_id=backup_job.id,
-                    copy_number=1,
-                    storage_location="Storage 1",
+                    copy_type="primary",
+                    storage_path="/backup/storage1",
                     media_type="disk",
-                    is_offsite=False,
-                    is_offline=False,
-                    size_bytes=1024,
-                    checksum="abc",
+                    last_backup_size=1024,
                     status="success",
                 ),
                 BackupCopy(
                     job_id=backup_job.id,
-                    copy_number=2,
-                    storage_location="Storage 2",
+                    copy_type="secondary",
+                    storage_path="/backup/storage2",
                     media_type="disk",
-                    is_offsite=False,
-                    is_offline=False,
-                    size_bytes=1024,
-                    checksum="def",
+                    last_backup_size=1024,
                     status="success",
                 ),
             ]
@@ -77,8 +71,8 @@ class TestComplianceChecker:
             result = checker.check_3_2_1_1_0(backup_job.id)
 
             assert result["compliant"] is False
+            assert result["status"] in ["non_compliant", "warning"]
             assert result["copies_count"] < 3
-            assert "insufficient copies" in result["issues"][0].lower()
 
     def test_check_3_2_1_1_0_insufficient_media_types(self, app, backup_job):
         """Test compliance check with insufficient media types."""
@@ -87,16 +81,13 @@ class TestComplianceChecker:
             copies = [
                 BackupCopy(
                     job_id=backup_job.id,
-                    copy_number=i,
-                    storage_location=f"Storage {i}",
+                    copy_type=["primary", "secondary", "offsite"][i],
+                    storage_path=f"/backup/storage{i}",
                     media_type="disk",  # All same type
-                    is_offsite=i == 2,
-                    is_offline=False,
-                    size_bytes=1024,
-                    checksum=f"hash{i}",
+                    last_backup_size=1024,
                     status="success",
                 )
-                for i in range(1, 4)
+                for i in range(3)
             ]
             db.session.add_all(copies)
             db.session.commit()
@@ -105,6 +96,7 @@ class TestComplianceChecker:
             result = checker.check_3_2_1_1_0(backup_job.id)
 
             assert result["compliant"] is False
+            assert result["status"] in ["non_compliant", "warning"]
             assert result["media_types_count"] < 2
 
     def test_check_3_2_1_1_0_missing_offsite(self, app, backup_job):
@@ -114,35 +106,26 @@ class TestComplianceChecker:
             copies = [
                 BackupCopy(
                     job_id=backup_job.id,
-                    copy_number=1,
-                    storage_location="Storage 1",
+                    copy_type="primary",
+                    storage_path="/backup/storage1",
                     media_type="disk",
-                    is_offsite=False,
-                    is_offline=False,
-                    size_bytes=1024,
-                    checksum="abc",
+                    last_backup_size=1024,
                     status="success",
                 ),
                 BackupCopy(
                     job_id=backup_job.id,
-                    copy_number=2,
-                    storage_location="Storage 2",
+                    copy_type="offline",
+                    storage_path="/backup/tape1",
                     media_type="tape",
-                    is_offsite=False,
-                    is_offline=True,
-                    size_bytes=1024,
-                    checksum="def",
+                    last_backup_size=1024,
                     status="success",
                 ),
                 BackupCopy(
                     job_id=backup_job.id,
-                    copy_number=3,
-                    storage_location="Storage 3",
+                    copy_type="secondary",
+                    storage_path="/backup/storage2",
                     media_type="disk",
-                    is_offsite=False,
-                    is_offline=False,
-                    size_bytes=1024,
-                    checksum="ghi",
+                    last_backup_size=1024,
                     status="success",
                 ),
             ]
@@ -153,6 +136,7 @@ class TestComplianceChecker:
             result = checker.check_3_2_1_1_0(backup_job.id)
 
             assert result["compliant"] is False
+            assert result["status"] in ["non_compliant", "warning"]
             assert result["has_offsite"] is False
 
     def test_check_3_2_1_1_0_missing_offline(self, app, backup_job):
@@ -162,35 +146,26 @@ class TestComplianceChecker:
             copies = [
                 BackupCopy(
                     job_id=backup_job.id,
-                    copy_number=1,
-                    storage_location="Storage 1",
+                    copy_type="primary",
+                    storage_path="/backup/storage1",
                     media_type="disk",
-                    is_offsite=False,
-                    is_offline=False,
-                    size_bytes=1024,
-                    checksum="abc",
+                    last_backup_size=1024,
                     status="success",
                 ),
                 BackupCopy(
                     job_id=backup_job.id,
-                    copy_number=2,
-                    storage_location="Storage 2",
+                    copy_type="offsite",
+                    storage_path="s3://bucket/backup",
                     media_type="cloud",
-                    is_offsite=True,
-                    is_offline=False,
-                    size_bytes=1024,
-                    checksum="def",
+                    last_backup_size=1024,
                     status="success",
                 ),
                 BackupCopy(
                     job_id=backup_job.id,
-                    copy_number=3,
-                    storage_location="Storage 3",
+                    copy_type="secondary",
+                    storage_path="/backup/storage2",
                     media_type="disk",
-                    is_offsite=False,
-                    is_offline=False,
-                    size_bytes=1024,
-                    checksum="ghi",
+                    last_backup_size=1024,
                     status="success",
                 ),
             ]
@@ -201,6 +176,7 @@ class TestComplianceChecker:
             result = checker.check_3_2_1_1_0(backup_job.id)
 
             assert result["compliant"] is False
+            assert result["status"] in ["non_compliant", "warning"]
             assert result["has_offline"] is False
 
     def test_check_3_2_1_1_0_nonexistent_job(self, app):
@@ -211,17 +187,21 @@ class TestComplianceChecker:
 
             assert result is not None
             assert result["compliant"] is False
-            assert "not found" in result["issues"][0].lower()
+            assert result["status"] == "unknown"
 
     def test_check_all_jobs(self, app, multiple_backup_jobs, backup_copies):
         """Test checking compliance for all jobs."""
         with app.app_context():
             checker = ComplianceChecker()
-            results = checker.check_all_jobs()
+            summary = checker.check_all_jobs()
 
-            assert results is not None
-            assert isinstance(results, list)
-            assert len(results) > 0
+            assert summary is not None
+            assert isinstance(summary, dict)
+            assert "total_jobs" in summary
+            assert "compliant_jobs" in summary
+            assert "results" in summary
+            assert isinstance(summary["results"], list)
+            assert summary["total_jobs"] > 0
 
     def test_compliance_status_saved_to_database(self, app, backup_job, backup_copies):
         """Test that compliance status is saved to database."""
@@ -264,11 +244,15 @@ class TestAlertManager:
         """Test acknowledging an alert."""
         with app.app_context():
             manager = AlertManager()
-            alert = db.session.get(Alert, alerts[0].id)
+            # Use alerts[1] which is not acknowledged (i=1, i%2==1, so is_acknowledged=False)
+            alert = db.session.get(Alert, alerts[1].id)
+            assert alert.is_acknowledged is False  # Verify it starts unacknowledged
 
             result = manager.acknowledge_alert(alert.id, admin_user.id)
 
             assert result is True
+            # Refresh the alert from database to get updated values
+            db.session.refresh(alert)
             assert alert.is_acknowledged is True
             assert alert.acknowledged_by == admin_user.id
             assert alert.acknowledged_at is not None

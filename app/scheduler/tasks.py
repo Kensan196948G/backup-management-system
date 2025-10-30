@@ -39,26 +39,12 @@ def check_compliance_status(app):
             alert_manager = AlertManager()
 
             for job in jobs:
-                # Check compliance
-                compliance = checker.check_job_compliance(job)
+                # Check compliance using 3-2-1-1-0 rule
+                compliance = checker.check_3_2_1_1_0(job.id)
 
-                # Update or create compliance status
-                status = ComplianceStatus.query.filter_by(job_id=job.id).first()
-                if not status:
-                    status = ComplianceStatus(job_id=job.id)
-                    db.session.add(status)
-
-                status.is_compliant = compliance["is_compliant"]
-                status.has_min_copies = compliance["has_min_copies"]
-                status.has_multiple_media = compliance["has_multiple_media"]
-                status.has_offsite_copy = compliance["has_offsite_copy"]
-                status.has_offline_copy = compliance["has_offline_copy"]
-                status.has_verified_copy = compliance["has_verified_copy"]
-                status.last_check = datetime.utcnow()
-                status.details = compliance.get("details", "")
-
-                # Generate alerts for non-compliant jobs
-                if not compliance["is_compliant"]:
+                # Compliance status is automatically cached by the checker
+                # Just generate alerts for non-compliant jobs
+                if compliance["status"] in ["non_compliant", "warning"]:
                     alert_manager.create_compliance_alert(job, compliance)
 
             db.session.commit()
@@ -195,18 +181,113 @@ def generate_daily_report(app):
         app: Flask application instance
     """
     with app.app_context():
-        from app.models import db
-        from app.services.report_generator import ReportGenerator
+        from app.models import (
+            Alert,
+            BackupExecution,
+            BackupJob,
+            ComplianceStatus,
+            User,
+            db,
+        )
+        from app.services.notification_service import get_notification_service
 
         try:
-            logger.info("Starting daily report generation")
+            logger.info("Starting daily report generation and email notification")
 
-            generator = ReportGenerator()
+            # Collect report data
+            today = datetime.utcnow().date()
+            yesterday = today - timedelta(days=1)
 
-            # Generate daily compliance report
-            report = generator.generate_daily_report()
+            # Get all backup jobs
+            total_jobs = BackupJob.query.filter_by(is_active=True).count()
 
-            logger.info(f"Daily report generated: {report.filename}")
+            # Get today's executions
+            executions_today = BackupExecution.query.filter(
+                BackupExecution.execution_date >= yesterday, BackupExecution.execution_date < datetime.utcnow()
+            ).all()
+
+            successful_backups = sum(1 for e in executions_today if e.execution_result == "success")
+            failed_backups = sum(1 for e in executions_today if e.execution_result == "failed")
+            warning_count = sum(1 for e in executions_today if e.execution_result == "warning")
+
+            # Calculate total backup size
+            total_backup_size_gb = sum(e.backup_size_bytes or 0 for e in executions_today) / (1024**3)
+
+            # Get compliance status
+            compliance_statuses = ComplianceStatus.query.all()
+            compliant_jobs = sum(1 for cs in compliance_statuses if cs.overall_status == "compliant")
+            non_compliant_jobs = sum(1 for cs in compliance_statuses if cs.overall_status == "non_compliant")
+
+            # Get failed jobs details
+            failed_jobs = [
+                {"name": e.job.job_name, "error": e.error_message or "Unknown error"}
+                for e in executions_today
+                if e.execution_result == "failed"
+            ]
+
+            # Get active alerts
+            active_alerts = Alert.query.filter_by(is_acknowledged=False).order_by(Alert.created_at.desc()).limit(10).all()
+
+            alerts_data = [
+                {
+                    "severity": alert.severity,
+                    "title": alert.title,
+                    "created_at": alert.created_at.strftime("%Y-%m-%d %H:%M"),
+                }
+                for alert in active_alerts
+            ]
+
+            # Determine system health
+            if failed_backups == 0 and non_compliant_jobs == 0:
+                system_health = "good"
+                health_message = "All systems operational"
+            elif failed_backups > 0 or non_compliant_jobs > 3:
+                system_health = "critical"
+                health_message = f"{failed_backups} failed backups, {non_compliant_jobs} non-compliant jobs"
+            else:
+                system_health = "warning"
+                health_message = f"{non_compliant_jobs} non-compliant jobs detected"
+
+            # Build report data
+            report_data = {
+                "total_jobs": total_jobs,
+                "successful_backups": successful_backups,
+                "failed_backups": failed_backups,
+                "warning_count": warning_count,
+                "total_backup_size_gb": total_backup_size_gb,
+                "compliance_summary": {
+                    "compliant": compliant_jobs,
+                    "non_compliant": non_compliant_jobs,
+                    "violations": [],
+                },
+                "failed_jobs": failed_jobs,
+                "media_status": {"total": 0, "in_use": 0, "available": 0, "pending_rotation": 0, "overdue": 0},
+                "verification_status": {
+                    "completed_today": 0,
+                    "passed": 0,
+                    "failed": 0,
+                    "upcoming": 0,
+                    "overdue": 0,
+                },
+                "alerts": alerts_data,
+                "system_health": system_health,
+                "health_message": health_message,
+            }
+
+            # Get admin users to send report to
+            admin_users = User.query.filter(User.role == "admin", User.is_active == True, User.email != None).all()
+            recipients = [user.email for user in admin_users if user.email]
+
+            if recipients:
+                # Send daily report email
+                notification_service = get_notification_service()
+                results = notification_service.send_daily_report(recipients=recipients, report_data=report_data)
+                success_count = sum(1 for success in results.values() if success)
+                logger.info(f"Daily report sent to {success_count}/{len(recipients)} recipients")
+            else:
+                logger.warning("No admin users with email addresses found for daily report")
+
+            logger.info("Daily report generation completed")
 
         except Exception as e:
             logger.error(f"Error in daily report generation: {e}", exc_info=True)

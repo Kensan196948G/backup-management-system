@@ -54,3 +54,13 @@ httpx==0.25.2
 
 # Environment Detection
 python-decouple==3.8
+
+# Performance & Monitoring (Phase 10)
+Flask-Caching==2.1.0
+redis==5.0.1
+prometheus-client==0.19.0
+prometheus-flask-exporter==0.23.0
+
+# Security (Phase 10)
+Flask-Talisman==1.1.0
+Flask-Limiter==3.5.0

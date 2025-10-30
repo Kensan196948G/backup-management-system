@@ -1,0 +1,126 @@
+{% extends "email/base.html" %}
+
+{% block title %}Media Reminder - {{ media_id }}{% endblock %}
+
+{% block header_subtitle %}Offline Media Action Required{% endblock %}
+
+{% block content %}
+<div class="alert-box alert-info">
+    <strong>Media Reminder</strong><br>
+    Action required for offline media: {{ media_id }}
+</div>
+
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px;">Media Information</h2>
+
+<table class="details-table">
+    <tr>
+        <th>Media ID</th>
+        <td>{{ media_id }}</td>
+    </tr>
+    <tr>
+        <th>Reminder Type</th>
+        <td style="text-transform: capitalize; font-weight: 600;">{{ reminder_type }}</td>
+    </tr>
+    <tr>
+        <th>Reminder Date</th>
+        <td>{{ timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}</td>
+    </tr>
+    {% if details.get('media_type') %}
+    <tr>
+        <th>Media Type</th>
+        <td>{{ details.media_type }}</td>
+    </tr>
+    {% endif %}
+    {% if details.get('storage_location') %}
+    <tr>
+        <th>Current Location</th>
+        <td>{{ details.storage_location }}</td>
+    </tr>
+    {% endif %}
+    {% if details.get('capacity_gb') %}
+    <tr>
+        <th>Capacity</th>
+        <td>{{ details.capacity_gb }} GB</td>
+    </tr>
+    {% endif %}
+</table>
+
+{% if reminder_type == 'rotation' %}
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px;">Rotation Schedule</h2>
+<div class="alert-box alert-warning">
+    <p style="margin: 0;">
+        <strong>Next Rotation Date:</strong> {{ details.get('next_rotation_date', 'Not scheduled') }}<br>
+        <strong>Rotation Cycle:</strong> {{ details.get('rotation_cycle', 'Unknown') }}<br>
+        <strong>Last Rotation:</strong> {{ details.get('last_rotation_date', 'Never') }}
+    </p>
+</div>
+<h3 style="color: #495057; font-size: 16px; margin-top: 20px;">Action Items:</h3>
+<ul>
+    <li>Prepare media {{ media_id }} for rotation</li>
+    <li>Verify media is write-protected if necessary</li>
+    <li>Update rotation schedule after completing rotation</li>
+    <li>Verify backup data integrity before archiving</li>
+</ul>
+
+{% elif reminder_type == 'return' %}
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px;">Return Information</h2>
+<div class="alert-box alert-warning">
+    <p style="margin: 0;">
+        <strong>Borrower:</strong> {{ details.get('borrower_name', 'Unknown') }}<br>
+        <strong>Borrowed Date:</strong> {{ details.get('borrow_date', 'Unknown') }}<br>
+        <strong>Expected Return:</strong> {{ details.get('expected_return', 'Unknown') }}<br>
+        <strong>Days Overdue:</strong> {{ details.get('days_overdue', 0) }}
+    </p>
+</div>
+<h3 style="color: #495057; font-size: 16px; margin-top: 20px;">Action Items:</h3>
+<ul>
+    <li>Contact borrower to arrange media return</li>
+    <li>Verify media condition upon return</li>
+    <li>Run verification test after return</li>
+    <li>Update lending status in the system</li>
+</ul>
+
+{% elif reminder_type == 'verification' %}
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px;">Verification Schedule</h2>
+<div class="alert-box alert-info">
+    <p style="margin: 0;">
+        <strong>Next Verification:</strong> {{ details.get('next_verification_date', 'Not scheduled') }}<br>
+        <strong>Last Verification:</strong> {{ details.get('last_verification_date', 'Never') }}<br>
+        <strong>Verification Type:</strong> {{ details.get('verification_type', 'Full restore test') }}
+    </p>
+</div>
+<h3 style="color: #495057; font-size: 16px; margin-top: 20px;">Action Items:</h3>
+<ul>
+    <li>Schedule verification test for media {{ media_id }}</li>
+    <li>Prepare test environment for restore verification</li>
+    <li>Document verification results</li>
+    <li>Update verification schedule in the system</li>
+</ul>
+
+{% elif reminder_type == 'update' %}
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px;">Update Required</h2>
+<div class="alert-box alert-warning">
+    <p style="margin: 0;">
+        <strong>Last Update:</strong> {{ details.get('last_update_date', 'Unknown') }}<br>
+        <strong>Days Since Update:</strong> {{ details.get('days_since_update', 0) }}<br>
+        <strong>Warning Threshold:</strong> {{ details.get('warning_threshold', 7) }} days
+    </p>
+</div>
+<h3 style="color: #495057; font-size: 16px; margin-top: 20px;">Action Items:</h3>
+<ul>
+    <li>Update backup data on media {{ media_id }}</li>
+    <li>Verify updated backup integrity</li>
+    <li>Update media metadata in the system</li>
+    <li>Ensure compliance with 3-2-1-1-0 rule</li>
+</ul>
+{% endif %}
+
+<p style="margin-top: 30px;">
+    <a href="#" class="button">View Media Details</a>
+    <a href="#" class="button" style="background-color: #28a745;">Mark as Completed</a>
+</p>
+
+<p class="timestamp">
+    Notification generated at {{ timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+</p>
+{% endblock %}

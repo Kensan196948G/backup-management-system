@@ -55,7 +55,7 @@ class AlertManager:
 
     def __init__(self):
         """Initialize alert manager"""
-        self.mail_service = None  # Lazy load when needed
+        self.notification_service = None  # Lazy load when needed
 
     def create_alert(
         self,
@@ -152,7 +152,7 @@ class AlertManager:
 
     def _send_email_notification(self, alert: Alert) -> bool:
         """
-        Send email notification.
+        Send email notification using new notification service.
 
         Args:
             alert: Alert to send
@@ -161,11 +161,11 @@ class AlertManager:
             True if successful
         """
         try:
-            # Lazy load email service
-            if self.mail_service is None:
-                from app.utils.email import EmailService
+            # Lazy load notification service
+            if self.notification_service is None:
+                from app.services.notification_service import get_notification_service
 
-                self.mail_service = EmailService()
+                self.notification_service = get_notification_service()
 
             # Get email recipients
             recipients = self._get_email_recipients(alert)
@@ -174,22 +174,117 @@ class AlertManager:
                 logger.warning(f"No email recipients found for alert {alert.id}")
                 return False
 
-            # Build email content
-            subject = f"[{alert.severity.upper()}] {alert.title}"
-            body = self._build_email_body(alert)
+            # Route to appropriate notification method based on alert type
+            success_count = 0
 
-            # Send emails
-            for recipient in recipients:
-                try:
-                    self.mail_service.send(to=recipient, subject=subject, html=body)
-                except Exception as e:
-                    logger.error(f"Failed to send email to {recipient}: {str(e)}")
+            if alert.alert_type == AlertType.BACKUP_SUCCESS.value:
+                for recipient in recipients:
+                    if self._send_backup_success_email(alert, recipient):
+                        success_count += 1
 
-            logger.info(f"Email notification sent for alert {alert.id}")
-            return True
+            elif alert.alert_type == AlertType.BACKUP_FAILED.value:
+                for recipient in recipients:
+                    if self._send_backup_failure_email(alert, recipient):
+                        success_count += 1
+
+            elif alert.alert_type in [AlertType.RULE_VIOLATION.value, AlertType.COMPLIANCE_WARNING.value]:
+                for recipient in recipients:
+                    if self._send_rule_violation_email(alert, recipient):
+                        success_count += 1
+
+            elif alert.alert_type in [
+                AlertType.OFFLINE_MEDIA_UPDATE_WARNING.value,
+                AlertType.VERIFICATION_REMINDER.value,
+                AlertType.MEDIA_ROTATION_REMINDER.value,
+                AlertType.MEDIA_OVERDUE_RETURN.value,
+            ]:
+                for recipient in recipients:
+                    if self._send_media_reminder_email(alert, recipient):
+                        success_count += 1
+
+            else:
+                # Generic alert notification (fallback)
+                subject = f"[{alert.severity.upper()}] {alert.title}"
+                body = self._build_email_body(alert)
+                for recipient in recipients:
+                    if self.notification_service.send_email(to=recipient, subject=subject, html_body=body):
+                        success_count += 1
+
+            logger.info(f"Email notification sent for alert {alert.id} to {success_count}/{len(recipients)} recipients")
+            return success_count > 0
 
         except Exception as e:
-            logger.error(f"Error sending email notification: {str(e)}")
+            logger.error(f"Error sending email notification: {str(e)}", exc_info=True)
+            return False
+
+    def _send_backup_success_email(self, alert: Alert, recipient: str) -> bool:
+        """Send backup success notification email"""
+        try:
+            job = BackupJob.query.get(alert.job_id) if alert.job_id else None
+            details = {}
+
+            if job:
+                # Get latest execution
+                latest_exec = job.executions.filter_by(execution_result="success").order_by(BackupJob.id.desc()).first()
+                if latest_exec:
+                    details = {
+                        "backup_size_bytes": latest_exec.backup_size_bytes,
+                        "duration_seconds": latest_exec.duration_seconds,
+                        "storage_path": job.target_path,
+                    }
+
+            return self.notification_service.send_backup_success_notification(
+                job_name=alert.title, recipients=[recipient], **details
+            ).get(recipient, False)
+
+        except Exception as e:
+            logger.error(f"Error sending backup success email: {str(e)}")
+            return False
+
+    def _send_backup_failure_email(self, alert: Alert, recipient: str) -> bool:
+        """Send backup failure notification email"""
+        try:
+            return self.notification_service.send_backup_failure_notification(
+                job_name=alert.title, recipients=[recipient], error_message=alert.message
+            ).get(recipient, False)
+
+        except Exception as e:
+            logger.error(f"Error sending backup failure email: {str(e)}")
+            return False
+
+    def _send_rule_violation_email(self, alert: Alert, recipient: str) -> bool:
+        """Send rule violation notification email"""
+        try:
+            # Parse violations from message
+            violations = [line.strip() for line in alert.message.split("\n") if line.strip()]
+
+            return self.notification_service.send_rule_violation_notification(
+                job_name=alert.title, recipients=[recipient], violations=violations
+            ).get(recipient, False)
+
+        except Exception as e:
+            logger.error(f"Error sending rule violation email: {str(e)}")
+            return False
+
+    def _send_media_reminder_email(self, alert: Alert, recipient: str) -> bool:
+        """Send media reminder notification email"""
+        try:
+            # Determine reminder type from alert type
+            reminder_type_map = {
+                AlertType.OFFLINE_MEDIA_UPDATE_WARNING.value: "update",
+                AlertType.VERIFICATION_REMINDER.value: "verification",
+                AlertType.MEDIA_ROTATION_REMINDER.value: "rotation",
+                AlertType.MEDIA_OVERDUE_RETURN.value: "return",
+            }
+
+            reminder_type = reminder_type_map.get(alert.alert_type, "reminder")
+
+            return self.notification_service.send_media_reminder_notification(
+                media_id=alert.title, recipients=[recipient], reminder_type=reminder_type
+            ).get(recipient, False)
+
+        except Exception as e:
+            logger.error(f"Error sending media reminder email: {str(e)}")
             return False
 
     def _should_send_teams(self, alert: Alert) -> bool:
@@ -207,7 +302,7 @@ class AlertManager:
 
     def _send_teams_notification(self, alert: Alert) -> bool:
         """
-        Send Microsoft Teams notification via webhook.
+        Send Microsoft Teams notification via webhook using TeamsNotificationService.
 
         Args:
             alert: Alert to send
@@ -216,25 +311,37 @@ class AlertManager:
             True if successful
         """
         try:
-            import requests
+            # Lazy load Teams notification service
+            from app.services.teams_notification_service import TeamsNotificationService
 
-            # Build Adaptive Card
-            card = self._build_adaptive_card(alert)
+            teams_service = TeamsNotificationService()
 
-            payload = {
-                "type": "message",
-                "attachments": [{"contentType": "application/vnd.microsoft.card.adaptive", "content": card}],
-            }
+            # Get job info if available
+            job_name = None
+            created_at = alert.created_at
 
-            # Send to Teams webhook
-            response = requests.post(Config.TEAMS_WEBHOOK_URL, json=payload, timeout=10)
+            if alert.job_id:
+                job = BackupJob.query.get(alert.job_id)
+                if job:
+                    job_name = job.job_name
 
-            if response.status_code == 200:
+            # Send alert card via new Teams service
+            result = teams_service.send_alert_card(
+                title=alert.title,
+                message=alert.message,
+                severity=alert.severity,
+                alert_type=alert.alert_type,
+                alert_id=alert.id,
+                job_name=job_name,
+                created_at=created_at,
+            )
+
+            if result:
                 logger.info(f"Teams notification sent for alert {alert.id}")
-                return True
             else:
-                logger.error(f"Teams webhook returned status {response.status_code}: {response.text}")
-                return False
+                logger.error(f"Failed to send Teams notification for alert {alert.id}")
+
+            return result
 
         except Exception as e:
             logger.error(f"Error sending Teams notification: {str(e)}")
@@ -313,43 +420,6 @@ class AlertManager:
         """
 
         return html
-
-    def _build_adaptive_card(self, alert: Alert) -> Dict:
-        """
-        Build Microsoft Teams Adaptive Card.
-
-        Args:
-            alert: Alert to format
-
-        Returns:
-            Adaptive Card JSON dictionary
-        """
-        color_map = {"info": "#0078D4", "warning": "#FFB900", "error": "#E81123", "critical": "#C50F1F"}
-
-        color = color_map.get(alert.severity, "#737373")
-
-        facts = [
-            {"title": "Type", "value": alert.alert_type},
-            {"title": "Severity", "value": alert.severity.upper()},
-            {"title": "Created", "value": alert.created_at.strftime("%Y-%m-%d %H:%M:%S")},
-        ]
-
-        if alert.job_id:
-            job = BackupJob.query.get(alert.job_id)
-            if job:
-                facts.insert(1, {"title": "Job", "value": job.job_name})
-
-        card = {
-            "type": "AdaptiveCard",
-            "version": "1.2",
-            "body": [
-                {"type": "TextBlock", "text": alert.title, "weight": "Bolder", "size": "Large", "color": color},
-                {"type": "TextBlock", "text": alert.message, "wrap": True, "spacing": "Medium"},
-                {"type": "FactSet", "facts": facts, "spacing": "Medium"},
-            ],
-        }
-
-        return card
 
     def acknowledge_alert(self, alert_id: int, user_id: int) -> Alert:
         """
@@ -456,6 +526,134 @@ class AlertManager:
         except Exception as e:
             logger.error(f"Error fetching alerts of type {alert_type}: {str(e)}")
             return []
+
+    def get_alerts_by_severity(self, severity: str, days: int = 30, limit: int = 100) -> List[Alert]:
+        """
+        Get alerts by severity level.
+
+        Args:
+            severity: Severity level (critical, warning, info)
+            days: Look back this many days
+            limit: Maximum number of alerts to return
+
+        Returns:
+            List of Alert objects
+        """
+        try:
+            since_date = datetime.utcnow() - timedelta(days=days)
+
+            alerts = (
+                Alert.query.filter(Alert.severity == severity, Alert.created_at >= since_date)
+                .order_by(Alert.created_at.desc())
+                .limit(limit)
+                .all()
+            )
+
+            return alerts
+
+        except Exception as e:
+            logger.error(f"Error fetching alerts with severity {severity}: {str(e)}")
+            return []
+
+    def bulk_acknowledge_alerts(self, alert_ids: List[int], user_id: int) -> bool:
+        """
+        Acknowledge multiple alerts at once.
+
+        Args:
+            alert_ids: List of alert IDs to acknowledge
+            user_id: User ID acknowledging the alerts
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            for alert_id in alert_ids:
+                self.acknowledge_alert(alert_id, user_id)
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error bulk acknowledging alerts: {str(e)}")
+            return False
+
+    def create_compliance_alert(self, job_id: int, issues: List[str], notify: bool = True) -> Alert:
+        """
+        Create a compliance-specific alert.
+
+        Args:
+            job_id: Backup job ID
+            issues: List of compliance issues
+            notify: Whether to send notifications
+
+        Returns:
+            Created Alert object
+        """
+        try:
+            message = "Compliance violations detected: " + ", ".join(issues)
+
+            alert = self.create_alert(
+                alert_type="compliance",
+                severity="warning" if len(issues) <= 2 else "critical",
+                title="3-2-1-1-0 Compliance Violation",
+                message=message,
+                job_id=job_id,
+                notify=notify,
+            )
+
+            return alert
+
+        except Exception as e:
+            logger.error(f"Error creating compliance alert: {str(e)}")
+            raise
+
+    def create_failure_alert(self, job_id: int, error_message: str, notify: bool = True) -> Alert:
+        """
+        Create a backup failure alert.
+
+        Args:
+            job_id: Backup job ID
+            error_message: Error message
+            notify: Whether to send notifications
+
+        Returns:
+            Created Alert object
+        """
+        try:
+            alert = self.create_alert(
+                alert_type="failure",
+                severity="critical",
+                title="Backup Failed",
+                message=f"Backup failed with error: {error_message}",
+                job_id=job_id,
+                notify=notify,
+            )
+
+            return alert
+
+        except Exception as e:
+            logger.error(f"Error creating failure alert: {str(e)}")
+            raise
+
+    def send_notification(self, alert_id: int) -> Dict[str, bool]:
+        """
+        Send notification for a specific alert.
+
+        Args:
+            alert_id: Alert ID
+
+        Returns:
+            Dictionary of notification results
+        """
+        try:
+            alert = Alert.query.get(alert_id)
+            if not alert:
+                return {}
+
+            return self.send_notifications(alert)
+
+        except Exception as e:
+            logger.error(f"Error sending notification for alert {alert_id}: {str(e)}")
+            return {}
 
     def clear_old_alerts(self, days: int = 90) -> int:
         """

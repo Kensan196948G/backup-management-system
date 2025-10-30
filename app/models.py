@@ -135,6 +135,8 @@ class BackupJob(db.Model):
     )
     alerts = db.relationship("Alert", back_populates="job", lazy="dynamic")
 
+    notification_logs = db.relationship("NotificationLog", back_populates="job", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<BackupJob {self.job_name} ({self.job_type})>"
 
@@ -382,6 +384,7 @@ class Alert(db.Model):
     # Relationships
     job = db.relationship("BackupJob", back_populates="alerts")
     acknowledger = db.relationship("User", back_populates="acknowledged_alerts")
+    notification_logs = db.relationship("NotificationLog", back_populates="alert", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Alert {self.alert_type} severity={self.severity} ack={self.is_acknowledged}>"
@@ -434,6 +437,8 @@ class Report(db.Model):
     # Relationships
     generator = db.relationship("User", back_populates="generated_reports")
 
+    notification_logs = db.relationship("NotificationLog", back_populates="report", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<Report {self.report_type} from={self.date_from} to={self.date_to}>"
 
@@ -460,3 +465,40 @@ class SystemSetting(db.Model):
 
     def __repr__(self):
         return f"<SystemSetting {self.setting_key}={self.setting_value}>"
+
+
+class NotificationLog(db.Model):
+    """
+    Notification delivery history and tracking
+    Records all notification attempts (Email, Teams, Dashboard)
+    """
+
+    __tablename__ = "notification_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    notification_type = db.Column(db.String(50), nullable=False, index=True)  # email/teams/dashboard
+    channel = db.Column(db.String(50), nullable=False)  # specific channel name
+    recipient = db.Column(db.String(255), nullable=False)  # email address or teams webhook
+    subject = db.Column(db.String(500))
+    message = db.Column(db.Text)
+    severity = db.Column(db.String(20), index=True)  # info/warning/error/critical
+    status = db.Column(db.String(20), nullable=False, index=True)  # sent/failed/pending
+    error_message = db.Column(db.Text)
+    sent_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    # Related entities
+    alert_id = db.Column(db.Integer, db.ForeignKey("alerts.id"))
+    job_id = db.Column(db.Integer, db.ForeignKey("backup_jobs.id"))
+    report_id = db.Column(db.Integer, db.ForeignKey("reports.id"))
+
+    # Metadata
+    retry_count = db.Column(db.Integer, default=0, nullable=False)
+    delivery_time_ms = db.Column(db.Integer)  # Time taken to deliver
+
+    # Relationships
+    alert = db.relationship("Alert", back_populates="notification_logs")
+    job = db.relationship("BackupJob", back_populates="notification_logs")
+    report = db.relationship("Report", back_populates="notification_logs")
+
+    def __repr__(self):
+        return f"<NotificationLog {self.notification_type} to {self.recipient} - {self.status}>"

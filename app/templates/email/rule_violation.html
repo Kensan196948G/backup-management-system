@@ -1,0 +1,111 @@
+{% extends "email/base.html" %}
+
+{% block title %}3-2-1-1-0 Rule Violation - {{ job_name }}{% endblock %}
+
+{% block header_subtitle %}Backup Compliance Violation Detected{% endblock %}
+
+{% block content %}
+<div class="alert-box alert-warning">
+    <strong>Compliance Violation!</strong><br>
+    The backup job "{{ job_name }}" is not compliant with the 3-2-1-1-0 backup rule.
+</div>
+
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px;">Job Information</h2>
+
+<table class="details-table">
+    <tr>
+        <th>Job Name</th>
+        <td>{{ job_name }}</td>
+    </tr>
+    <tr>
+        <th>Check Time</th>
+        <td>{{ timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}</td>
+    </tr>
+    {% if details.get('job_type') %}
+    <tr>
+        <th>Job Type</th>
+        <td>{{ details.job_type }}</td>
+    </tr>
+    {% endif %}
+</table>
+
+<h2 style="color: #dc3545; font-size: 18px; margin-bottom: 15px;">Detected Violations</h2>
+
+<ul style="color: #721c24;">
+    {% for violation in violations %}
+    <li><strong>{{ violation }}</strong></li>
+    {% endfor %}
+</ul>
+
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px;">3-2-1-1-0 Rule Requirements</h2>
+
+<table class="details-table">
+    <tr>
+        <th>Requirement</th>
+        <th>Status</th>
+    </tr>
+    <tr>
+        <td><strong>3</strong> copies of data</td>
+        <td style="color: {{ '#28a745' if details.get('has_min_copies') else '#dc3545' }};">
+            {{ "✓ Compliant" if details.get('has_min_copies') else "✗ Non-Compliant" }}
+        </td>
+    </tr>
+    <tr>
+        <td><strong>2</strong> different media types</td>
+        <td style="color: {{ '#28a745' if details.get('has_multiple_media') else '#dc3545' }};">
+            {{ "✓ Compliant" if details.get('has_multiple_media') else "✗ Non-Compliant" }}
+        </td>
+    </tr>
+    <tr>
+        <td><strong>1</strong> offsite copy</td>
+        <td style="color: {{ '#28a745' if details.get('has_offsite') else '#dc3545' }};">
+            {{ "✓ Compliant" if details.get('has_offsite') else "✗ Non-Compliant" }}
+        </td>
+    </tr>
+    <tr>
+        <td><strong>1</strong> offline copy (air-gapped)</td>
+        <td style="color: {{ '#28a745' if details.get('has_offline') else '#dc3545' }};">
+            {{ "✓ Compliant" if details.get('has_offline') else "✗ Non-Compliant" }}
+        </td>
+    </tr>
+    <tr>
+        <td><strong>0</strong> errors (verified)</td>
+        <td style="color: {{ '#28a745' if details.get('has_zero_errors') else '#dc3545' }};">
+            {{ "✓ Compliant" if details.get('has_zero_errors') else "✗ Non-Compliant" }}
+        </td>
+    </tr>
+</table>
+
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px;">Remediation Steps</h2>
+
+<ul>
+    {% if not details.get('has_min_copies') %}
+    <li>Add additional backup copies to meet the minimum of 3 copies</li>
+    {% endif %}
+    {% if not details.get('has_multiple_media') %}
+    <li>Configure backups to use at least 2 different media types (e.g., disk + tape or disk + cloud)</li>
+    {% endif %}
+    {% if not details.get('has_offsite') %}
+    <li>Create an offsite backup copy to protect against site-wide disasters</li>
+    {% endif %}
+    {% if not details.get('has_offline') %}
+    <li>Implement an offline (air-gapped) backup copy to protect against ransomware</li>
+    {% endif %}
+    {% if not details.get('has_zero_errors') %}
+    <li>Run verification tests to ensure backup integrity and fix any errors</li>
+    {% endif %}
+</ul>
+
+<div class="alert-box alert-danger">
+    <strong>Action Required:</strong> Please address these compliance violations to ensure proper data protection and disaster recovery capability.
+</div>
+
+<p style="margin-top: 30px;">
+    <a href="#" class="button">View Compliance Dashboard</a>
+    <a href="#" class="button" style="background-color: #ffc107;">Configure Backups</a>
+</p>
+
+<p class="timestamp">
+    Notification generated at {{ timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+</p>
+{% endblock %}

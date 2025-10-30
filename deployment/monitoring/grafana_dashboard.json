@@ -1,0 +1,313 @@
+{
+  "dashboard": {
+    "title": "Backup Management System Overview",
+    "uid": "backup-system-overview",
+    "tags": ["backup", "monitoring"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "System Health",
+        "type": "stat",
+        "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "up{job='backup-management-system'}",
+            "legendFormat": "Application Status"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {"type": "value", "value": "1", "text": "UP"},
+              {"type": "value", "value": "0", "text": "DOWN"}
+            ],
+            "thresholds": {
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 1, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Backup Success Rate (24h)",
+        "type": "gauge",
+        "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "backup_success_rate{period='daily'}",
+            "legendFormat": "Success Rate"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 0.8, "color": "yellow"},
+                {"value": 0.95, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Compliance Rate",
+        "type": "gauge",
+        "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "compliance_rate",
+            "legendFormat": "Compliance"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 0.7, "color": "yellow"},
+                {"value": 0.9, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Unacknowledged Alerts",
+        "type": "stat",
+        "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "sum(alerts_unacknowledged)",
+            "legendFormat": "Total Alerts"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 10, "color": "yellow"},
+                {"value": 50, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Backup Executions (Rate)",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(backup_executions_total{result='success'}[5m])",
+            "legendFormat": "Success"
+          },
+          {
+            "expr": "rate(backup_executions_total{result='failed'}[5m])",
+            "legendFormat": "Failed"
+          },
+          {
+            "expr": "rate(backup_executions_total{result='warning'}[5m])",
+            "legendFormat": "Warning"
+          }
+        ],
+        "yaxes": [
+          {"label": "Executions/sec", "format": "short"}
+        ]
+      },
+      {
+        "id": 6,
+        "title": "API Response Time (p95)",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(flask_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95 Response Time"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(flask_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "p50 Response Time"
+          }
+        ],
+        "yaxes": [
+          {"label": "Seconds", "format": "s"}
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Active Jobs",
+        "type": "stat",
+        "gridPos": {"x": 0, "y": 12, "w": 4, "h": 4},
+        "targets": [
+          {
+            "expr": "backup_jobs_total{status='active'}",
+            "legendFormat": "Active Jobs"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Running Jobs",
+        "type": "stat",
+        "gridPos": {"x": 4, "y": 12, "w": 4, "h": 4},
+        "targets": [
+          {
+            "expr": "active_jobs",
+            "legendFormat": "Running"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Queued Jobs",
+        "type": "stat",
+        "gridPos": {"x": 8, "y": 12, "w": 4, "h": 4},
+        "targets": [
+          {
+            "expr": "queued_jobs",
+            "legendFormat": "Queued"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 50, "color": "yellow"},
+                {"value": 100, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Backup Size Distribution",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(backup_size_bytes_bucket[5m]))",
+            "legendFormat": "p95 Size"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(backup_size_bytes_bucket[5m]))",
+            "legendFormat": "p50 Size"
+          }
+        ],
+        "yaxes": [
+          {"label": "Bytes", "format": "bytes"}
+        ]
+      },
+      {
+        "id": 11,
+        "title": "CPU Usage",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 20, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "100 - (avg(rate(node_cpu_seconds_total{mode='idle'}[5m])) * 100)",
+            "legendFormat": "CPU Usage %"
+          }
+        ],
+        "yaxes": [
+          {"label": "Percent", "format": "percent", "min": 0, "max": 100}
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Memory Usage",
+        "type": "graph",
+        "gridPos": {"x": 8, "y": 20, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+            "legendFormat": "Memory Usage %"
+          }
+        ],
+        "yaxes": [
+          {"label": "Percent", "format": "percent", "min": 0, "max": 100}
+        ]
+      },
+      {
+        "id": 13,
+        "title": "Disk Space",
+        "type": "graph",
+        "gridPos": {"x": 16, "y": 20, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "(node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100",
+            "legendFormat": "Disk Space Available %"
+          }
+        ],
+        "yaxes": [
+          {"label": "Percent", "format": "percent", "min": 0, "max": 100}
+        ]
+      },
+      {
+        "id": 14,
+        "title": "Alert Generation Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 26, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(alerts_total{severity='critical'}[5m])",
+            "legendFormat": "Critical"
+          },
+          {
+            "expr": "rate(alerts_total{severity='warning'}[5m])",
+            "legendFormat": "Warning"
+          },
+          {
+            "expr": "rate(alerts_total{severity='info'}[5m])",
+            "legendFormat": "Info"
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "title": "Cache Hit Rate",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 26, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m]))",
+            "legendFormat": "Hit Rate"
+          }
+        ],
+        "yaxes": [
+          {"label": "Rate", "format": "percentunit", "min": 0, "max": 1}
+        ]
+      }
+    ]
+  }
+}

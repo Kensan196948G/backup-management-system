@@ -52,7 +52,8 @@ def index():
 
     except Exception as e:
         current_app.logger.error(f"Error loading dashboard: {str(e)}")
-        return render_template("error.html", error=str(e)), 500
+        # Return a simple error page without template
+        return f"<h1>Error</h1><p>{str(e)}</p>", 500
 
 
 @dashboard_bp.route("/api/dashboard/stats")
@@ -79,16 +80,11 @@ def api_compliance_chart():
     """
     try:
         # Get compliance status counts
-        compliant = ComplianceStatus.query.filter_by(is_compliant=True).count()
-        non_compliant = ComplianceStatus.query.filter_by(is_compliant=False).count()
+        compliant = ComplianceStatus.query.filter_by(overall_status="compliant").count()
+        non_compliant = ComplianceStatus.query.filter_by(overall_status="non_compliant").count()
 
         # Get warning count (jobs with some violations but not critical)
-        warning = ComplianceStatus.query.filter(
-            and_(
-                ComplianceStatus.is_compliant == False,
-                or_(ComplianceStatus.three_copies == False, ComplianceStatus.two_media_types == False),
-            )
-        ).count()
+        warning = ComplianceStatus.query.filter_by(overall_status="warning").count()
 
         chart_data = {
             "labels": ["準拠", "非準拠", "警告"],
@@ -218,7 +214,7 @@ def get_dashboard_statistics():
     total_jobs = BackupJob.query.filter_by(is_active=True).count()
 
     # Compliance statistics
-    compliant_jobs = ComplianceStatus.query.filter_by(is_compliant=True).count()
+    compliant_jobs = ComplianceStatus.query.filter_by(overall_status="compliant").count()
     compliance_rate = round((compliant_jobs / total_jobs * 100) if total_jobs > 0 else 0, 1)
 
     # Backup success rate (last 7 days)
