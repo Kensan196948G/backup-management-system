@@ -1,0 +1,16 @@
+[Unit]
+Description=3-2-1-1-0 Backup Management System
+After=network.target
+
+[Service]
+Type=simple
+User=backupmgmt
+WorkingDirectory=/opt/backup-management-system
+Environment="FLASK_ENV=production"
+EnvironmentFile=/opt/backup-management-system/.env
+ExecStart=/opt/backup-management-system/venv/bin/python run.py --production
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

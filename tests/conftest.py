@@ -125,11 +125,12 @@ def admin_user(app):
         User: Admin user with full permissions
     """
     with app.app_context():
-        user = User(username="admin", email="admin@example.com", role="admin", is_active=True)
-        user.set_password("admin123")
+        user = User(username="admin", email="admin@example.com", full_name="Admin User", role="admin", is_active=True)
+        user.set_password("Admin123!@#")
         db.session.add(user)
         db.session.commit()
-        return user
+        db.session.refresh(user)
+        yield user
 
 
 @pytest.fixture(scope="function")
@@ -141,11 +142,14 @@ def operator_user(app):
         User: Operator user with edit permissions
     """
     with app.app_context():
-        user = User(username="operator", email="operator@example.com", role="operator", is_active=True)
-        user.set_password("operator123")
+        user = User(
+            username="operator", email="operator@example.com", full_name="Operator User", role="operator", is_active=True
+        )
+        user.set_password("Operator123!@#")
         db.session.add(user)
         db.session.commit()
-        return user
+        db.session.refresh(user)
+        yield user
 
 
 @pytest.fixture(scope="function")
@@ -157,11 +161,29 @@ def auditor_user(app):
         User: Auditor user with read-only permissions
     """
     with app.app_context():
-        user = User(username="auditor", email="auditor@example.com", role="auditor", is_active=True)
-        user.set_password("auditor123")
+        user = User(username="auditor", email="auditor@example.com", full_name="Auditor User", role="auditor", is_active=True)
+        user.set_password("Auditor123!@#")
         db.session.add(user)
         db.session.commit()
-        return user
+        db.session.refresh(user)
+        yield user
+
+
+@pytest.fixture(scope="function")
+def viewer_user(app):
+    """
+    Create a viewer user for testing.
+
+    Returns:
+        User: Viewer user with read-only permissions
+    """
+    with app.app_context():
+        user = User(username="viewer", email="viewer@example.com", full_name="Viewer User", role="viewer", is_active=True)
+        user.set_password("Viewer123!@#")
+        db.session.add(user)
+        db.session.commit()
+        db.session.refresh(user)
+        yield user
 
 
 # Backup Job Fixtures
@@ -174,6 +196,9 @@ def backup_job(app, admin_user):
         BackupJob: Basic backup job with daily schedule
     """
     with app.app_context():
+        # Get fresh user instance
+        user = db.session.get(User, admin_user.id)
+
         job = BackupJob(
             job_name="Test Backup Job",
             job_type="file",
@@ -182,12 +207,13 @@ def backup_job(app, admin_user):
             target_path="/data/source",
             schedule_type="daily",
             retention_days=30,
-            owner_id=admin_user.id,
+            owner_id=user.id,
             is_active=True,
         )
         db.session.add(job)
         db.session.commit()
-        return job
+        db.session.refresh(job)
+        yield job
 
 
 @pytest.fixture(scope="function")
@@ -199,6 +225,9 @@ def multiple_backup_jobs(app, admin_user):
         list: List of BackupJob instances
     """
     with app.app_context():
+        # Get fresh user instance
+        user = db.session.get(User, admin_user.id)
+
         jobs = [
             BackupJob(
                 job_name=f"Test Job {i}",
@@ -208,14 +237,16 @@ def multiple_backup_jobs(app, admin_user):
                 target_path=f"/data/source{i}",
                 schedule_type=["daily", "weekly", "monthly"][i % 3],
                 retention_days=30 * (i + 1),
-                owner_id=admin_user.id,
+                owner_id=user.id,
                 is_active=i % 2 == 0,
             )
             for i in range(5)
         ]
         db.session.add_all(jobs)
         db.session.commit()
-        return jobs
+        for job in jobs:
+            db.session.refresh(job)
+        yield jobs
 
 
 # Backup Copy Fixtures
@@ -228,10 +259,13 @@ def backup_copies(app, backup_job):
         list: List of BackupCopy instances
     """
     with app.app_context():
+        # Get fresh job instance
+        job = db.session.get(BackupJob, backup_job.id)
+
         copies = [
             # Copy 1: Primary storage, onsite
             BackupCopy(
-                job_id=backup_job.id,
+                job_id=job.id,
                 copy_type="primary",
                 storage_path="Primary NAS",
                 media_type="disk",
@@ -243,7 +277,7 @@ def backup_copies(app, backup_job):
             ),
             # Copy 2: Secondary storage, onsite
             BackupCopy(
-                job_id=backup_job.id,
+                job_id=job.id,
                 copy_type="secondary",
                 storage_path="Secondary NAS",
                 media_type="disk",
@@ -255,7 +289,7 @@ def backup_copies(app, backup_job):
             ),
             # Copy 3: Cloud storage, offsite
             BackupCopy(
-                job_id=backup_job.id,
+                job_id=job.id,
                 copy_type="offsite",
                 storage_path="AWS S3",
                 media_type="cloud",
@@ -267,7 +301,7 @@ def backup_copies(app, backup_job):
             ),
             # Copy 4: Tape storage, offline
             BackupCopy(
-                job_id=backup_job.id,
+                job_id=job.id,
                 copy_type="offline",
                 storage_path="Tape Library",
                 media_type="tape",
@@ -280,7 +314,9 @@ def backup_copies(app, backup_job):
         ]
         db.session.add_all(copies)
         db.session.commit()
-        return copies
+        for copy in copies:
+            db.session.refresh(copy)
+        yield copies
 
 
 # Offline Media Fixtures
@@ -306,7 +342,9 @@ def offline_media(app):
         ]
         db.session.add_all(media_list)
         db.session.commit()
-        return media_list
+        for media in media_list:
+            db.session.refresh(media)
+        yield media_list
 
 
 # Verification Test Fixtures
@@ -319,12 +357,16 @@ def verification_tests(app, backup_job, admin_user):
         list: List of VerificationTest instances
     """
     with app.app_context():
+        # Get fresh instances
+        job = db.session.get(BackupJob, backup_job.id)
+        user = db.session.get(User, admin_user.id)
+
         tests = [
             VerificationTest(
-                job_id=backup_job.id,
+                job_id=job.id,
                 test_type=["full_restore", "partial", "integrity"][i % 3],
                 test_date=datetime.utcnow(),
-                tester_id=admin_user.id,
+                tester_id=user.id,
                 test_result=["success", "failed"][i % 2],
                 duration_seconds=300 + i * 60,
                 issues_found=None if i % 2 == 0 else "Test error details",
@@ -333,7 +375,9 @@ def verification_tests(app, backup_job, admin_user):
         ]
         db.session.add_all(tests)
         db.session.commit()
-        return tests
+        for test in tests:
+            db.session.refresh(test)
+        yield tests
 
 
 # Alert Fixtures
@@ -346,9 +390,12 @@ def alerts(app, backup_job):
         list: List of Alert instances
     """
     with app.app_context():
+        # Get fresh job instance
+        job = db.session.get(BackupJob, backup_job.id)
+
         alerts_list = [
             Alert(
-                job_id=backup_job.id,
+                job_id=job.id,
                 alert_type=["compliance_check", "backup_failure", "media_warning"][i % 3],
                 severity=["critical", "warning", "info"][i % 3],
                 title=f"Test Alert {i}",
@@ -359,7 +406,9 @@ def alerts(app, backup_job):
         ]
         db.session.add_all(alerts_list)
         db.session.commit()
-        return alerts_list
+        for alert in alerts_list:
+            db.session.refresh(alert)
+        yield alerts_list
 
 
 # Report Fixtures
@@ -372,6 +421,9 @@ def reports(app, admin_user):
         list: List of Report instances
     """
     with app.app_context():
+        # Get fresh user instance
+        user = db.session.get(User, admin_user.id)
+
         reports_list = [
             Report(
                 report_type=["daily", "weekly", "monthly"][i % 3],
@@ -380,13 +432,15 @@ def reports(app, admin_user):
                 date_to=(datetime.utcnow() - timedelta(days=i)).date(),
                 file_format="pdf",
                 file_path=f"/reports/test_report_{i}.pdf",
-                generated_by=admin_user.id,
+                generated_by=user.id,
             )
             for i in range(5)
         ]
         db.session.add_all(reports_list)
         db.session.commit()
-        return reports_list
+        for report in reports_list:
+            db.session.refresh(report)
+        yield reports_list
 
 
 # System Setting Fixtures
@@ -415,7 +469,9 @@ def system_settings(app):
         ]
         db.session.add_all(settings)
         db.session.commit()
-        return settings
+        for setting in settings:
+            db.session.refresh(setting)
+        yield settings
 
 
 # Authentication Fixtures
@@ -433,13 +489,15 @@ def authenticated_client(client, app):
     """
     with app.app_context():
         # Create admin user
-        user = User(username="admin_test", email="admin_test@example.com", role="admin", is_active=True)
-        user.set_password("admin123")
+        user = User(
+            username="admin_test", email="admin_test@example.com", full_name="Admin Test User", role="admin", is_active=True
+        )
+        user.set_password("Admin123!@#")
         db.session.add(user)
         db.session.commit()
 
     with client:
-        client.post("/auth/login", data={"username": "admin_test", "password": "admin123"}, follow_redirects=True)
+        client.post("/auth/login", data={"username": "admin_test", "password": "Admin123!@#"}, follow_redirects=True)
         yield client
 
 
@@ -456,13 +514,19 @@ def operator_authenticated_client(client, app):
         FlaskClient: Authenticated test client with operator role
     """
     with app.app_context():
-        user = User(username="operator_test", email="operator_test@example.com", role="operator", is_active=True)
-        user.set_password("operator123")
+        user = User(
+            username="operator_test",
+            email="operator_test@example.com",
+            full_name="Operator Test User",
+            role="operator",
+            is_active=True,
+        )
+        user.set_password("Operator123!@#")
         db.session.add(user)
         db.session.commit()
 
     with client:
-        client.post("/auth/login", data={"username": "operator_test", "password": "operator123"}, follow_redirects=True)
+        client.post("/auth/login", data={"username": "operator_test", "password": "Operator123!@#"}, follow_redirects=True)
         yield client
 
 
@@ -479,13 +543,19 @@ def auditor_authenticated_client(client, app):
         FlaskClient: Authenticated test client with auditor role
     """
     with app.app_context():
-        user = User(username="auditor_test", email="auditor_test@example.com", role="auditor", is_active=True)
-        user.set_password("auditor123")
+        user = User(
+            username="auditor_test",
+            email="auditor_test@example.com",
+            full_name="Auditor Test User",
+            role="auditor",
+            is_active=True,
+        )
+        user.set_password("Auditor123!@#")
         db.session.add(user)
         db.session.commit()
 
     with client:
-        client.post("/auth/login", data={"username": "auditor_test", "password": "auditor123"}, follow_redirects=True)
+        client.post("/auth/login", data={"username": "auditor_test", "password": "Auditor123!@#"}, follow_redirects=True)
         yield client
 
 
