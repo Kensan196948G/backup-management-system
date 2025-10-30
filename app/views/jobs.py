@@ -71,9 +71,9 @@ def list():
 
     # Join with compliance status for compliance filter
     if compliance == "compliant":
-        query = query.join(ComplianceStatus).filter(ComplianceStatus.is_compliant == True)
+        query = query.join(ComplianceStatus).filter(ComplianceStatus.overall_status == "compliant")
     elif compliance == "non_compliant":
-        query = query.join(ComplianceStatus).filter(ComplianceStatus.is_compliant == False)
+        query = query.join(ComplianceStatus).filter(ComplianceStatus.overall_status == "non_compliant")
 
     # Order by
     sort_by = request.args.get("sort", "updated_at")
@@ -331,7 +331,9 @@ def check_compliance(job_id):
         checker = ComplianceChecker()
         compliance = checker.check_job_compliance(job_id)
 
-        status = "準拠" if compliance.is_compliant else "非準拠"
+        status = (
+            "準拠" if compliance.overall_status == "compliant" else ("警告" if compliance.overall_status == "warning" else "非準拠")
+        )
         flash(f"コンプライアンスチェックを実行しました: {status}", "success")
 
     except Exception as e:

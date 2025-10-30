@@ -1,0 +1,198 @@
+# Prometheus Alert Rules for Backup Management System
+
+groups:
+  - name: backup_system_alerts
+    interval: 30s
+    rules:
+      # Application availability
+      - alert: ApplicationDown
+        expr: up{job="backup-management-system"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backup Management System is down"
+          description: "The application has been down for more than 2 minutes."
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(backup_executions_total{result="failed"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High backup failure rate"
+          description: "Backup failure rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+
+      # Critical backup failures
+      - alert: CriticalBackupFailures
+        expr: rate(backup_executions_total{result="failed"}[5m]) > 0.3
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical backup failure rate"
+          description: "Backup failure rate is {{ $value | humanizePercentage }}. Immediate attention required."
+
+      # Low success rate
+      - alert: LowBackupSuccessRate
+        expr: backup_success_rate{period="daily"} < 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low daily backup success rate"
+          description: "Daily backup success rate is {{ $value | humanizePercentage }}. Target is 95%."
+
+      # Compliance issues
+      - alert: LowComplianceRate
+        expr: compliance_rate < 0.9
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low compliance rate"
+          description: "Compliance rate is {{ $value | humanizePercentage }}. Target is 95%."
+
+      # Critical compliance
+      - alert: CriticalComplianceRate
+        expr: compliance_rate < 0.7
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical compliance rate"
+          description: "Compliance rate is {{ $value | humanizePercentage }}. Immediate action required."
+
+      # Unacknowledged alerts
+      - alert: TooManyUnacknowledgedAlerts
+        expr: sum(alerts_unacknowledged) > 50
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Too many unacknowledged alerts"
+          description: "There are {{ $value }} unacknowledged alerts. Please review."
+
+      # Critical unacknowledged alerts
+      - alert: CriticalUnacknowledgedAlerts
+        expr: alerts_unacknowledged{severity="critical"} > 5
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Multiple critical alerts unacknowledged"
+          description: "{{ $value }} critical alerts are unacknowledged."
+
+      # API response time
+      - alert: SlowAPIResponses
+        expr: histogram_quantile(0.95, rate(flask_http_request_duration_seconds_bucket[5m])) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow API response times"
+          description: "95th percentile API response time is {{ $value }}s. Target is <200ms."
+
+      # Database query performance
+      - alert: SlowDatabaseQueries
+        expr: histogram_quantile(0.95, rate(db_query_duration_seconds_bucket[5m])) > 1.0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow database queries"
+          description: "95th percentile database query time is {{ $value }}s."
+
+      # High verification failure rate
+      - alert: HighVerificationFailureRate
+        expr: rate(verification_tests_total{result="failed"}[5m]) > 0.2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High verification test failure rate"
+          description: "Verification test failure rate is {{ $value | humanizePercentage }}."
+
+      # Job queue buildup
+      - alert: JobQueueBacklog
+        expr: queued_jobs > 100
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Large job queue backlog"
+          description: "{{ $value }} jobs are queued. Check scheduler performance."
+
+      # Active jobs stuck
+      - alert: JobsStuck
+        expr: active_jobs > 0 and changes(active_jobs[30m]) == 0
+        for: 30m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Jobs appear to be stuck"
+          description: "{{ $value }} jobs have been active for over 30 minutes without change."
+
+  - name: infrastructure_alerts
+    interval: 30s
+    rules:
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%."
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}%."
+
+      # Disk space low
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is {{ $value }}% remaining."
+
+      # Critical disk space
+      - alert: CriticalDiskSpace
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk space"
+          description: "Disk space is {{ $value }}% remaining. Immediate action required."
+
+      # Database connection pool exhaustion
+      - alert: DatabaseConnectionPoolExhausted
+        expr: db_connection_pool_size > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "{{ $value }}% of database connections are in use."
+
+      # Cache performance
+      - alert: LowCacheHitRate
+        expr: rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m])) < 0.5
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value | humanizePercentage }}. Check cache configuration."

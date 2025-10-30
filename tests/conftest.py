@@ -487,18 +487,17 @@ def authenticated_client(client, app):
     Returns:
         FlaskClient: Authenticated test client
     """
-    with app.app_context():
-        # Create admin user
-        user = User(
-            username="admin_test", email="admin_test@example.com", full_name="Admin Test User", role="admin", is_active=True
-        )
-        user.set_password("Admin123!@#")
-        db.session.add(user)
-        db.session.commit()
+    # Create admin user
+    user = User(
+        username="admin_test", email="admin_test@example.com", full_name="Admin Test User", role="admin", is_active=True
+    )
+    user.set_password("Admin123!@#")
+    db.session.add(user)
+    db.session.commit()
 
-    with client:
-        client.post("/auth/login", data={"username": "admin_test", "password": "Admin123!@#"}, follow_redirects=True)
-        yield client
+    # Login
+    client.post("/auth/login", data={"username": "admin_test", "password": "Admin123!@#"}, follow_redirects=True)
+    yield client
 
 
 @pytest.fixture(scope="function")
@@ -513,21 +512,20 @@ def operator_authenticated_client(client, app):
     Returns:
         FlaskClient: Authenticated test client with operator role
     """
-    with app.app_context():
-        user = User(
-            username="operator_test",
-            email="operator_test@example.com",
-            full_name="Operator Test User",
-            role="operator",
-            is_active=True,
-        )
-        user.set_password("Operator123!@#")
-        db.session.add(user)
-        db.session.commit()
+    user = User(
+        username="operator_test",
+        email="operator_test@example.com",
+        full_name="Operator Test User",
+        role="operator",
+        is_active=True,
+    )
+    user.set_password("Operator123!@#")
+    db.session.add(user)
+    db.session.commit()
 
-    with client:
-        client.post("/auth/login", data={"username": "operator_test", "password": "Operator123!@#"}, follow_redirects=True)
-        yield client
+    # Login
+    client.post("/auth/login", data={"username": "operator_test", "password": "Operator123!@#"}, follow_redirects=True)
+    yield client
 
 
 @pytest.fixture(scope="function")
@@ -542,21 +540,20 @@ def auditor_authenticated_client(client, app):
     Returns:
         FlaskClient: Authenticated test client with auditor role
     """
-    with app.app_context():
-        user = User(
-            username="auditor_test",
-            email="auditor_test@example.com",
-            full_name="Auditor Test User",
-            role="auditor",
-            is_active=True,
-        )
-        user.set_password("Auditor123!@#")
-        db.session.add(user)
-        db.session.commit()
+    user = User(
+        username="auditor_test",
+        email="auditor_test@example.com",
+        full_name="Auditor Test User",
+        role="auditor",
+        is_active=True,
+    )
+    user.set_password("Auditor123!@#")
+    db.session.add(user)
+    db.session.commit()
 
-    with client:
-        client.post("/auth/login", data={"username": "auditor_test", "password": "Auditor123!@#"}, follow_redirects=True)
-        yield client
+    # Login
+    client.post("/auth/login", data={"username": "auditor_test", "password": "Auditor123!@#"}, follow_redirects=True)
+    yield client
 
 
 # API Token Fixtures

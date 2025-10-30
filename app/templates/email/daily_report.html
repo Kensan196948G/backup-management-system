@@ -1,0 +1,201 @@
+{% extends "email/base.html" %}
+
+{% block title %}Daily Backup Report - {{ report_date }}{% endblock %}
+
+{% block header_subtitle %}Daily Compliance and Activity Summary{% endblock %}
+
+{% block content %}
+<h1 style="color: #495057; font-size: 22px; margin-bottom: 20px;">
+    Daily Backup Report - {{ report_date }}
+</h1>
+
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px;">Executive Summary</h2>
+
+<table class="details-table">
+    <tr>
+        <th>Total Backup Jobs</th>
+        <td>{{ data.get('total_jobs', 0) }}</td>
+    </tr>
+    <tr>
+        <th>Successful Backups</th>
+        <td style="color: #28a745; font-weight: 600;">{{ data.get('successful_backups', 0) }}</td>
+    </tr>
+    <tr>
+        <th>Failed Backups</th>
+        <td style="color: {{ '#dc3545' if data.get('failed_backups', 0) > 0 else '#6c757d' }}; font-weight: 600;">
+            {{ data.get('failed_backups', 0) }}
+        </td>
+    </tr>
+    <tr>
+        <th>Jobs with Warnings</th>
+        <td style="color: {{ '#ffc107' if data.get('warning_count', 0) > 0 else '#6c757d' }}; font-weight: 600;">
+            {{ data.get('warning_count', 0) }}
+        </td>
+    </tr>
+    <tr>
+        <th>Total Data Backed Up</th>
+        <td>{{ "%.2f GB" | format(data.get('total_backup_size_gb', 0)) }}</td>
+    </tr>
+</table>
+
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px; margin-top: 30px;">3-2-1-1-0 Compliance Status</h2>
+
+{% set compliance = data.get('compliance_summary', {}) %}
+<table class="details-table">
+    <tr>
+        <th>Compliant Jobs</th>
+        <td style="color: #28a745; font-weight: 600;">
+            {{ compliance.get('compliant', 0) }} / {{ data.get('total_jobs', 0) }}
+        </td>
+    </tr>
+    <tr>
+        <th>Non-Compliant Jobs</th>
+        <td style="color: {{ '#dc3545' if compliance.get('non_compliant', 0) > 0 else '#6c757d' }}; font-weight: 600;">
+            {{ compliance.get('non_compliant', 0) }}
+        </td>
+    </tr>
+    <tr>
+        <th>Compliance Rate</th>
+        <td>
+            {% if data.get('total_jobs', 0) > 0 %}
+                {{ "%.1f%%" | format((compliance.get('compliant', 0) / data.get('total_jobs', 1)) * 100) }}
+            {% else %}
+                N/A
+            {% endif %}
+        </td>
+    </tr>
+</table>
+
+{% if compliance.get('violations', []) %}
+<div class="alert-box alert-warning" style="margin-top: 15px;">
+    <strong>Compliance Violations Detected:</strong>
+    <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+        {% for violation in compliance.violations[:5] %}
+        <li>{{ violation }}</li>
+        {% endfor %}
+        {% if compliance.violations|length > 5 %}
+        <li><em>... and {{ compliance.violations|length - 5 }} more</em></li>
+        {% endif %}
+    </ul>
+</div>
+{% endif %}
+
+{% if data.get('failed_jobs', []) %}
+<h2 style="color: #dc3545; font-size: 18px; margin-bottom: 15px; margin-top: 30px;">Failed Backup Jobs</h2>
+<table class="details-table">
+    <tr>
+        <th>Job Name</th>
+        <th>Error</th>
+    </tr>
+    {% for job in data.failed_jobs[:10] %}
+    <tr>
+        <td>{{ job.name }}</td>
+        <td style="color: #dc3545;">{{ job.error[:100] }}{% if job.error|length > 100 %}...{% endif %}</td>
+    </tr>
+    {% endfor %}
+    {% if data.failed_jobs|length > 10 %}
+    <tr>
+        <td colspan="2" style="text-align: center; font-style: italic;">
+            ... and {{ data.failed_jobs|length - 10 }} more failed jobs
+        </td>
+    </tr>
+    {% endif %}
+</table>
+{% endif %}
+
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px; margin-top: 30px;">Offline Media Status</h2>
+
+{% set media = data.get('media_status', {}) %}
+<table class="details-table">
+    <tr>
+        <th>Total Offline Media</th>
+        <td>{{ media.get('total', 0) }}</td>
+    </tr>
+    <tr>
+        <th>In Use</th>
+        <td>{{ media.get('in_use', 0) }}</td>
+    </tr>
+    <tr>
+        <th>Available</th>
+        <td>{{ media.get('available', 0) }}</td>
+    </tr>
+    <tr>
+        <th>Pending Rotation</th>
+        <td style="color: {{ '#ffc107' if media.get('pending_rotation', 0) > 0 else '#6c757d' }};">
+            {{ media.get('pending_rotation', 0) }}
+        </td>
+    </tr>
+    <tr>
+        <th>Overdue Returns</th>
+        <td style="color: {{ '#dc3545' if media.get('overdue', 0) > 0 else '#6c757d' }};">
+            {{ media.get('overdue', 0) }}
+        </td>
+    </tr>
+</table>
+
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px; margin-top: 30px;">Verification Tests</h2>
+
+{% set verification = data.get('verification_status', {}) %}
+<table class="details-table">
+    <tr>
+        <th>Tests Completed Today</th>
+        <td>{{ verification.get('completed_today', 0) }}</td>
+    </tr>
+    <tr>
+        <th>Tests Passed</th>
+        <td style="color: #28a745;">{{ verification.get('passed', 0) }}</td>
+    </tr>
+    <tr>
+        <th>Tests Failed</th>
+        <td style="color: {{ '#dc3545' if verification.get('failed', 0) > 0 else '#6c757d' }};">
+            {{ verification.get('failed', 0) }}
+        </td>
+    </tr>
+    <tr>
+        <th>Upcoming Tests (7 days)</th>
+        <td>{{ verification.get('upcoming', 0) }}</td>
+    </tr>
+    <tr>
+        <th>Overdue Tests</th>
+        <td style="color: {{ '#dc3545' if verification.get('overdue', 0) > 0 else '#6c757d' }};">
+            {{ verification.get('overdue', 0) }}
+        </td>
+    </tr>
+</table>
+
+{% if data.get('alerts', []) %}
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px; margin-top: 30px;">Active Alerts</h2>
+<div class="alert-box alert-info">
+    <strong>Unacknowledged Alerts:</strong> {{ data.alerts|length }}
+    <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+        {% for alert in data.alerts[:5] %}
+        <li>
+            <strong>[{{ alert.severity|upper }}]</strong> {{ alert.title }}
+            <span style="color: #6c757d; font-size: 11px;">({{ alert.created_at }})</span>
+        </li>
+        {% endfor %}
+        {% if data.alerts|length > 5 %}
+        <li><em>... and {{ data.alerts|length - 5 }} more alerts</em></li>
+        {% endif %}
+    </ul>
+</div>
+{% endif %}
+
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px; margin-top: 30px;">System Health</h2>
+
+<div class="alert-box {% if data.get('system_health') == 'good' %}alert-success{% elif data.get('system_health') == 'warning' %}alert-warning{% else %}alert-danger{% endif %}">
+    <strong>Overall System Health:</strong>
+    <span style="text-transform: uppercase;">{{ data.get('system_health', 'Unknown') }}</span>
+    <br>
+    <small>{{ data.get('health_message', 'No additional information available') }}</small>
+</div>
+
+<p style="margin-top: 30px;">
+    <a href="#" class="button">View Full Dashboard</a>
+    <a href="#" class="button" style="background-color: #17a2b8;">Download Detailed Report</a>
+</p>
+
+<p class="timestamp">
+    Report generated at {{ timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') if timestamp else 'Unknown' }}
+</p>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "email/base.html" %}
+
+{% block title %}Backup Success - {{ job_name }}{% endblock %}
+
+{% block header_subtitle %}Backup Completed Successfully{% endblock %}
+
+{% block content %}
+<div class="alert-box alert-success">
+    <strong>Backup Successful!</strong><br>
+    The backup job "{{ job_name }}" has completed successfully.
+</div>
+
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px;">Job Details</h2>
+
+<table class="details-table">
+    <tr>
+        <th>Job Name</th>
+        <td>{{ job_name }}</td>
+    </tr>
+    <tr>
+        <th>Completion Time</th>
+        <td>{{ timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}</td>
+    </tr>
+    {% if details.get('backup_size_bytes') %}
+    <tr>
+        <th>Backup Size</th>
+        <td>{{ "%.2f GB" | format(details.backup_size_bytes / 1024 / 1024 / 1024) }}</td>
+    </tr>
+    {% endif %}
+    {% if details.get('duration_seconds') %}
+    <tr>
+        <th>Duration</th>
+        <td>{{ "%d minutes %d seconds" | format(details.duration_seconds // 60, details.duration_seconds % 60) }}</td>
+    </tr>
+    {% endif %}
+    {% if details.get('copy_type') %}
+    <tr>
+        <th>Copy Type</th>
+        <td>{{ details.copy_type }}</td>
+    </tr>
+    {% endif %}
+    {% if details.get('storage_path') %}
+    <tr>
+        <th>Storage Path</th>
+        <td>{{ details.storage_path }}</td>
+    </tr>
+    {% endif %}
+</table>
+
+{% if details.get('compliance_status') %}
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px;">3-2-1-1-0 Compliance Status</h2>
+<div class="alert-box alert-info">
+    <ul style="margin: 0; padding-left: 20px;">
+        <li><strong>Copies:</strong> {{ details.compliance_status.copies_count }} / 3 minimum</li>
+        <li><strong>Media Types:</strong> {{ details.compliance_status.media_types_count }} / 2 minimum</li>
+        <li><strong>Offsite Copy:</strong> {{ "Yes" if details.compliance_status.has_offsite else "No" }}</li>
+        <li><strong>Offline Copy:</strong> {{ "Yes" if details.compliance_status.has_offline else "No" }}</li>
+        <li><strong>Error Free:</strong> {{ "Yes" if not details.compliance_status.has_errors else "No" }}</li>
+    </ul>
+</div>
+{% endif %}
+
+<p style="margin-top: 30px;">
+    <a href="#" class="button">View Backup Details</a>
+</p>
+
+<p class="timestamp">
+    Notification generated at {{ timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+</p>
+{% endblock %}

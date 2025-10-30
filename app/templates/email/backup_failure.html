@@ -1,0 +1,68 @@
+{% extends "email/base.html" %}
+
+{% block title %}Backup Failed - {{ job_name }}{% endblock %}
+
+{% block header_subtitle %}Backup Failed - Immediate Action Required{% endblock %}
+
+{% block content %}
+<div class="alert-box alert-danger">
+    <strong>Backup Failed!</strong><br>
+    The backup job "{{ job_name }}" has failed and requires immediate attention.
+</div>
+
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px;">Failure Details</h2>
+
+<table class="details-table">
+    <tr>
+        <th>Job Name</th>
+        <td>{{ job_name }}</td>
+    </tr>
+    <tr>
+        <th>Failure Time</th>
+        <td>{{ timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}</td>
+    </tr>
+    <tr>
+        <th>Error Message</th>
+        <td style="color: #dc3545; font-weight: 600;">{{ error_message }}</td>
+    </tr>
+    {% if details.get('attempt_number') %}
+    <tr>
+        <th>Retry Attempt</th>
+        <td>{{ details.attempt_number }}</td>
+    </tr>
+    {% endif %}
+    {% if details.get('last_successful_backup') %}
+    <tr>
+        <th>Last Successful Backup</th>
+        <td>{{ details.last_successful_backup }}</td>
+    </tr>
+    {% endif %}
+</table>
+
+<h2 style="color: #495057; font-size: 18px; margin-bottom: 15px;">Recommended Actions</h2>
+
+<ul>
+    <li>Check the backup server connectivity and credentials</li>
+    <li>Verify sufficient disk space on the target storage</li>
+    <li>Review backup job configuration and schedules</li>
+    <li>Check system logs for additional error details</li>
+    {% if details.get('suggested_actions') %}
+        {% for action in details.suggested_actions %}
+        <li>{{ action }}</li>
+        {% endfor %}
+    {% endif %}
+</ul>
+
+<div class="alert-box alert-warning">
+    <strong>Important:</strong> Please investigate and resolve this issue as soon as possible to maintain backup integrity and compliance with the 3-2-1-1-0 rule.
+</div>
+
+<p style="margin-top: 30px;">
+    <a href="#" class="button">View Error Logs</a>
+    <a href="#" class="button" style="background-color: #dc3545;">Retry Backup Now</a>
+</p>
+
+<p class="timestamp">
+    Notification generated at {{ timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+</p>
+{% endblock %}
