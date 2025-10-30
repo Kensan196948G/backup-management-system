@@ -1,0 +1,104 @@
+{
+  "updated_at": "2025-10-30T16:00:00Z",
+  "project": {
+    "name": "backup-management-system",
+    "phase": "initialization",
+    "sprint": 1,
+    "version": "0.1.0-dev",
+    "start_date": "2025-10-30",
+    "target_release": "2025-12-01"
+  },
+  "agents": {
+    "agent-1-pm": {
+      "status": "active",
+      "current_task": "Initialize agent system and assign tasks",
+      "last_update": "2025-10-30T16:00:00Z",
+      "health": "green",
+      "progress": 0
+    },
+    "agent-2-database": {
+      "status": "idle",
+      "current_task": null,
+      "progress": 0,
+      "waiting_for": [],
+      "health": "green"
+    },
+    "agent-3-api": {
+      "status": "idle",
+      "current_task": null,
+      "progress": 0,
+      "waiting_for": ["agent-2-database"],
+      "health": "green"
+    },
+    "agent-4-frontend": {
+      "status": "idle",
+      "current_task": null,
+      "progress": 0,
+      "waiting_for": [],
+      "health": "green"
+    },
+    "agent-5-security": {
+      "status": "idle",
+      "current_task": null,
+      "progress": 0,
+      "waiting_for": ["agent-2-database", "agent-3-api"],
+      "health": "green"
+    },
+    "agent-6-logic": {
+      "status": "idle",
+      "current_task": null,
+      "progress": 0,
+      "waiting_for": ["agent-2-database"],
+      "health": "green"
+    },
+    "agent-7-scheduler": {
+      "status": "idle",
+      "current_task": null,
+      "progress": 0,
+      "waiting_for": ["agent-6-logic"],
+      "health": "green"
+    },
+    "agent-8-powershell": {
+      "status": "idle",
+      "current_task": null,
+      "progress": 0,
+      "waiting_for": [],
+      "health": "green"
+    },
+    "agent-9-test": {
+      "status": "idle",
+      "current_task": null,
+      "progress": 0,
+      "waiting_for": ["agent-2-database"],
+      "health": "green"
+    },
+    "agent-10-devops": {
+      "status": "idle",
+      "current_task": null,
+      "progress": 0,
+      "waiting_for": [],
+      "health": "green"
+    }
+  },
+  "tasks": {
+    "total": 0,
+    "completed": 0,
+    "in_progress": 0,
+    "blocked": 0,
+    "pending": 0
+  },
+  "metrics": {
+    "code_coverage": 0,
+    "test_pass_rate": 0,
+    "build_status": "unknown",
+    "open_issues": 0,
+    "open_prs": 0
+  },
+  "dependencies": {
+    "agent-3-api": ["agent-2-database"],
+    "agent-5-security": ["agent-2-database", "agent-3-api"],
+    "agent-6-logic": ["agent-2-database"],
+    "agent-7-scheduler": ["agent-6-logic"],
+    "agent-9-test": ["agent-2-database"]
+  }
+}
