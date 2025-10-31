@@ -103,23 +103,41 @@ flask run
 
 ## 📚 ドキュメント
 
-### セットアップガイド
+**すべてのドキュメントは整理されたカテゴリー別に配置されています。**
 
-- [MCP設定ガイド](docs/MCP_SETUP_GUIDE.md) - MCPサーバーのセットアップ手順
-- [MCP設定要件](docs/MCP設定要件.txt) - 詳細な技術仕様
-- [インストールガイド](INSTALLATION.md) - システム全体のインストール手順
+### 📖 スタートガイド
 
-### PowerShell統合ドキュメント
+- 🗺️ **[ドキュメント構造マップ](docs/00_ドキュメント構造（documentation-map）.md)** - 全ドキュメント索引（72ファイル）
+- 🚀 **[クイックスタート](docs/02_セットアップ（setup）/クイックスタート（quickstart）.md)** - 最速5分で起動
+- 💻 **[インストールガイド](docs/02_セットアップ（setup）/インストールガイド（installation）.md)** - 詳細インストール手順
+
+### 📋 要件と設計
+
+- 📋 [要件定義書](docs/01_要件・設計（requirements-design）/要件定義書（requirements）.md) - システム要件
+- 🏗️ [設計仕様書](docs/01_要件・設計（requirements-design）/設計仕様書（design-spec）.md) - 詳細設計仕様
+
+### 👨‍💻 開発者向け
+
+- 🏛️ [アーキテクチャ概要](docs/09_アーキテクチャ（architecture）/アーキテクチャ概要（architecture-overview）.md) - システム全体像
+- 🔧 [アプリケーション構造](docs/03_開発（development）/実装サマリー（implementation）/アプリケーション構造（application-structure）.md) - コード構造
+- 🎉 [フェーズ8-10 MVP達成](docs/03_開発（development）/フェーズレポート（phase-reports）/フェーズ8-10 MVP達成（phase8-10-mvp）.md) - **MVP 100%達成報告**
+
+### 🔌 API統合
+
+- 📡 [API使用例](docs/04_API（api）/API使用例（api-usage-examples）.md) - API使用方法
+- 🔐 [認証実装](docs/04_API（api）/認証実装（auth-implementation）.md) - 認証・認可
+
+### 🚀 デプロイメント
+
+- 🚀 [デプロイガイド](docs/05_デプロイメント（deployment）/デプロイガイド（deployment-guide）.md) - Windows/Linux デプロイ手順
+- 📖 [本番運用マニュアル](docs/05_デプロイメント（deployment）/本番運用マニュアル（production-operations）.md) - 運用ガイド
+- 🔧 [Veeam統合ガイド](docs/05_デプロイメント（deployment）/Veeam統合ガイド（veeam-integration）.md) - Veeam連携
+
+### PowerShell統合
 
 - [PowerShell統合 README](scripts/powershell/README.md) - Windows環境向けバックアップツール連携
 - [テスト手順書](scripts/powershell/TESTING_GUIDE.md) - 動作テストとトラブルシューティング
 - [実装サマリー](scripts/powershell/IMPLEMENTATION_SUMMARY.md) - 実装詳細と技術仕様
-
-### 技術ドキュメント
-
-- 要件定義書（作成予定）
-- 設計仕様書（作成予定）
-- API仕様書（作成予定）
 
 ## 🛠️ 技術スタック
 
