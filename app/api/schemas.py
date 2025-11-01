@@ -371,3 +371,89 @@ class APIKeyResponse(BaseModel):
     is_active: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ============================================================================
+# AOMEI Integration Models
+# ============================================================================
+
+
+class AOMEIJobRegisterRequest(BaseModel):
+    """Request model for AOMEI job registration"""
+
+    job_id: int = Field(default=0, description="Job ID (0 for new job)")
+    task_name: str = Field(..., min_length=1, max_length=200, description="AOMEI task name")
+    job_type: str = Field(default="system_image", description="Backup type")
+    target_server: Optional[str] = Field(default=None, max_length=100, description="Target server name")
+    target_path: Optional[str] = Field(default=None, max_length=500, description="Target backup path")
+    description: Optional[str] = Field(default=None, max_length=500, description="Job description")
+
+    @field_validator("job_type")
+    @classmethod
+    def validate_job_type(cls, v):
+        allowed = ["system_image", "file", "database", "vm"]
+        if v not in allowed:
+            raise ValueError(f'job_type must be one of: {", ".join(allowed)}')
+        return v
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AOMEIStatusRequest(BaseModel):
+    """Request model for AOMEI status update"""
+
+    job_id: int = Field(..., description="Backup job ID")
+    status: str = Field(..., description="Backup status (success/failed/warning/unknown)")
+    backup_size: int = Field(default=0, ge=0, description="Backup size in bytes")
+    duration: int = Field(default=0, ge=0, description="Execution duration in seconds")
+    error_message: Optional[str] = Field(default=None, description="Error message if failed")
+    task_name: Optional[str] = Field(default=None, max_length=200, description="AOMEI task name")
+    start_time: Optional[str] = Field(default=None, description="Backup start time (ISO 8601)")
+    end_time: Optional[str] = Field(default=None, description="Backup end time (ISO 8601)")
+    details: Optional[str] = Field(default=None, description="Additional details")
+    copy_type: str = Field(default="primary", description="Copy type (primary/secondary/offsite/offline)")
+    storage_path: Optional[str] = Field(default=None, max_length=500, description="Storage path")
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v):
+        allowed = ["success", "failed", "warning", "unknown"]
+        if v.lower() not in allowed:
+            raise ValueError(f'status must be one of: {", ".join(allowed)}')
+        return v.lower()
+
+    @field_validator("copy_type")
+    @classmethod
+    def validate_copy_type(cls, v):
+        allowed = ["primary", "secondary", "offsite", "offline"]
+        if v.lower() not in allowed:
+            raise ValueError(f'copy_type must be one of: {", ".join(allowed)}')
+        return v.lower()
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AOMEILogAnalysisRequest(BaseModel):
+    """Request model for AOMEI log analysis processing"""
+
+    job_id: int = Field(..., description="Backup job ID")
+    log_file_path: str = Field(..., min_length=1, description="Path to log file")
+    parsed_data: Dict[str, Any] = Field(..., description="Parsed log data")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AOMEIJobResponse(BaseModel):
+    """Response model for AOMEI job details"""
+
+    id: int
+    job_name: str
+    job_type: str
+    target_server: Optional[str]
+    target_path: Optional[str]
+    backup_tool: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

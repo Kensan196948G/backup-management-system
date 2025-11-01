@@ -575,6 +575,178 @@ def api_headers(admin_user, app):
         return {"Content-Type": "application/json", "Accept": "application/json"}
 
 
+@pytest.fixture(scope="function")
+def api_client(client, app):
+    """
+    Create API test client with helper methods for authentication.
+
+    Args:
+        client: Flask test client
+        app: Flask application fixture
+
+    Returns:
+        APITestClient: Enhanced test client with JWT token management
+    """
+
+    class APITestClient:
+        def __init__(self, flask_client, flask_app):
+            self.client = flask_client
+            self.app = flask_app
+            self.access_token = None
+            self.refresh_token = None
+            self.current_user = None
+
+        def login(self, username, password):
+            """Login and store tokens."""
+            response = self.client.post(
+                "/api/v1/auth/login",
+                json={"username": username, "password": password},
+                headers={"Content-Type": "application/json"},
+            )
+            if response.status_code == 200:
+                data = response.get_json()
+                self.access_token = data.get("access_token")
+                self.refresh_token = data.get("refresh_token")
+                self.current_user = data.get("user")
+            return response
+
+        def logout(self):
+            """Logout and clear tokens."""
+            if self.access_token:
+                response = self.client.post("/api/v1/auth/logout", headers=self.get_headers())
+                self.access_token = None
+                self.refresh_token = None
+                self.current_user = None
+                return response
+            return None
+
+        def refresh(self):
+            """Refresh access token."""
+            if self.refresh_token:
+                response = self.client.post(
+                    "/api/v1/auth/refresh",
+                    json={"refresh_token": self.refresh_token},
+                    headers={"Content-Type": "application/json"},
+                )
+                if response.status_code == 200:
+                    data = response.get_json()
+                    self.access_token = data.get("access_token")
+                return response
+            return None
+
+        def get_headers(self, extra_headers=None):
+            """Get headers with authentication token."""
+            headers = {"Content-Type": "application/json"}
+            if self.access_token:
+                headers["Authorization"] = f"Bearer {self.access_token}"
+            if extra_headers:
+                headers.update(extra_headers)
+            return headers
+
+        def get(self, url, **kwargs):
+            """GET request with authentication."""
+            if "headers" not in kwargs:
+                kwargs["headers"] = self.get_headers()
+            return self.client.get(url, **kwargs)
+
+        def post(self, url, **kwargs):
+            """POST request with authentication."""
+            if "headers" not in kwargs:
+                kwargs["headers"] = self.get_headers()
+            return self.client.post(url, **kwargs)
+
+        def put(self, url, **kwargs):
+            """PUT request with authentication."""
+            if "headers" not in kwargs:
+                kwargs["headers"] = self.get_headers()
+            return self.client.put(url, **kwargs)
+
+        def delete(self, url, **kwargs):
+            """DELETE request with authentication."""
+            if "headers" not in kwargs:
+                kwargs["headers"] = self.get_headers()
+            return self.client.delete(url, **kwargs)
+
+    return APITestClient(client, app)
+
+
+@pytest.fixture(scope="function")
+def jwt_token(admin_user, app):
+    """
+    Generate JWT token for admin user.
+
+    Args:
+        admin_user: Admin user fixture
+        app: Flask application fixture
+
+    Returns:
+        str: JWT access token
+    """
+    from app.api.auth import generate_jwt_token
+
+    with app.app_context():
+        user = db.session.get(User, admin_user.id)
+        return generate_jwt_token(user)
+
+
+@pytest.fixture(scope="function")
+def api_key_fixture(admin_user, app):
+    """
+    Create API key for admin user.
+
+    Args:
+        admin_user: Admin user fixture
+        app: Flask application fixture
+
+    Returns:
+        tuple: (plaintext_key, ApiKey object)
+    """
+    from app.models_api_key import ApiKey
+
+    with app.app_context():
+        user = db.session.get(User, admin_user.id)
+        plaintext_key, api_key_obj = ApiKey.create_api_key(user_id=user.id, name="Test API Key", expires_in_days=30)
+        db.session.commit()
+        db.session.refresh(api_key_obj)
+        yield plaintext_key, api_key_obj
+
+
+@pytest.fixture(scope="function")
+def operator_api_client(api_client, operator_user, app):
+    """
+    Create authenticated API client with operator user.
+
+    Args:
+        api_client: API test client fixture
+        operator_user: Operator user fixture
+        app: Flask application fixture
+
+    Returns:
+        APITestClient: Authenticated API client
+    """
+    with app.app_context():
+        api_client.login("operator", "Operator123!@#")
+        yield api_client
+
+
+@pytest.fixture(scope="function")
+def admin_api_client(api_client, admin_user, app):
+    """
+    Create authenticated API client with admin user.
+
+    Args:
+        api_client: API test client fixture
+        admin_user: Admin user fixture
+        app: Flask application fixture
+
+    Returns:
+        APITestClient: Authenticated API client
+    """
+    with app.app_context():
+        api_client.login("admin", "Admin123!@#")
+        yield api_client
+
+
 # Cleanup Fixtures
 @pytest.fixture(autouse=True)
 def reset_db(app):

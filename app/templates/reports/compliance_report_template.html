@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ report_title }}</title>
+    <style>
+        .header-title {
+            string-set: header-title "3-2-1-1-0 Compliance Report";
+        }
+        .header-date {
+            string-set: header-date "{{ generated_date.strftime('%Y-%m-%d') }}";
+        }
+    </style>
+</head>
+<body>
+    <!-- Cover Page -->
+    <div class="cover-page header-title">
+        <div class="cover-title">
+            3-2-1-1-0<br>
+            バックアップルール<br>
+            コンプライアンスレポート
+        </div>
+        <div class="cover-subtitle">
+            Backup Rule Compliance Analysis Report
+        </div>
+        <div class="cover-info">
+            <p>対象期間: {{ start_date.strftime('%Y年%m月%d日') }} - {{ end_date.strftime('%Y年%m月%d日') }}</p>
+            <p>作成日: {{ generated_date.strftime('%Y年%m月%d日 %H:%M') }} UTC</p>
+            <p>総合準拠率: <strong>{{ "%.1f"|format(data.compliance_rate or 0) }}%</strong></p>
+        </div>
+    </div>
+
+    <!-- Table of Contents -->
+    <div class="toc">
+        <h2>目次</h2>
+        <div class="toc-item">1. エグゼクティブサマリー</div>
+        <div class="toc-item">2. 3-2-1-1-0 ルール説明</div>
+        <div class="toc-item">3. 準拠状況分析</div>
+        <div class="toc-item">4. 詳細評価結果</div>
+        <div class="toc-item">5. 非準拠項目と是正措置</div>
+        <div class="toc-item">6. トレンド分析</div>
+        <div class="toc-item">7. 推奨事項</div>
+    </div>
+
+    <!-- 1. Executive Summary -->
+    <div class="section header-date">
+        <h2>1. エグゼクティブサマリー</h2>
+
+        <h3>1.1 総合評価</h3>
+        <div style="text-align: center; margin: 1cm 0;">
+            <div style="display: inline-block; padding: 0.5cm; border: 3pt solid
+                {% if data.compliance_rate >= 95 %}#27ae60{% elif data.compliance_rate >= 80 %}#f39c12{% else %}#e74c3c{% endif %};
+                border-radius: 10pt;">
+                <div style="font-size: 48pt; font-weight: bold; color:
+                    {% if data.compliance_rate >= 95 %}#27ae60{% elif data.compliance_rate >= 80 %}#f39c12{% else %}#e74c3c{% endif %};">
+                    {{ "%.1f"|format(data.compliance_rate or 0) }}%
+                </div>
+                <div style="font-size: 14pt; color: #7f8c8d;">総合準拠率</div>
+            </div>
+        </div>
+
+        <p style="text-align: center; font-size: 14pt; margin: 1cm 0;">
+            {% if data.compliance_rate >= 95 %}
+            <span class="status-badge status-success" style="font-size: 14pt; padding: 0.3cm 0.8cm;">
+                ✓ 優良 - 高水準の準拠を達成
+            </span>
+            {% elif data.compliance_rate >= 80 %}
+            <span class="status-badge status-warning" style="font-size: 14pt; padding: 0.3cm 0.8cm;">
+                △ 要改善 - 一部改善が必要
+            </span>
+            {% else %}
+            <span class="status-badge status-danger" style="font-size: 14pt; padding: 0.3cm 0.8cm;">
+                ✗ 不十分 - 早急な対応が必要
+            </span>
+            {% endif %}
+        </p>
+
+        <h3>1.2 主要メトリクス</h3>
+        <div style="margin: 1cm 0;">
+            <div class="metric-box">
+                <div class="metric-label">総ジョブ数</div>
+                <div class="metric-value">{{ data.total_jobs or 0 }}</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label success">準拠ジョブ</div>
+                <div class="metric-value success">{{ data.compliant_jobs or 0 }}</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label danger">非準拠ジョブ</div>
+                <div class="metric-value danger">{{ data.non_compliant_jobs or 0 }}</div>
+            </div>
+        </div>
+
+        <h3>1.3 期間サマリー</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>項目</th>
+                    <th>値</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>評価期間</td>
+                    <td>{{ start_date.strftime('%Y-%m-%d') }} - {{ end_date.strftime('%Y-%m-%d') }}</td>
+                </tr>
+                <tr>
+                    <td>総チェック回数</td>
+                    <td>{{ data.compliance_statuses|length if data.compliance_statuses else 0 }}</td>
+                </tr>
+                <tr class="success">
+                    <td>準拠判定</td>
+                    <td>{{ data.compliant_jobs or 0 }} / {{ data.total_jobs or 0 }} ジョブ</td>
+                </tr>
+                <tr class="warning">
+                    <td>警告</td>
+                    <td>{{ data.warning_jobs or 0 }} ジョブ</td>
+                </tr>
+                <tr class="danger">
+                    <td>非準拠</td>
+                    <td>{{ data.non_compliant_jobs or 0 }} ジョブ</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 2. Rule Explanation -->
+    <div class="section">
+        <h2>2. 3-2-1-1-0 ルール説明</h2>
+
+        <h3>2.1 ルール概要</h3>
+        <p>
+            3-2-1-1-0 バックアップルールは、データ保護のベストプラクティスとして
+            広く認められている包括的なバックアップ戦略です。
+        </p>
+
+        <div class="compliance-grid" style="margin: 1cm 0;">
+            <div class="compliance-item" style="background-color: #e8f5e9;">
+                <div class="compliance-check success" style="font-size: 36pt;">3</div>
+                <strong>3 コピー</strong>
+                <p style="font-size: 9pt; margin: 0.2cm 0;">
+                    データの3つのコピーを保持<br>
+                    (本番 + バックアップ2つ)
+                </p>
+            </div>
+            <div class="compliance-item" style="background-color: #e3f2fd;">
+                <div class="compliance-check info" style="font-size: 36pt;">2</div>
+                <strong>2 メディア</strong>
+                <p style="font-size: 9pt; margin: 0.2cm 0;">
+                    異なる2種類のメディアに保存<br>
+                    (例: HDD + クラウド)
+                </p>
+            </div>
+            <div class="compliance-item" style="background-color: #fff3e0;">
+                <div class="compliance-check warning" style="font-size: 36pt;">1</div>
+                <strong>1 オフサイト</strong>
+                <p style="font-size: 9pt; margin: 0.2cm 0;">
+                    最低1つは別の場所に保管<br>
+                    (災害対策)
+                </p>
+            </div>
+            <div class="compliance-item" style="background-color: #f3e5f5;">
+                <div class="compliance-check" style="font-size: 36pt; color: #8e24aa;">1</div>
+                <strong>1 オフライン</strong>
+                <p style="font-size: 9pt; margin: 0.2cm 0;">
+                    最低1つはオフライン保存<br>
+                    (ランサムウェア対策)
+                </p>
+            </div>
+            <div class="compliance-item" style="background-color: #fce4ec;">
+                <div class="compliance-check danger" style="font-size: 36pt;">0</div>
+                <strong>0 エラー</strong>
+                <p style="font-size: 9pt; margin: 0.2cm 0;">
+                    バックアップとリストアの<br>
+                    検証でエラーゼロ
+                </p>
+            </div>
+        </div>
+
+        <h3>2.2 各要件の詳細</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>要件</th>
+                    <th>目的</th>
+                    <th>実装方法</th>
+                    <th>準拠状況</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>3コピー</strong></td>
+                    <td>単一障害点の排除</td>
+                    <td>プライマリ + 2つのバックアップコピー</td>
+                    <td>
+                        <span class="status-badge
+                            {% if data.three_copies_rate >= 95 %}status-success{% else %}status-warning{% endif %}">
+                            {{ "%.0f"|format(data.three_copies_rate or 0) }}%
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>2メディア</strong></td>
+                    <td>メディア障害への耐性</td>
+                    <td>異なるストレージタイプへの分散</td>
+                    <td>
+                        <span class="status-badge
+                            {% if data.two_media_rate >= 95 %}status-success{% else %}status-warning{% endif %}">
+                            {{ "%.0f"|format(data.two_media_rate or 0) }}%
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>1オフサイト</strong></td>
+                    <td>地理的災害からの保護</td>
+                    <td>リモートサイト/クラウドへの保存</td>
+                    <td>
+                        <span class="status-badge
+                            {% if data.one_offsite_rate >= 95 %}status-success{% else %}status-warning{% endif %}">
+                            {{ "%.0f"|format(data.one_offsite_rate or 0) }}%
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>1オフライン</strong></td>
+                    <td>サイバー攻撃からの保護</td>
+                    <td>エアギャップ/イミュータブルストレージ</td>
+                    <td>
+                        <span class="status-badge
+                            {% if data.one_offline_rate >= 95 %}status-success{% else %}status-warning{% endif %}">
+                            {{ "%.0f"|format(data.one_offline_rate or 0) }}%
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>0エラー</strong></td>
+                    <td>復旧可能性の保証</td>
+                    <td>定期的な検証テストの実施</td>
+                    <td>
+                        <span class="status-badge
+                            {% if data.zero_errors_rate >= 95 %}status-success{% else %}status-warning{% endif %}">
+                            {{ "%.0f"|format(data.zero_errors_rate or 0) }}%
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 3. Compliance Analysis -->
+    <div class="section">
+        <h2>3. 準拠状況分析</h2>
+
+        <h3>3.1 要件別準拠率</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>要件</th>
+                    <th>準拠数</th>
+                    <th>総数</th>
+                    <th>準拠率</th>
+                    <th>評価</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>3 コピー</td>
+                    <td>{{ data.three_copies_count or 0 }}</td>
+                    <td>{{ data.total_jobs or 0 }}</td>
+                    <td>{{ "%.1f"|format(data.three_copies_rate or 0) }}%</td>
+                    <td>
+                        {% if (data.three_copies_rate or 0) >= 95 %}
+                        <span class="status-badge status-success">優良</span>
+                        {% elif (data.three_copies_rate or 0) >= 80 %}
+                        <span class="status-badge status-warning">要改善</span>
+                        {% else %}
+                        <span class="status-badge status-danger">不十分</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>2 メディア</td>
+                    <td>{{ data.two_media_count or 0 }}</td>
+                    <td>{{ data.total_jobs or 0 }}</td>
+                    <td>{{ "%.1f"|format(data.two_media_rate or 0) }}%</td>
+                    <td>
+                        {% if (data.two_media_rate or 0) >= 95 %}
+                        <span class="status-badge status-success">優良</span>
+                        {% elif (data.two_media_rate or 0) >= 80 %}
+                        <span class="status-badge status-warning">要改善</span>
+                        {% else %}
+                        <span class="status-badge status-danger">不十分</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>1 オフサイト</td>
+                    <td>{{ data.one_offsite_count or 0 }}</td>
+                    <td>{{ data.total_jobs or 0 }}</td>
+                    <td>{{ "%.1f"|format(data.one_offsite_rate or 0) }}%</td>
+                    <td>
+                        {% if (data.one_offsite_rate or 0) >= 95 %}
+                        <span class="status-badge status-success">優良</span>
+                        {% elif (data.one_offsite_rate or 0) >= 80 %}
+                        <span class="status-badge status-warning">要改善</span>
+                        {% else %}
+                        <span class="status-badge status-danger">不十分</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>1 オフライン</td>
+                    <td>{{ data.one_offline_count or 0 }}</td>
+                    <td>{{ data.total_jobs or 0 }}</td>
+                    <td>{{ "%.1f"|format(data.one_offline_rate or 0) }}%</td>
+                    <td>
+                        {% if (data.one_offline_rate or 0) >= 95 %}
+                        <span class="status-badge status-success">優良</span>
+                        {% elif (data.one_offline_rate or 0) >= 80 %}
+                        <span class="status-badge status-warning">要改善</span>
+                        {% else %}
+                        <span class="status-badge status-danger">不十分</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>0 エラー</td>
+                    <td>{{ data.zero_errors_count or 0 }}</td>
+                    <td>{{ data.total_jobs or 0 }}</td>
+                    <td>{{ "%.1f"|format(data.zero_errors_rate or 0) }}%</td>
+                    <td>
+                        {% if (data.zero_errors_rate or 0) >= 95 %}
+                        <span class="status-badge status-success">優良</span>
+                        {% elif (data.zero_errors_rate or 0) >= 80 %}
+                        <span class="status-badge status-warning">要改善</span>
+                        {% else %}
+                        <span class="status-badge status-danger">不十分</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr style="background-color: #f0f0f0; font-weight: bold;">
+                    <td><strong>総合準拠</strong></td>
+                    <td>{{ data.compliant_jobs or 0 }}</td>
+                    <td>{{ data.total_jobs or 0 }}</td>
+                    <td><strong>{{ "%.1f"|format(data.compliance_rate or 0) }}%</strong></td>
+                    <td>
+                        {% if (data.compliance_rate or 0) >= 95 %}
+                        <span class="status-badge status-success">優良</span>
+                        {% elif (data.compliance_rate or 0) >= 80 %}
+                        <span class="status-badge status-warning">要改善</span>
+                        {% else %}
+                        <span class="status-badge status-danger">不十分</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 4. Detailed Results -->
+    <div class="section">
+        <h2>4. 詳細評価結果</h2>
+
+        <h3>4.1 ジョブ別準拠状況</h3>
+        {% if data.compliance_statuses %}
+        <table style="font-size: 9pt;">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">ID</th>
+                    <th style="width: 20%;">ジョブ名</th>
+                    <th style="width: 8%;">総合</th>
+                    <th style="width: 8%;">3</th>
+                    <th style="width: 8%;">2</th>
+                    <th style="width: 8%;">1offs</th>
+                    <th style="width: 8%;">1offl</th>
+                    <th style="width: 8%;">0err</th>
+                    <th style="width: 12%;">確認日</th>
+                    <th style="width: 15%;">備考</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for status in data.compliance_statuses[:30] %}
+                <tr>
+                    <td>{{ status.job_id }}</td>
+                    <td>{{ status.job.job_name if status.job else '-' }}</td>
+                    <td style="text-align: center;">
+                        {% if status.overall_status == 'compliant' %}
+                        <span style="color: #27ae60; font-size: 14pt;">✓</span>
+                        {% elif status.overall_status == 'warning' %}
+                        <span style="color: #f39c12; font-size: 14pt;">△</span>
+                        {% else %}
+                        <span style="color: #e74c3c; font-size: 14pt;">✗</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">{{ '✓' if status.three_copies else '✗' }}</td>
+                    <td style="text-align: center;">{{ '✓' if status.two_media_types else '✗' }}</td>
+                    <td style="text-align: center;">{{ '✓' if status.one_offsite else '✗' }}</td>
+                    <td style="text-align: center;">{{ '✓' if status.one_offline else '✗' }}</td>
+                    <td style="text-align: center;">{{ '✓' if status.zero_errors else '✗' }}</td>
+                    <td>{{ status.check_date.strftime('%Y-%m-%d') if status.check_date else '-' }}</td>
+                    <td>{{ status.notes or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>該当期間のコンプライアンスチェック記録がありません。</p>
+        {% endif %}
+    </div>
+
+    <!-- 5. Non-Compliance Items -->
+    <div class="section">
+        <h2>5. 非準拠項目と是正措置</h2>
+
+        <h3>5.1 非準拠ジョブ一覧</h3>
+        {% if data.non_compliant_list %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ジョブ名</th>
+                    <th>非準拠要件</th>
+                    <th>リスクレベル</th>
+                    <th>推奨是正措置</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data.non_compliant_list[:20] %}
+                <tr>
+                    <td>{{ item.job_name }}</td>
+                    <td>{{ item.failed_requirements|join(', ') }}</td>
+                    <td>
+                        <span class="status-badge
+                            {% if item.risk_level == 'high' %}status-danger
+                            {% elif item.risk_level == 'medium' %}status-warning
+                            {% else %}status-info{% endif %}">
+                            {{ item.risk_level }}
+                        </span>
+                    </td>
+                    <td style="font-size: 9pt;">{{ item.recommendation }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: #27ae60; font-weight: bold;">
+            ✓ すべてのジョブが準拠基準を満たしています。
+        </p>
+        {% endif %}
+
+        <h3>5.2 是正アクションプラン</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>優先度</th>
+                    <th>対象</th>
+                    <th>アクション</th>
+                    <th>担当</th>
+                    <th>期限</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if data.non_compliant_jobs > 0 %}
+                <tr>
+                    <td><span class="status-badge status-danger">高</span></td>
+                    <td>非準拠{{ data.non_compliant_jobs }}ジョブ</td>
+                    <td>各要件の設定見直しと修正</td>
+                    <td>バックアップ管理者</td>
+                    <td>2週間以内</td>
+                </tr>
+                {% endif %}
+                {% if data.warning_jobs > 0 %}
+                <tr>
+                    <td><span class="status-badge status-warning">中</span></td>
+                    <td>警告{{ data.warning_jobs }}ジョブ</td>
+                    <td>部分的な改善実施</td>
+                    <td>バックアップ管理者</td>
+                    <td>1ヶ月以内</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td><span class="status-badge status-info">低</span></td>
+                    <td>全ジョブ</td>
+                    <td>定期的な準拠チェックの継続</td>
+                    <td>システム自動</td>
+                    <td>継続</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 6. Trend Analysis -->
+    <div class="section">
+        <h2>6. トレンド分析</h2>
+
+        <h3>6.1 準拠率の推移</h3>
+        <p>過去の準拠率推移を分析し、継続的改善を評価します。</p>
+
+        <!-- Chart placeholder -->
+        {% if chart_image %}
+        <div class="chart-container">
+            <img src="{{ chart_image }}" alt="Compliance Trend" class="chart-image">
+        </div>
+        {% endif %}
+
+        <h3>6.2 傾向分析</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>メトリクス</th>
+                    <th>前期</th>
+                    <th>今期</th>
+                    <th>変化</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>総合準拠率</td>
+                    <td>{{ "%.1f"|format(data.previous_compliance_rate or 0) }}%</td>
+                    <td>{{ "%.1f"|format(data.compliance_rate or 0) }}%</td>
+                    <td>
+                        {% set diff = (data.compliance_rate or 0) - (data.previous_compliance_rate or 0) %}
+                        <span class="{% if diff > 0 %}success{% elif diff < 0 %}danger{% endif %}">
+                            {{ "%+.1f"|format(diff) }}%
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 7. Recommendations -->
+    <div class="section">
+        <h2>7. 推奨事項</h2>
+
+        <h3>7.1 即座に実施すべき対策</h3>
+        <ol>
+            {% if data.compliance_rate < 95 %}
+            <li><strong>非準拠ジョブの是正:</strong> 特定された{{ data.non_compliant_jobs }}件の非準拠ジョブについて、各要件を満たすよう設定を修正してください。</li>
+            {% endif %}
+            <li><strong>定期検証の実施:</strong> すべてのバックアップについて、月次でリストアテストを実施し、0エラー要件を確実に満たしてください。</li>
+            <li><strong>監視強化:</strong> 準拠状況の自動監視とアラート機能を有効化してください。</li>
+        </ol>
+
+        <h3>7.2 中長期的な改善策</h3>
+        <ul>
+            <li>クラウドバックアップの活用によるオフサイト要件の確実な達成</li>
+            <li>イミュータブルストレージの導入によるランサムウェア対策の強化</li>
+            <li>自動化レベルの向上による人的ミスの削減</li>
+            <li>バックアップポリシーの定期的な見直しと最適化</li>
+        </ul>
+
+        <h3>7.3 ベストプラクティス</h3>
+        <ul>
+            <li>3-2-1-1-0ルールを組織のバックアップポリシーとして正式に採用</li>
+            <li>全従業員への教育・トレーニングの実施</li>
+            <li>準拠状況の経営層への定期報告</li>
+            <li>インシデント発生時の復旧手順の文書化と訓練</li>
+        </ul>
+    </div>
+
+    <!-- Footer Note -->
+    <div class="footer-note">
+        <p>
+            本レポートは 3-2-1-1-0 バックアップルールに基づき自動生成されました。<br>
+            Confidential - 本レポートは機密情報を含みます。権限のない複製・配布を禁じます。<br>
+            Generated by Backup Management System v1.0
+        </p>
+    </div>
+</body>
+</html>

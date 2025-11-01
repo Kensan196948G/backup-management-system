@@ -225,6 +225,15 @@ def _register_blueprints(app):
     except ImportError as e:
         app.logger.warning(f"API blueprint not found: {e}")
 
+    # API v1 Authentication blueprint
+    try:
+        from app.api.v1.auth import auth_bp
+
+        app.register_blueprint(auth_bp)
+        app.logger.info("API v1 Auth blueprint registered")
+    except ImportError as e:
+        app.logger.warning(f"API v1 Auth blueprint not found: {e}")
+
     app.logger.info("All blueprints registered successfully")
 
     # Register root route

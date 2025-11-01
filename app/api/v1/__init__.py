@@ -8,12 +8,10 @@ Endpoints:
 - /api/v1/storage - Storage provider management
 - /api/v1/verify - Verification management
 - /api/v1/compliance - Compliance status
+- /api/v1/aomei - AOMEI Backupper integration
 """
 from flask import Blueprint
 
-from app.api import api_bp
-
-# Import v1 route modules
-from app.api.v1 import backup_api, storage_api, verification_api
-
-# All routes are registered on the parent api_bp with /api/v1 prefix
+# Note: v1 modules are imported when needed to avoid circular dependencies
+# and blueprint registration issues.
+# Auth blueprint is registered separately in app/__init__.py to preserve URL prefix.

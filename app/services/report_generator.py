@@ -767,37 +767,321 @@ class ReportGenerator:
         file_path = self.report_dir / f"audit_report_{start_date}_to_{end_date}.html"
         return file_path, html
 
-    # PDF generation methods (stub - requires additional library)
+    # PDF generation methods
 
     def _generate_daily_pdf(self, data: Dict, date) -> Tuple[Path, bytes]:
-        """Generate PDF daily report (stub)"""
-        logger.warning("PDF generation not yet implemented - returning empty PDF stub")
-        file_path = self.report_dir / f"daily_report_{date}.pdf"
-        return file_path, b"%PDF-1.4\n"
+        """
+        Generate PDF daily report using WeasyPrint.
+
+        Args:
+            data: Report data dictionary
+            date: Report date
+
+        Returns:
+            Tuple of (file_path, pdf_bytes)
+        """
+        try:
+            from app.services.pdf_generator import PDFGenerator
+
+            pdf_gen = PDFGenerator()
+
+            # Prepare context with all necessary data
+            context = {
+                "report_title": f"Daily Backup Report - {date}",
+                "start_date": datetime.combine(date, datetime.min.time()),
+                "end_date": datetime.combine(date, datetime.max.time()),
+                "generated_date": datetime.utcnow(),
+                "data": {
+                    **data,
+                    "success_rate": (
+                        (data.get("success_count", 0) / len(data.get("executions", [])) * 100) if data.get("executions") else 0
+                    ),
+                    "avg_backup_size": (
+                        sum(e.backup_size_bytes or 0 for e in data.get("executions", [])) / len(data.get("executions", []))
+                        if data.get("executions")
+                        else 0
+                    ),
+                    "avg_duration": (
+                        sum(e.duration_seconds or 0 for e in data.get("executions", [])) / len(data.get("executions", []))
+                        if data.get("executions")
+                        else 0
+                    ),
+                },
+            }
+
+            # Generate PDF using compliance template (can use for daily too)
+            pdf_bytes = pdf_gen.generate_pdf_from_template("compliance_report_template.html", context)
+
+            file_path = self.report_dir / f"daily_report_{date}.pdf"
+            logger.info(f"Generated daily PDF report: {file_path}")
+
+            return file_path, pdf_bytes
+
+        except Exception as e:
+            logger.error(f"Error generating daily PDF: {str(e)}", exc_info=True)
+            raise
 
     def _generate_weekly_pdf(self, data: Dict, start_date, end_date) -> Tuple[Path, bytes]:
-        """Generate PDF weekly report (stub)"""
-        logger.warning("PDF generation not yet implemented")
-        file_path = self.report_dir / f"weekly_report_{start_date}_to_{end_date}.pdf"
-        return file_path, b"%PDF-1.4\n"
+        """
+        Generate PDF weekly report using WeasyPrint.
+
+        Args:
+            data: Report data dictionary
+            start_date: Week start date
+            end_date: Week end date
+
+        Returns:
+            Tuple of (file_path, pdf_bytes)
+        """
+        try:
+            from app.services.pdf_generator import PDFGenerator
+
+            pdf_gen = PDFGenerator()
+
+            # Calculate statistics
+            total_executions = len(data.get("executions", []))
+
+            context = {
+                "report_title": f"Weekly Report - {start_date} to {end_date}",
+                "start_date": datetime.combine(start_date, datetime.min.time()),
+                "end_date": datetime.combine(end_date, datetime.max.time()),
+                "generated_date": datetime.utcnow(),
+                "data": {
+                    **data,
+                    "success_rate": ((data.get("success_count", 0) / total_executions * 100) if total_executions > 0 else 0),
+                    "compliance_rate": 0,  # Will be calculated if compliance data available
+                },
+            }
+
+            pdf_bytes = pdf_gen.generate_pdf_from_template("compliance_report_template.html", context)
+
+            file_path = self.report_dir / f"weekly_report_{start_date}_to_{end_date}.pdf"
+            logger.info(f"Generated weekly PDF report: {file_path}")
+
+            return file_path, pdf_bytes
+
+        except Exception as e:
+            logger.error(f"Error generating weekly PDF: {str(e)}", exc_info=True)
+            raise
 
     def _generate_monthly_pdf(self, data: Dict, start_date, end_date) -> Tuple[Path, bytes]:
-        """Generate PDF monthly report (stub)"""
-        logger.warning("PDF generation not yet implemented")
-        file_path = self.report_dir / f"monthly_report_{start_date.strftime('%Y-%m')}.pdf"
-        return file_path, b"%PDF-1.4\n"
+        """
+        Generate PDF monthly report using ISO 27001 template.
+
+        Args:
+            data: Report data dictionary
+            start_date: Month start date
+            end_date: Month end date
+
+        Returns:
+            Tuple of (file_path, pdf_bytes)
+        """
+        try:
+            from app.services.pdf_generator import PDFGenerator
+
+            pdf_gen = PDFGenerator()
+
+            # Calculate metrics
+            total_executions = len(data.get("executions", []))
+            total_tests = len(data.get("verification_tests", []))
+
+            context = {
+                "report_title": f"Monthly Report - {start_date.strftime('%Y-%m')}",
+                "start_date": datetime.combine(start_date, datetime.min.time()),
+                "end_date": datetime.combine(end_date, datetime.max.time()),
+                "generated_date": datetime.utcnow(),
+                "data": {
+                    **data,
+                    "success_rate": ((data.get("success_count", 0) / total_executions * 100) if total_executions > 0 else 0),
+                    "verification_rate": ((data.get("test_success_count", 0) / total_tests * 100) if total_tests > 0 else 0),
+                    "compliance_rate": 0,  # Will be calculated from compliance_statuses
+                    "total_backup_size": sum(e.backup_size_bytes or 0 for e in data.get("executions", [])),
+                    "avg_backup_size": (
+                        sum(e.backup_size_bytes or 0 for e in data.get("executions", [])) / total_executions
+                        if total_executions > 0
+                        else 0
+                    ),
+                    "avg_duration": (
+                        sum(e.duration_seconds or 0 for e in data.get("executions", [])) / total_executions
+                        if total_executions > 0
+                        else 0
+                    ),
+                },
+                "clauses": [],  # Will be populated by pdf_generator
+            }
+
+            # Use ISO 27001 template for monthly reports
+            pdf_bytes = pdf_gen.generate_iso27001_report(context["data"], context["start_date"], context["end_date"])
+
+            file_path = self.report_dir / f"monthly_report_{start_date.strftime('%Y-%m')}.pdf"
+            logger.info(f"Generated monthly PDF report: {file_path}")
+
+            return file_path, pdf_bytes
+
+        except Exception as e:
+            logger.error(f"Error generating monthly PDF: {str(e)}", exc_info=True)
+            raise
 
     def _generate_compliance_pdf(self, data: Dict, start_date, end_date) -> Tuple[Path, bytes]:
-        """Generate PDF compliance report (stub)"""
-        logger.warning("PDF generation not yet implemented")
-        file_path = self.report_dir / f"compliance_report_{start_date}_to_{end_date}.pdf"
-        return file_path, b"%PDF-1.4\n"
+        """
+        Generate PDF compliance report using compliance template.
+
+        Args:
+            data: Report data dictionary
+            start_date: Report start date
+            end_date: Report end date
+
+        Returns:
+            Tuple of (file_path, pdf_bytes)
+        """
+        try:
+            from app.services.pdf_generator import PDFGenerator
+
+            pdf_gen = PDFGenerator()
+
+            # Calculate detailed compliance metrics
+            compliance_statuses = data.get("compliance_statuses", [])
+            total_jobs = data.get("total_jobs", 0)
+
+            # Calculate per-requirement compliance rates
+            three_copies_count = sum(1 for c in compliance_statuses if c.three_copies)
+            two_media_count = sum(1 for c in compliance_statuses if c.two_media_types)
+            one_offsite_count = sum(1 for c in compliance_statuses if c.one_offsite)
+            one_offline_count = sum(1 for c in compliance_statuses if c.one_offline)
+            zero_errors_count = sum(1 for c in compliance_statuses if c.zero_errors)
+
+            context = {
+                "report_title": "3-2-1-1-0 Compliance Report",
+                "start_date": datetime.combine(start_date, datetime.min.time()),
+                "end_date": datetime.combine(end_date, datetime.max.time()),
+                "generated_date": datetime.utcnow(),
+                "data": {
+                    **data,
+                    "three_copies_count": three_copies_count,
+                    "three_copies_rate": (three_copies_count / total_jobs * 100) if total_jobs > 0 else 0,
+                    "two_media_count": two_media_count,
+                    "two_media_rate": (two_media_count / total_jobs * 100) if total_jobs > 0 else 0,
+                    "one_offsite_count": one_offsite_count,
+                    "one_offsite_rate": (one_offsite_count / total_jobs * 100) if total_jobs > 0 else 0,
+                    "one_offline_count": one_offline_count,
+                    "one_offline_rate": (one_offline_count / total_jobs * 100) if total_jobs > 0 else 0,
+                    "zero_errors_count": zero_errors_count,
+                    "zero_errors_rate": (zero_errors_count / total_jobs * 100) if total_jobs > 0 else 0,
+                    "non_compliant_list": [],  # Can be populated with detailed list
+                    "previous_compliance_rate": 0,  # Can be fetched from previous report
+                },
+            }
+
+            pdf_bytes = pdf_gen.generate_pdf_from_template("compliance_report_template.html", context)
+
+            file_path = self.report_dir / f"compliance_report_{start_date}_to_{end_date}.pdf"
+            logger.info(f"Generated compliance PDF report: {file_path}")
+
+            return file_path, pdf_bytes
+
+        except Exception as e:
+            logger.error(f"Error generating compliance PDF: {str(e)}", exc_info=True)
+            raise
 
     def _generate_audit_pdf(self, data: Dict, start_date, end_date) -> Tuple[Path, bytes]:
-        """Generate PDF audit report (stub)"""
-        logger.warning("PDF generation not yet implemented")
-        file_path = self.report_dir / f"audit_report_{start_date}_to_{end_date}.pdf"
-        return file_path, b"%PDF-1.4\n"
+        """
+        Generate PDF audit report using audit template.
+
+        Args:
+            data: Report data dictionary
+            start_date: Report start date
+            end_date: Report end date
+
+        Returns:
+            Tuple of (file_path, pdf_bytes)
+        """
+        try:
+            from app.services.pdf_generator import PDFGenerator
+
+            pdf_gen = PDFGenerator()
+
+            # Calculate audit statistics
+            audit_logs = data.get("audit_logs", [])
+
+            # Count by action type
+            action_type_stats = {}
+            for log in audit_logs:
+                action_type = log.action_type
+                if action_type not in action_type_stats:
+                    action_type_stats[action_type] = {"total": 0, "success": 0, "failed": 0}
+
+                action_type_stats[action_type]["total"] += 1
+                if log.action_result == "success":
+                    action_type_stats[action_type]["success"] += 1
+                else:
+                    action_type_stats[action_type]["failed"] += 1
+
+            # Calculate success rate for each action type
+            for stats in action_type_stats.values():
+                stats["success_rate"] = (stats["success"] / stats["total"] * 100) if stats["total"] > 0 else 0
+
+            # Count by resource type
+            resource_type_stats = {}
+            for log in audit_logs:
+                resource_type = log.resource_type or "Other"
+                if resource_type not in resource_type_stats:
+                    resource_type_stats[resource_type] = {"count": 0, "top_actions": []}
+
+                resource_type_stats[resource_type]["count"] += 1
+
+            # Get unique users
+            active_users = set(log.user_id for log in audit_logs if log.user_id)
+
+            # Security event counts
+            failed_login_count = sum(1 for log in audit_logs if log.action_type == "LOGIN" and log.action_result == "failed")
+            permission_error_count = sum(
+                1 for log in audit_logs if "permission" in (log.description or "").lower() and log.action_result == "failed"
+            )
+            delete_count = sum(1 for log in audit_logs if log.action_type == "DELETE")
+            config_change_count = sum(1 for log in audit_logs if log.action_type == "UPDATE")
+
+            login_count = sum(1 for log in audit_logs if log.action_type == "LOGIN")
+            logout_count = sum(1 for log in audit_logs if log.action_type == "LOGOUT")
+            create_count = sum(1 for log in audit_logs if log.action_type == "CREATE")
+            update_count = sum(1 for log in audit_logs if log.action_type == "UPDATE")
+            execute_count = sum(1 for log in audit_logs if log.action_type == "EXECUTE")
+            verify_count = sum(1 for log in audit_logs if log.action_type == "VERIFY")
+
+            context = {
+                "report_title": "Audit Log Report",
+                "start_date": datetime.combine(start_date, datetime.min.time()),
+                "end_date": datetime.combine(end_date, datetime.max.time()),
+                "generated_date": datetime.utcnow(),
+                "data": {
+                    **data,
+                    "action_type_stats": action_type_stats,
+                    "resource_type_stats": resource_type_stats,
+                    "active_users_count": len(active_users),
+                    "failed_login_count": failed_login_count,
+                    "permission_error_count": permission_error_count,
+                    "delete_count": delete_count,
+                    "config_change_count": config_change_count,
+                    "login_count": login_count,
+                    "logout_count": logout_count,
+                    "create_count": create_count,
+                    "update_count": update_count,
+                    "execute_count": execute_count,
+                    "verify_count": verify_count,
+                    "user_activity_stats": [],  # Can be populated with detailed user stats
+                    "security_events": [],  # Can be populated with security events
+                },
+            }
+
+            pdf_bytes = pdf_gen.generate_pdf_from_template("audit_report_template.html", context)
+
+            file_path = self.report_dir / f"audit_report_{start_date}_to_{end_date}.pdf"
+            logger.info(f"Generated audit PDF report: {file_path}")
+
+            return file_path, pdf_bytes
+
+        except Exception as e:
+            logger.error(f"Error generating audit PDF: {str(e)}", exc_info=True)
+            raise
 
     # CSV generation methods
 
