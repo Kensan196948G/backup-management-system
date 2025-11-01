@@ -37,7 +37,8 @@ def index():
         recent_alerts = Alert.query.filter_by(is_acknowledged=False).order_by(Alert.created_at.desc()).limit(10).all()
 
         # Get upcoming jobs (scheduled jobs)
-        upcoming_jobs = BackupJob.query.filter_by(is_active=True).order_by(BackupJob.next_run.asc()).limit(5).all()
+        # Note: BackupJob doesn't have next_run field, sorting by job_name instead
+        upcoming_jobs = BackupJob.query.filter_by(is_active=True).order_by(BackupJob.job_name.asc()).limit(5).all()
 
         # Get recent executions
         recent_executions = BackupExecution.query.order_by(BackupExecution.execution_date.desc()).limit(10).all()
