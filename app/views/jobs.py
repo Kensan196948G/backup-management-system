@@ -131,7 +131,7 @@ def detail(job_id):
     copies = BackupCopy.query.filter_by(job_id=job_id).all()
 
     # Get recent executions
-    executions = BackupExecution.query.filter_by(job_id=job_id).order_by(BackupExecution.start_time.desc()).limit(20).all()
+    executions = BackupExecution.query.filter_by(job_id=job_id).order_by(BackupExecution.execution_date.desc()).limit(20).all()
 
     # Get recent verification tests
     verifications = VerificationTest.query.filter_by(job_id=job_id).order_by(VerificationTest.test_date.desc()).limit(10).all()
@@ -388,7 +388,9 @@ def api_executions(job_id):
     Returns JSON array of executions
     """
     try:
-        executions = BackupExecution.query.filter_by(job_id=job_id).order_by(BackupExecution.start_time.desc()).limit(50).all()
+        executions = (
+            BackupExecution.query.filter_by(job_id=job_id).order_by(BackupExecution.execution_date.desc()).limit(50).all()
+        )
 
         return jsonify({"executions": [exec.to_dict() for exec in executions]}), 200
 

@@ -6,6 +6,16 @@
 
 ---
 
+## 📖 ドキュメント
+
+このガイドは簡易版です。**完全版の移行手順書**を参照することをお勧めします:
+
+- **📘 完全版**: [docs/WINDOWS_PRODUCTION_MIGRATION.md](docs/WINDOWS_PRODUCTION_MIGRATION.md) - 詳細な説明とInsightつき
+- **🚀 クイックスタート**: [deployment/windows/QUICKSTART.md](deployment/windows/QUICKSTART.md) - 30分でコピー＆ペースト
+- **📖 詳細ガイド**: [deployment/windows/README.md](deployment/windows/README.md) - トラブルシューティング含む
+
+---
+
 ## 🎯 このガイドについて
 
 2つのフォルダ（C:\BackupSystemとC:\temp\BackupSystem）を完全削除して、

@@ -129,6 +129,12 @@ flask run
 
 ### 🚀 デプロイメント
 
+#### Windows本番環境
+- 🎯 **[Windows本番環境移行手順書](docs/WINDOWS_PRODUCTION_MIGRATION.md)** - **最新・完全版ガイド（推奨）**
+- 🚀 [クイックスタート](deployment/windows/QUICKSTART.md) - 30分で完了
+- 📘 [クリーンインストールガイド](WINDOWS_CLEAN_INSTALL_GUIDE.md) - 簡易版
+
+#### 一般ガイド
 - 🚀 [デプロイガイド](docs/05_デプロイメント（deployment）/デプロイガイド（deployment-guide）.md) - Windows/Linux デプロイ手順
 - 📖 [本番運用マニュアル](docs/05_デプロイメント（deployment）/本番運用マニュアル（production-operations）.md) - 運用ガイド
 - 🔧 [Veeam統合ガイド](docs/05_デプロイメント（deployment）/Veeam統合ガイド（veeam-integration）.md) - Veeam連携

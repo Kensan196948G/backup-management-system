@@ -40,7 +40,7 @@ def index():
         upcoming_jobs = BackupJob.query.filter_by(is_active=True).order_by(BackupJob.next_run.asc()).limit(5).all()
 
         # Get recent executions
-        recent_executions = BackupExecution.query.order_by(BackupExecution.start_time.desc()).limit(10).all()
+        recent_executions = BackupExecution.query.order_by(BackupExecution.execution_date.desc()).limit(10).all()
 
         return render_template(
             "dashboard.html",
@@ -127,11 +127,14 @@ def api_success_rate_chart():
 
             # Count success and failures for this date
             success_count = BackupExecution.query.filter(
-                and_(func.date(BackupExecution.start_time) == date.date(), BackupExecution.status == "success")
+                and_(func.date(BackupExecution.execution_date) == date.date(), BackupExecution.execution_result == "success")
             ).count()
 
             failure_count = BackupExecution.query.filter(
-                and_(func.date(BackupExecution.start_time) == date.date(), BackupExecution.status.in_(["failed", "error"]))
+                and_(
+                    func.date(BackupExecution.execution_date) == date.date(),
+                    BackupExecution.execution_result.in_(["failed", "error"]),
+                )
             ).count()
 
             success_data.append(success_count)
@@ -219,10 +222,10 @@ def get_dashboard_statistics():
 
     # Backup success rate (last 7 days)
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
-    total_executions = BackupExecution.query.filter(BackupExecution.start_time >= seven_days_ago).count()
+    total_executions = BackupExecution.query.filter(BackupExecution.execution_date >= seven_days_ago).count()
 
     successful_executions = BackupExecution.query.filter(
-        and_(BackupExecution.start_time >= seven_days_ago, BackupExecution.status == "success")
+        and_(BackupExecution.execution_date >= seven_days_ago, BackupExecution.execution_result == "success")
     ).count()
 
     success_rate = round((successful_executions / total_executions * 100) if total_executions > 0 else 0, 1)
