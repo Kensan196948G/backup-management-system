@@ -185,7 +185,7 @@ def api_storage_chart():
         # In production, you would calculate actual storage from BackupCopy table
         onsite = BackupJob.query.filter_by(is_active=True).count() * 70  # Mock data
         offsite = BackupJob.query.filter_by(is_active=True).count() * 60
-        offline = OfflineMedia.query.filter_by(status="in_use").count() * 50
+        offline = OfflineMedia.query.filter_by(current_status="in_use").count() * 50
 
         chart_data = {
             "labels": ["オンサイト", "オフサイト", "オフライン"],
@@ -241,8 +241,8 @@ def get_dashboard_statistics():
 
     # Offline media statistics
     total_media = OfflineMedia.query.count()
-    in_use_media = OfflineMedia.query.filter_by(status="in_use").count()
-    available_media = OfflineMedia.query.filter_by(status="available").count()
+    in_use_media = OfflineMedia.query.filter_by(current_status="in_use").count()
+    available_media = OfflineMedia.query.filter_by(current_status="available").count()
 
     # Recent verification tests
     verification_passed = VerificationTest.query.filter_by(result="success").count()
