@@ -7,8 +7,8 @@ Flask-WTF==1.2.1
 Flask-Cors==4.0.0
 
 # Database
-SQLAlchemy==2.0.23
-alembic==1.13.0
+SQLAlchemy==2.0.36
+alembic==1.14.0
 
 # Authentication & Security
 bcrypt==4.1.2
