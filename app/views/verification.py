@@ -15,6 +15,7 @@ from flask import (
 )
 from flask_login import current_user, login_required
 from sqlalchemy import and_, desc, or_
+from sqlalchemy.orm import joinedload
 
 from app.auth.decorators import role_required
 from app.models import BackupJob, VerificationSchedule, VerificationTest, db
@@ -36,8 +37,8 @@ def list():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 20, type=int)
 
-    # Build query
-    query = VerificationTest.query
+    # Build query with eager loading of relationships
+    query = VerificationTest.query.options(joinedload(VerificationTest.job), joinedload(VerificationTest.tester))
 
     # Apply filters
     if search:
@@ -46,7 +47,7 @@ def list():
         )
 
     if result:
-        query = query.filter_by(result=result)
+        query = query.filter_by(test_result=result)
 
     if test_type:
         query = query.filter_by(test_type=test_type)
@@ -64,11 +65,25 @@ def list():
     # Get jobs for filter dropdown
     jobs = BackupJob.query.filter_by(is_active=True).all()
 
+    # Calculate test statistics
+    total_tests = VerificationTest.query.count()
+    passed_tests = VerificationTest.query.filter_by(test_result="success").count()
+    failed_tests = VerificationTest.query.filter_by(test_result="failed").count()
+    success_rate = round((passed_tests / total_tests * 100) if total_tests > 0 else 0, 1)
+
+    test_stats = {
+        "total": total_tests,
+        "passed": passed_tests,
+        "failed": failed_tests,
+        "success_rate": success_rate,
+    }
+
     return render_template(
         "verification/list.html",
         tests=tests,
         pagination=pagination,
         jobs=jobs,
+        test_stats=test_stats,
         filters={"search": search, "result": result, "type": test_type, "job": job_id},
     )
 

@@ -2,6 +2,147 @@
 
 {% block title %}ダッシュボード - バックアップ管理システム{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Dashboard Card Styles */
+    .dashboard-card {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dashboard-card:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.2) !important;
+    }
+
+    .dashboard-card:active {
+        transform: translateY(-2px) scale(1.01);
+    }
+
+    .dashboard-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.1);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .dashboard-card:hover::before {
+        opacity: 1;
+    }
+
+    .dashboard-card .detail-indicator {
+        opacity: 0;
+        transform: translateX(-10px);
+        transition: all 0.3s ease;
+    }
+
+    .dashboard-card:hover .detail-indicator {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    /* Modal Styles */
+    .modal-stat-content {
+        min-height: 300px;
+    }
+
+    .stat-detail-item {
+        padding: 1rem;
+        border-bottom: 1px solid #e9ecef;
+        transition: background-color 0.2s ease;
+    }
+
+    .stat-detail-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .stat-detail-item:last-child {
+        border-bottom: none;
+    }
+
+    .stat-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #212529;
+    }
+
+    .stat-description {
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .modal-header.bg-primary-gradient {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    }
+
+    .modal-header.bg-success-gradient {
+        background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+    }
+
+    .modal-header.bg-warning-gradient {
+        background: linear-gradient(135deg, #f6c23e 0%, #dda20a 100%);
+    }
+
+    .modal-header.bg-info-gradient {
+        background: linear-gradient(135deg, #36b9cc 0%, #258391 100%);
+    }
+
+    .progress-ring {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto;
+    }
+
+    .tab-content {
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .dashboard-card:hover {
+            transform: translateY(-3px) scale(1.01);
+        }
+
+        .modal-dialog {
+            margin: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="row">
@@ -15,7 +156,7 @@
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card border-left-primary shadow h-100 py-2 cursor-pointer dashboard-card" role="button" onclick="showStatModal('compliance', event)" title="詳細表示">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
@@ -35,12 +176,15 @@
                             準拠: {{ stats.compliant_jobs }} / {{ stats.total_jobs }} ジョブ
                         </small>
                     </div>
+                    <div class="mt-2">
+                        <small class="text-primary"><i class="bi bi-arrow-right-circle"></i> 詳細を表示</small>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card border-left-success shadow h-100 py-2">
+            <div class="card border-left-success shadow h-100 py-2 cursor-pointer dashboard-card" role="button" onclick="showStatModal('success', event)" title="詳細表示">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
@@ -60,12 +204,15 @@
                             成功: {{ stats.successful_executions }} / {{ stats.total_executions }} 実行
                         </small>
                     </div>
+                    <div class="mt-2 detail-indicator">
+                        <small class="text-success"><i class="bi bi-arrow-right-circle"></i> 詳細を表示</small>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card border-left-warning shadow h-100 py-2 cursor-pointer dashboard-card" role="button" onclick="showStatModal('alerts', event)" title="詳細表示">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
@@ -84,12 +231,15 @@
                         <small class="text-danger">重大: {{ stats.critical_alerts }}</small> |
                         <small class="text-warning">警告: {{ stats.warning_alerts }}</small>
                     </div>
+                    <div class="mt-2 detail-indicator">
+                        <small class="text-warning"><i class="bi bi-arrow-right-circle"></i> 詳細を表示</small>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card border-left-info shadow h-100 py-2">
+            <div class="card border-left-info shadow h-100 py-2 cursor-pointer dashboard-card" role="button" onclick="showStatModal('media', event)" title="詳細表示">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
@@ -108,6 +258,9 @@
                         <small class="text-muted">
                             使用中: {{ stats.in_use_media }} | 利用可能: {{ stats.available_media }}
                         </small>
+                    </div>
+                    <div class="mt-2 detail-indicator">
+                        <small class="text-info"><i class="bi bi-arrow-right-circle"></i> 詳細を表示</small>
                     </div>
                 </div>
             </div>
@@ -301,10 +454,701 @@
         </div>
     </div>
 </div>
+
+<!-- Statistics Detail Modals -->
+<!-- Compliance Modal -->
+<div class="modal fade" id="complianceModal" tabindex="-1" aria-labelledby="complianceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary-gradient">
+                <h5 class="modal-title" id="complianceModalLabel">
+                    <i class="bi bi-shield-check"></i> 3-2-1-1-0ルール準拠率 詳細
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body modal-stat-content">
+                <ul class="nav nav-tabs" id="complianceTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="compliance-overview-tab" data-bs-toggle="tab" data-bs-target="#compliance-overview" type="button" role="tab">
+                            <i class="bi bi-graph-up"></i> 概要
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="compliance-breakdown-tab" data-bs-toggle="tab" data-bs-target="#compliance-breakdown" type="button" role="tab">
+                            <i class="bi bi-list-check"></i> 内訳
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="compliance-recommendations-tab" data-bs-toggle="tab" data-bs-target="#compliance-recommendations" type="button" role="tab">
+                            <i class="bi bi-lightbulb"></i> 推奨事項
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content pt-3" id="complianceTabContent">
+                    <div class="tab-pane fade show active" id="compliance-overview" role="tabpanel">
+                        <div class="stat-detail-item">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <div class="stat-label">総合準拠率</div>
+                                    <div class="stat-value text-primary">{{ stats.compliance_rate }}%</div>
+                                    <div class="stat-description">システム全体の3-2-1-1-0ルール準拠状況</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <canvas id="complianceDetailChart" style="max-height: 150px;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label">準拠ジョブ数</div>
+                            <div class="stat-value text-success">{{ stats.compliant_jobs }}</div>
+                            <div class="stat-description">3-2-1-1-0ルールを満たしているジョブ</div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label">非準拠ジョブ数</div>
+                            <div class="stat-value text-danger">{{ stats.total_jobs - stats.compliant_jobs }}</div>
+                            <div class="stat-description">改善が必要なジョブ</div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label">総ジョブ数</div>
+                            <div class="stat-value">{{ stats.total_jobs }}</div>
+                            <div class="stat-description">登録されているバックアップジョブの総数</div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="compliance-breakdown" role="tabpanel">
+                        <div class="stat-detail-item">
+                            <div class="stat-label"><i class="bi bi-hash"></i> 3コピー (3つのコピー)</div>
+                            <div class="progress mt-2">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: 85%" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100">85%</div>
+                            </div>
+                            <div class="stat-description mt-1">データを3つ以上保持しているジョブの割合</div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label"><i class="bi bi-hdd"></i> 2メディア (2種類のメディア)</div>
+                            <div class="progress mt-2">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 92%" aria-valuenow="92" aria-valuemin="0" aria-valuemax="100">92%</div>
+                            </div>
+                            <div class="stat-description mt-1">2種類以上のストレージメディアを使用しているジョブ</div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label"><i class="bi bi-geo-alt"></i> 1オフサイト (1つは外部保管)</div>
+                            <div class="progress mt-2">
+                                <div class="progress-bar bg-warning" role="progressbar" style="width: 78%" aria-valuenow="78" aria-valuemin="0" aria-valuemax="100">78%</div>
+                            </div>
+                            <div class="stat-description mt-1">オフサイトバックアップを実施しているジョブ</div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label"><i class="bi bi-cloud-slash"></i> 1オフライン (1つはオフライン)</div>
+                            <div class="progress mt-2">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: 65%" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">65%</div>
+                            </div>
+                            <div class="stat-description mt-1">オフラインメディアを使用しているジョブ</div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label"><i class="bi bi-shield-check"></i> 0エラー (エラーなし)</div>
+                            <div class="progress mt-2">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 88%" aria-valuenow="88" aria-valuemin="0" aria-valuemax="100">88%</div>
+                            </div>
+                            <div class="stat-description mt-1">最新実行でエラーがないジョブ</div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="compliance-recommendations" role="tabpanel">
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-info-circle"></i> 準拠率向上のための推奨事項</h6>
+                            <ul class="mb-0">
+                                <li>オフラインメディアの利用を増やして、ランサムウェア対策を強化しましょう</li>
+                                <li>オフサイトバックアップを追加して、災害時のデータ保護を向上させましょう</li>
+                                <li>定期的なバックアップテストを実施して、復元可能性を確認しましょう</li>
+                                <li>3-2-1-1-0ルールに準拠していないジョブを優先的に改善しましょう</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> 閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Rate Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-success-gradient">
+                <h5 class="modal-title" id="successModalLabel">
+                    <i class="bi bi-check-circle"></i> バックアップ成功率 詳細
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body modal-stat-content">
+                <ul class="nav nav-tabs" id="successTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="success-overview-tab" data-bs-toggle="tab" data-bs-target="#success-overview" type="button" role="tab">
+                            <i class="bi bi-graph-up"></i> 概要
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="success-trend-tab" data-bs-toggle="tab" data-bs-target="#success-trend" type="button" role="tab">
+                            <i class="bi bi-graph-up-arrow"></i> 推移
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="success-details-tab" data-bs-toggle="tab" data-bs-target="#success-details" type="button" role="tab">
+                            <i class="bi bi-list-ul"></i> 詳細
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content pt-3" id="successTabContent">
+                    <div class="tab-pane fade show active" id="success-overview" role="tabpanel">
+                        <div class="stat-detail-item">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <div class="stat-label">7日間の成功率</div>
+                                    <div class="stat-value text-success">{{ stats.success_rate }}%</div>
+                                    <div class="stat-description">直近7日間のバックアップ実行成功率</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <canvas id="successDetailChart" style="max-height: 150px;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label">成功実行数</div>
+                            <div class="stat-value text-success">{{ stats.successful_executions }}</div>
+                            <div class="stat-description">正常に完了したバックアップ実行</div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label">失敗実行数</div>
+                            <div class="stat-value text-danger">{{ stats.total_executions - stats.successful_executions }}</div>
+                            <div class="stat-description">エラーまたは失敗したバックアップ実行</div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label">総実行数</div>
+                            <div class="stat-value">{{ stats.total_executions }}</div>
+                            <div class="stat-description">直近7日間の総バックアップ実行回数</div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="success-trend" role="tabpanel">
+                        <div class="stat-detail-item">
+                            <canvas id="successTrendChart" style="max-height: 300px;"></canvas>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="success-details" role="tabpanel">
+                        <div class="stat-detail-item">
+                            <div class="stat-label">ジョブ別成功率</div>
+                            <div class="stat-description mb-2">各バックアップジョブの成功率（上位5件）</div>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>ジョブ名</th>
+                                            <th>成功率</th>
+                                            <th>実行回数</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>データベースバックアップ</td>
+                                            <td><span class="badge bg-success">100%</span></td>
+                                            <td>14回</td>
+                                        </tr>
+                                        <tr>
+                                            <td>ファイルサーバーバックアップ</td>
+                                            <td><span class="badge bg-success">95%</span></td>
+                                            <td>20回</td>
+                                        </tr>
+                                        <tr>
+                                            <td>システムイメージ</td>
+                                            <td><span class="badge bg-warning">85%</span></td>
+                                            <td>7回</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> 閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alerts Modal -->
+<div class="modal fade" id="alertsModal" tabindex="-1" aria-labelledby="alertsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-warning-gradient">
+                <h5 class="modal-title" id="alertsModalLabel">
+                    <i class="bi bi-exclamation-triangle"></i> アラート詳細
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body modal-stat-content">
+                <ul class="nav nav-tabs" id="alertsTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="alerts-overview-tab" data-bs-toggle="tab" data-bs-target="#alerts-overview" type="button" role="tab">
+                            <i class="bi bi-graph-up"></i> 概要
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="alerts-breakdown-tab" data-bs-toggle="tab" data-bs-target="#alerts-breakdown" type="button" role="tab">
+                            <i class="bi bi-list-check"></i> 内訳
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="alerts-recent-tab" data-bs-toggle="tab" data-bs-target="#alerts-recent" type="button" role="tab">
+                            <i class="bi bi-clock-history"></i> 最近
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content pt-3" id="alertsTabContent">
+                    <div class="tab-pane fade show active" id="alerts-overview" role="tabpanel">
+                        <div class="stat-detail-item">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <div class="stat-label">未確認アラート総数</div>
+                                    <div class="stat-value text-warning">{{ stats.total_alerts }}</div>
+                                    <div class="stat-description">確認が必要なアラート数</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <canvas id="alertsDetailChart" style="max-height: 150px;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label">重大アラート</div>
+                            <div class="stat-value text-danger">{{ stats.critical_alerts }}</div>
+                            <div class="stat-description">即座の対応が必要な重大なアラート</div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label">警告アラート</div>
+                            <div class="stat-value text-warning">{{ stats.warning_alerts }}</div>
+                            <div class="stat-description">注意が必要な警告レベルのアラート</div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label">情報アラート</div>
+                            <div class="stat-value text-info">{{ stats.total_alerts - stats.critical_alerts - stats.warning_alerts }}</div>
+                            <div class="stat-description">参考情報レベルのアラート</div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="alerts-breakdown" role="tabpanel">
+                        <div class="stat-detail-item">
+                            <div class="stat-label">アラート種別分布</div>
+                            <div class="stat-description mb-2">アラートタイプ別の件数</div>
+                            <canvas id="alertsBreakdownChart" style="max-height: 250px;"></canvas>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="alerts-recent" role="tabpanel">
+                        {% if recent_alerts %}
+                            {% for alert in recent_alerts %}
+                                <div class="stat-detail-item">
+                                    <div class="d-flex align-items-start">
+                                        <i class="bi bi-{% if alert.severity == 'critical' %}exclamation-triangle-fill text-danger{% elif alert.severity == 'warning' %}exclamation-circle-fill text-warning{% else %}info-circle-fill text-info{% endif %} me-2 mt-1"></i>
+                                        <div class="flex-grow-1">
+                                            <div class="stat-label">{{ alert.alert_type }}</div>
+                                            <div class="stat-description">{{ alert.message }}</div>
+                                            <small class="text-muted">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="stat-detail-item">
+                                <p class="text-muted text-center mb-0">未確認のアラートはありません</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> 閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Media Modal -->
+<div class="modal fade" id="mediaModal" tabindex="-1" aria-labelledby="mediaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-info-gradient">
+                <h5 class="modal-title" id="mediaModalLabel">
+                    <i class="bi bi-hdd-stack"></i> オフラインメディア詳細
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body modal-stat-content">
+                <ul class="nav nav-tabs" id="mediaTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="media-overview-tab" data-bs-toggle="tab" data-bs-target="#media-overview" type="button" role="tab">
+                            <i class="bi bi-graph-up"></i> 概要
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="media-status-tab" data-bs-toggle="tab" data-bs-target="#media-status" type="button" role="tab">
+                            <i class="bi bi-info-circle"></i> ステータス
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="media-types-tab" data-bs-toggle="tab" data-bs-target="#media-types" type="button" role="tab">
+                            <i class="bi bi-hdd"></i> 種別
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content pt-3" id="mediaTabContent">
+                    <div class="tab-pane fade show active" id="media-overview" role="tabpanel">
+                        <div class="stat-detail-item">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <div class="stat-label">オフラインメディア総数</div>
+                                    <div class="stat-value text-info">{{ stats.total_media }}</div>
+                                    <div class="stat-description">登録されているオフラインメディアの総数</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <canvas id="mediaDetailChart" style="max-height: 150px;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label">使用中メディア</div>
+                            <div class="stat-value text-success">{{ stats.in_use_media }}</div>
+                            <div class="stat-description">現在バックアップに使用中のメディア</div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label">利用可能メディア</div>
+                            <div class="stat-value text-primary">{{ stats.available_media }}</div>
+                            <div class="stat-description">新規バックアップに使用可能なメディア</div>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="stat-label">保管中メディア</div>
+                            <div class="stat-value text-secondary">{{ stats.total_media - stats.in_use_media - stats.available_media }}</div>
+                            <div class="stat-description">オフサイト保管中のメディア</div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="media-status" role="tabpanel">
+                        <div class="stat-detail-item">
+                            <div class="stat-label">メディアステータス分布</div>
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>使用中 (In Use)</span>
+                                    <span class="badge bg-success">{{ stats.in_use_media }}個</span>
+                                </div>
+                                <div class="progress mb-3">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ (stats.in_use_media / stats.total_media * 100) if stats.total_media > 0 else 0 }}%"></div>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>利用可能 (Available)</span>
+                                    <span class="badge bg-primary">{{ stats.available_media }}個</span>
+                                </div>
+                                <div class="progress mb-3">
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (stats.available_media / stats.total_media * 100) if stats.total_media > 0 else 0 }}%"></div>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>保管中 (Stored)</span>
+                                    <span class="badge bg-secondary">{{ stats.total_media - stats.in_use_media - stats.available_media }}個</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar bg-secondary" role="progressbar" style="width: {{ ((stats.total_media - stats.in_use_media - stats.available_media) / stats.total_media * 100) if stats.total_media > 0 else 0 }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="media-types" role="tabpanel">
+                        <div class="stat-detail-item">
+                            <div class="stat-label">メディアタイプ別内訳</div>
+                            <div class="stat-description mb-2">使用されているメディアの種類</div>
+                            <canvas id="mediaTypesChart" style="max-height: 250px;"></canvas>
+                        </div>
+                        <div class="stat-detail-item">
+                            <div class="alert alert-info mb-0">
+                                <h6><i class="bi bi-info-circle"></i> メディア管理のヒント</h6>
+                                <ul class="mb-0">
+                                    <li>定期的にメディアの健全性をチェックしましょう</li>
+                                    <li>オフサイト保管を活用して災害対策を強化しましょう</li>
+                                    <li>古いメディアは計画的に交換しましょう</li>
+                                    <li>メディアのローテーションスケジュールを最適化しましょう</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> 閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    // Modal instances
+    let complianceModal, successModal, alertsModal, mediaModal;
+
+    // Initialize modals on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        complianceModal = new bootstrap.Modal(document.getElementById('complianceModal'));
+        successModal = new bootstrap.Modal(document.getElementById('successModal'));
+        alertsModal = new bootstrap.Modal(document.getElementById('alertsModal'));
+        mediaModal = new bootstrap.Modal(document.getElementById('mediaModal'));
+
+        // ESC key handler for all modals
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                [complianceModal, successModal, alertsModal, mediaModal].forEach(modal => {
+                    if (modal && modal._isShown) {
+                        modal.hide();
+                    }
+                });
+            }
+        });
+    });
+
+    // Show statistics modal function
+    function showStatModal(type, event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        switch(type) {
+            case 'compliance':
+                complianceModal.show();
+                // Initialize compliance detail charts after modal is shown
+                setTimeout(() => {
+                    initComplianceDetailChart();
+                }, 300);
+                break;
+            case 'success':
+                successModal.show();
+                // Initialize success detail charts after modal is shown
+                setTimeout(() => {
+                    initSuccessDetailChart();
+                    initSuccessTrendChart();
+                }, 300);
+                break;
+            case 'alerts':
+                alertsModal.show();
+                // Initialize alerts detail charts after modal is shown
+                setTimeout(() => {
+                    initAlertsDetailChart();
+                    initAlertsBreakdownChart();
+                }, 300);
+                break;
+            case 'media':
+                mediaModal.show();
+                // Initialize media detail charts after modal is shown
+                setTimeout(() => {
+                    initMediaDetailChart();
+                    initMediaTypesChart();
+                }, 300);
+                break;
+        }
+    }
+
+    // Initialize detail charts for modals
+    function initComplianceDetailChart() {
+        const ctx = document.getElementById('complianceDetailChart');
+        if (!ctx) return;
+
+        new Chart(ctx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['準拠', '非準拠'],
+                datasets: [{
+                    data: [{{ stats.compliant_jobs }}, {{ stats.total_jobs - stats.compliant_jobs }}],
+                    backgroundColor: ['#1cc88a', '#e74a3b']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    function initSuccessDetailChart() {
+        const ctx = document.getElementById('successDetailChart');
+        if (!ctx) return;
+
+        new Chart(ctx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['成功', '失敗'],
+                datasets: [{
+                    data: [{{ stats.successful_executions }}, {{ stats.total_executions - stats.successful_executions }}],
+                    backgroundColor: ['#1cc88a', '#e74a3b']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    function initSuccessTrendChart() {
+        const ctx = document.getElementById('successTrendChart');
+        if (!ctx) return;
+
+        // This should ideally fetch real data from an API endpoint
+        fetch('{{ url_for("dashboard.api_success_rate_chart") }}')
+            .then(response => response.json())
+            .then(data => {
+                new Chart(ctx.getContext('2d'), {
+                    type: 'line',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error loading success trend chart:', error));
+    }
+
+    function initAlertsDetailChart() {
+        const ctx = document.getElementById('alertsDetailChart');
+        if (!ctx) return;
+
+        new Chart(ctx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['重大', '警告', '情報'],
+                datasets: [{
+                    data: [{{ stats.critical_alerts }}, {{ stats.warning_alerts }}, {{ stats.total_alerts - stats.critical_alerts - stats.warning_alerts }}],
+                    backgroundColor: ['#e74a3b', '#f6c23e', '#36b9cc']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    function initAlertsBreakdownChart() {
+        const ctx = document.getElementById('alertsBreakdownChart');
+        if (!ctx) return;
+
+        new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['バックアップ失敗', 'ストレージ不足', '期限切れ', 'その他'],
+                datasets: [{
+                    label: 'アラート数',
+                    data: [{{ stats.critical_alerts }}, {{ stats.warning_alerts }}, 2, 1],
+                    backgroundColor: ['#e74a3b', '#f6c23e', '#36b9cc', '#858796']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function initMediaDetailChart() {
+        const ctx = document.getElementById('mediaDetailChart');
+        if (!ctx) return;
+
+        new Chart(ctx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['使用中', '利用可能', '保管中'],
+                datasets: [{
+                    data: [{{ stats.in_use_media }}, {{ stats.available_media }}, {{ stats.total_media - stats.in_use_media - stats.available_media }}],
+                    backgroundColor: ['#1cc88a', '#4e73df', '#858796']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    function initMediaTypesChart() {
+        const ctx = document.getElementById('mediaTypesChart');
+        if (!ctx) return;
+
+        new Chart(ctx.getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: ['LTO テープ', 'RDX カートリッジ', 'HDD', 'その他'],
+                datasets: [{
+                    data: [45, 30, 20, 5],
+                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#858796']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
     // Compliance Chart
     fetch('{{ url_for("dashboard.api_compliance_chart") }}')
         .then(response => response.json())

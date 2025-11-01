@@ -39,7 +39,7 @@
                     <a href="{{ url_for('verification.schedule') }}" class="btn btn-secondary me-2">
                         <i class="bi bi-calendar3"></i> スケジュール
                     </a>
-                    <a href="{{ url_for('verification.create') }}" class="btn btn-primary">
+                    <a href="{{ url_for('verification.execute') }}" class="btn btn-primary">
                         <i class="bi bi-plus-circle"></i> 新規テスト記録
                     </a>
                 </div>
@@ -184,7 +184,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for test in verification_tests %}
+                        {% for test in tests %}
                         <tr>
                             <td>
                                 <strong>{{ test.id }}</strong>
@@ -199,67 +199,62 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if test.media %}
-                                <a href="{{ url_for('media.detail', media_id=test.media.id) }}">
-                                    {{ test.media.media_id }}
-                                </a>
+                                {% if test.restore_target %}
+                                {{ test.restore_target }}
                                 {% else %}
                                 <span class="text-muted">N/A</span>
                                 {% endif %}
                             </td>
                             <td>
-                                {% if test.test_type == 'full' %}
-                                <span class="badge bg-primary">完全検証</span>
+                                {% if test.test_type == 'full_restore' %}
+                                <span class="badge bg-primary">完全復元</span>
                                 {% elif test.test_type == 'partial' %}
                                 <span class="badge bg-info">部分検証</span>
-                                {% elif test.test_type == 'quick' %}
-                                <span class="badge bg-secondary">クイック</span>
+                                {% elif test.test_type == 'integrity' %}
+                                <span class="badge bg-secondary">整合性</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ test.test_type }}</span>
                                 {% endif %}
                             </td>
                             <td>{{ test.test_date.strftime('%Y/%m/%d %H:%M') }}</td>
                             <td>
-                                {% if test.duration_minutes %}
-                                {{ test.duration_minutes }} 分
+                                {% if test.duration_seconds %}
+                                {{ (test.duration_seconds / 60)|round(1) }} 分
                                 {% else %}
                                 <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
                             <td>
-                                {% if test.result == 'passed' %}
+                                {% if test.test_result == 'success' %}
                                 <span class="result-indicator bg-success"></span>
                                 <span class="badge bg-success status-badge">成功</span>
-                                {% elif test.result == 'failed' %}
+                                {% elif test.test_result == 'failed' %}
                                 <span class="result-indicator bg-danger"></span>
                                 <span class="badge bg-danger status-badge">失敗</span>
-                                {% elif test.result == 'warning' %}
-                                <span class="result-indicator bg-warning"></span>
-                                <span class="badge bg-warning status-badge">警告あり</span>
-                                {% elif test.result == 'in_progress' %}
-                                <span class="result-indicator bg-info"></span>
-                                <span class="badge bg-info status-badge">実施中</span>
+                                {% else %}
+                                <span class="result-indicator bg-secondary"></span>
+                                <span class="badge bg-secondary status-badge">{{ test.test_result }}</span>
                                 {% endif %}
                             </td>
                             <td>
-                                {{ test.files_verified|default(0) }} / {{ test.total_files|default(0) }}
-                                {% if test.total_files > 0 %}
-                                <div class="progress mt-1" style="height: 5px;">
-                                    <div class="progress-bar bg-success" role="progressbar"
-                                         style="width: {{ (test.files_verified / test.total_files * 100)|round(1) }}%"></div>
-                                </div>
+                                {% if test.issues_found %}
+                                <span class="text-danger">問題あり</span>
+                                {% else %}
+                                <span class="text-success">問題なし</span>
                                 {% endif %}
                             </td>
-                            <td>{{ test.performed_by }}</td>
+                            <td>{{ test.tester.username if test.tester else '不明' }}</td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ url_for('verification.detail', test_id=test.id) }}"
                                        class="btn btn-outline-info" title="詳細">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    {% if test.result == 'failed' %}
-                                    <button type="button" class="btn btn-outline-warning" title="再実行"
-                                            onclick="retryTest({{ test.id }})">
+                                    {% if test.test_result == 'failed' %}
+                                    <a href="{{ url_for('verification.execute') }}"
+                                       class="btn btn-outline-warning" title="再実行">
                                         <i class="bi bi-arrow-repeat"></i>
-                                    </button>
+                                    </a>
                                     {% endif %}
                                 </div>
                             </td>
