@@ -21,12 +21,16 @@ def check_env_file():
     print("1. 環境変数ファイル (.env) のチェック")
     print("=" * 70)
 
+    # インストールパス: C:\temp\BackupSystem
     env_path = project_root / ".env"
 
     if not env_path.exists():
         print("❌ .envファイルが存在しません")
         print(f"   パス: {env_path}")
         print("   対処法: .env.exampleをコピーして.envを作成してください")
+        print("\nPowerShellコマンド:")
+        print("  cd C:\\temp\\BackupSystem")
+        print("  Copy-Item .env.example .env")
         return False
 
     print(f"✅ .envファイルが存在します: {env_path}")
@@ -194,12 +198,13 @@ def provide_recommendations():
     print("\n【400 Bad Request エラーの場合】")
     print("原因: 本番モード(production)でHTTP接続を使用しているため")
     print("\n対処法A: 開発モードで起動（推奨）")
-    print("  1. .envファイルを開く: notepad C:\\BackupSystem\\.env")
+    print("  1. .envファイルを開く: notepad C:\\temp\\BackupSystem\\.env")
     print("  2. FLASK_ENV=production を FLASK_ENV=development に変更")
     print("  3. サービス再起動: Restart-Service BackupManagementSystem")
     print("\n対処法B: 本番環境でHTTP許可（一時的）")
-    print("  1. scripts/fix_production_http.py を実行")
-    print("  2. サービス再起動")
+    print("  1. cd C:\\temp\\BackupSystem")
+    print("  2. .\\venv\\Scripts\\python.exe scripts\\fix_production_http.py")
+    print("  3. サービス再起動: Restart-Service BackupManagementSystem")
 
     print("\n【401 Unauthorized エラーの場合】")
     print("原因: 認証が必要なページに未ログイン状態でアクセス")
@@ -249,7 +254,7 @@ def main():
         print("\nそれでもログインできない場合:")
         print("  1. ブラウザのキャッシュをクリア")
         print("  2. プライベートブラウジングモードで試す")
-        print("  3. サービスログを確認: Get-Content C:\\BackupSystem\\logs\\service_stderr.log -Tail 50")
+        print("  3. サービスログを確認: Get-Content C:\\temp\\BackupSystem\\logs\\service_stderr.log -Tail 50")
     else:
         print("❌ 問題が検出されました。上記の対処法を参考に修正してください。")
 

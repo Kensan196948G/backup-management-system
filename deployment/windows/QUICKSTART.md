@@ -22,8 +22,8 @@
 ```powershell
 # === ステップ1-3: クリーンアップ＆最新コード取得 ===
 Stop-Service -Name BackupManagementSystem -ErrorAction SilentlyContinue
-if (Test-Path "C:\BackupSystem\nssm\nssm.exe") { C:\BackupSystem\nssm\nssm.exe remove BackupManagementSystem confirm }
-Remove-Item -Recurse -Force C:\BackupSystem -ErrorAction SilentlyContinue
+if (Test-Path "C:\temp\BackupSystem\nssm\nssm.exe") { C:\temp\BackupSystem\nssm\nssm.exe remove BackupManagementSystem confirm }
+Remove-Item -Recurse -Force C:\temp\BackupSystem -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force C:\temp\BackupSystem -ErrorAction SilentlyContinue
 
 cd C:\temp
@@ -31,8 +31,8 @@ git clone https://github.com/Kensan196948G/backup-management-system.git BackupSy
 cd BackupSystem
 git checkout develop
 
-Move-Item C:\temp\BackupSystem C:\BackupSystem
-cd C:\BackupSystem
+# インストール先は既にC:\temp\BackupSystemです
+cd C:\temp\BackupSystem
 
 # === ステップ4: 環境変数設定 ===
 Copy-Item .env.example .env
@@ -113,8 +113,8 @@ Get-Service -Name BackupManagementSystem
 
 **対処法**:
 ```powershell
-$secretKey = C:\BackupSystem\venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"
-notepad C:\BackupSystem\.env  # SECRET_KEY=（上記の値を設定）
+$secretKey = C:\temp\BackupSystem\venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"
+notepad C:\temp\BackupSystem\.env  # SECRET_KEY=（上記の値を設定）
 Restart-Service -Name BackupManagementSystem
 ```
 
@@ -122,8 +122,8 @@ Restart-Service -Name BackupManagementSystem
 
 **対処法**:
 ```powershell
-Get-Content C:\BackupSystem\logs\service_stderr.log -Tail 50
-C:\BackupSystem\venv\Scripts\python.exe C:\BackupSystem\run.py --production
+Get-Content C:\temp\BackupSystem\logs\service_stderr.log -Tail 50
+C:\temp\BackupSystem\venv\Scripts\python.exe C:\temp\BackupSystem\run.py --production
 ```
 
 ### 問題: ポート5000が使用中
@@ -148,13 +148,13 @@ Stop-Process -Id <PID> -Force
 
 ### 1. Veeam統合
 ```powershell
-cd C:\BackupSystem\scripts\powershell
+cd C:\temp\BackupSystem\scripts\powershell
 .\veeam_integration.ps1 -Register
 ```
 
 ### 2. メール通知設定
 ```powershell
-notepad C:\BackupSystem\.env
+notepad C:\temp\BackupSystem\.env
 # MAIL_SERVER=smtp.gmail.com
 # MAIL_USERNAME=your-email@gmail.com
 # MAIL_PASSWORD=your-app-password
@@ -163,7 +163,7 @@ Restart-Service -Name BackupManagementSystem
 
 ### 3. Teams通知設定
 ```powershell
-notepad C:\BackupSystem\.env
+notepad C:\temp\BackupSystem\.env
 # TEAMS_WEBHOOK_URL=https://outlook.office.com/webhook/xxxxx
 Restart-Service -Name BackupManagementSystem
 ```
@@ -177,13 +177,13 @@ Restart-Service -Name BackupManagementSystem
 Restart-Service BackupManagementSystem
 
 # ログ確認
-Get-Content C:\BackupSystem\logs\app.log -Tail 50 -Wait
+Get-Content C:\temp\BackupSystem\logs\app.log -Tail 50 -Wait
 
 # サービス状態確認
 Get-Service BackupManagementSystem
 
 # エラーログ確認
-Get-Content C:\BackupSystem\logs\service_stderr.log -Tail 50
+Get-Content C:\temp\BackupSystem\logs\service_stderr.log -Tail 50
 ```
 
 ---
