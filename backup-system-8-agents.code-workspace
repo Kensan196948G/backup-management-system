@@ -1,0 +1,74 @@
+{
+  "folders": [
+    {
+      "name": "🏠 Main Repository (develop)",
+      "path": "."
+    },
+    {
+      "name": "🔴 Agent-01: Core Backup Engine",
+      "path": "../worktrees/agent-01-core"
+    },
+    {
+      "name": "🔴 Agent-02: Storage Management",
+      "path": "../worktrees/agent-02-storage"
+    },
+    {
+      "name": "🟠 Agent-03: Verification & Validation",
+      "path": "../worktrees/agent-03-verification"
+    },
+    {
+      "name": "🟠 Agent-04: Scheduler & Job Manager",
+      "path": "../worktrees/agent-04-scheduler"
+    },
+    {
+      "name": "🟡 Agent-05: Alert & Notification",
+      "path": "../worktrees/agent-05-alerts"
+    },
+    {
+      "name": "🟡 Agent-06: Web UI & Dashboard",
+      "path": "../worktrees/agent-06-web"
+    },
+    {
+      "name": "🟡 Agent-07: API & Integration Layer",
+      "path": "../worktrees/agent-07-api"
+    },
+    {
+      "name": "🟢 Agent-08: Documentation & Compliance",
+      "path": "../worktrees/agent-08-docs"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/__pycache__": true,
+      "**/*.pyc": true,
+      "**/.pytest_cache": true,
+      "**/node_modules": true
+    },
+    "editor.formatOnSave": true,
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.formatting.provider": "black",
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "[python]": {
+      "editor.defaultFormatter": "ms-python.black-formatter",
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+      }
+    },
+    "git.detectSubmodules": false,
+    "git.detectSubmodulesLimit": 20
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.black-formatter",
+      "ms-python.isort",
+      "ms-python.flake8",
+      "eamodio.gitlens",
+      "github.vscode-pull-request-github",
+      "donjayamanne.githistory"
+    ]
+  }
+}
