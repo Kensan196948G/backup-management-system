@@ -18,6 +18,7 @@ from app.core.exceptions import (
     CopyOperationError,
     InsufficientStorageError,
     RetryExhaustedError,
+    VerificationFailedError,
 )
 
 # ログ設定
