@@ -1,0 +1,532 @@
+{% extends "base.html" %}
+
+{% block title %}ストレージプロバイダー設定 - バックアップ管理システム{% endblock %}
+
+{% block extra_css %}
+<style>
+    .storage-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        transition: box-shadow 0.3s ease;
+    }
+
+    .storage-card:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .storage-card.active {
+        border-color: #198754;
+        background: #f0f9f4;
+    }
+
+    .storage-card.inactive {
+        border-color: #dc3545;
+        background: #fef5f5;
+    }
+
+    .storage-card.warning {
+        border-color: #ffc107;
+        background: #fffbf0;
+    }
+
+    .storage-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+    }
+
+    .capacity-bar {
+        height: 25px;
+        border-radius: 4px;
+        background: #e9ecef;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .capacity-fill {
+        height: 100%;
+        transition: width 0.5s ease;
+    }
+
+    .capacity-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #000;
+        font-weight: bold;
+        font-size: 0.85rem;
+    }
+
+    .provider-logo {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+        margin-bottom: 10px;
+    }
+
+    .connection-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .status-indicator.online {
+        background: #198754;
+        box-shadow: 0 0 8px #198754;
+    }
+
+    .status-indicator.offline {
+        background: #dc3545;
+    }
+
+    .status-indicator.testing {
+        background: #ffc107;
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .config-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .credential-input {
+        font-family: 'Courier New', monospace;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1><i class="bi bi-hdd-network"></i> ストレージプロバイダー設定</h1>
+            <p class="text-muted">バックアップ先ストレージの追加・設定・管理</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStorageModal">
+                <i class="bi bi-plus-circle"></i> ストレージを追加
+            </button>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Storage Provider Cards -->
+    <div class="row g-4 mb-4">
+        {% for storage in storage_providers %}
+        <div class="col-md-6 col-lg-4">
+            <div class="storage-card card {% if storage.is_active and storage.connection_status == 'online' %}active{% elif not storage.is_active %}inactive{% else %}warning{% endif %} h-100">
+                <div class="card-body">
+                    <div class="text-center">
+                        <!-- Provider Icon -->
+                        <div class="storage-icon text-{% if storage.is_active and storage.connection_status == 'online' %}success{% elif not storage.is_active %}secondary{% else %}warning{% endif %}">
+                            {% if storage.provider_type == 's3' %}
+                                <i class="bi bi-cloud"></i>
+                            {% elif storage.provider_type == 'azure' %}
+                                <i class="bi bi-cloud-upload"></i>
+                            {% elif storage.provider_type == 'gcp' %}
+                                <i class="bi bi-cloud-arrow-up"></i>
+                            {% elif storage.provider_type == 'nfs' %}
+                                <i class="bi bi-hdd-network"></i>
+                            {% elif storage.provider_type == 'smb' %}
+                                <i class="bi bi-hdd-rack"></i>
+                            {% elif storage.provider_type == 'local' %}
+                                <i class="bi bi-device-hdd"></i>
+                            {% else %}
+                                <i class="bi bi-hdd"></i>
+                            {% endif %}
+                        </div>
+
+                        <h5 class="card-title">{{ storage.name }}</h5>
+                        <p class="text-muted mb-3">
+                            <span class="badge bg-secondary">{{ storage.provider_type.upper() }}</span>
+                        </p>
+                    </div>
+
+                    <!-- Connection Status -->
+                    <div class="mb-3 text-center">
+                        <div class="connection-status">
+                            <span class="status-indicator {% if storage.connection_status == 'online' %}online{% elif storage.connection_status == 'testing' %}testing{% else %}offline{% endif %}"></span>
+                            <span>
+                                {% if storage.connection_status == 'online' %}
+                                    接続正常
+                                {% elif storage.connection_status == 'testing' %}
+                                    接続テスト中...
+                                {% else %}
+                                    接続エラー
+                                {% endif %}
+                            </span>
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            最終確認: {{ storage.last_check.strftime('%Y-%m-%d %H:%M') if storage.last_check else 'N/A' }}
+                        </small>
+                    </div>
+
+                    <!-- Storage Path/Endpoint -->
+                    <div class="mb-3">
+                        <small class="text-muted">接続先</small>
+                        <div class="text-truncate" title="{{ storage.endpoint }}">
+                            <code>{{ storage.endpoint }}</code>
+                        </div>
+                    </div>
+
+                    <!-- Capacity Information -->
+                    {% if storage.total_capacity %}
+                    <div class="mb-3">
+                        <small class="text-muted">容量使用状況</small>
+                        <div class="capacity-bar mt-1">
+                            {% set usage_percent = (storage.used_capacity / storage.total_capacity * 100) if storage.total_capacity > 0 else 0 %}
+                            <div class="capacity-fill
+                                {% if usage_percent >= 90 %}bg-danger
+                                {% elif usage_percent >= 75 %}bg-warning
+                                {% else %}bg-success
+                                {% endif %}"
+                                 style="width: {{ usage_percent }}%">
+                            </div>
+                            <span class="capacity-text">
+                                {{ "%.1f"|format(usage_percent) }}% 使用中
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1">
+                            <small class="text-muted">{{ storage.used_capacity|filesizeformat }}</small>
+                            <small class="text-muted">{{ storage.total_capacity|filesizeformat }}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Statistics -->
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <h6 class="mb-0">{{ storage.backup_count }}</h6>
+                                <small class="text-muted">バックアップ</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <h6 class="mb-0">{{ storage.file_count }}</h6>
+                                <small class="text-muted">ファイル数</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <h6 class="mb-0">{{ storage.success_rate }}%</h6>
+                                <small class="text-muted">成功率</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-sm btn-outline-primary test-connection"
+                                data-storage-id="{{ storage.id }}">
+                            <i class="bi bi-arrow-repeat"></i> 接続テスト
+                        </button>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-secondary edit-storage"
+                                    data-storage-id="{{ storage.id }}">
+                                <i class="bi bi-pencil"></i> 編集
+                            </button>
+                            <button class="btn btn-sm btn-outline-{% if storage.is_active %}warning{% else %}success{% endif %} toggle-storage"
+                                    data-storage-id="{{ storage.id }}"
+                                    data-active="{{ storage.is_active }}">
+                                <i class="bi bi-{% if storage.is_active %}pause{% else %}play{% endif %}-circle"></i>
+                                {% if storage.is_active %}無効化{% else %}有効化{% endif %}
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-storage"
+                                    data-storage-id="{{ storage.id }}">
+                                <i class="bi bi-trash"></i> 削除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-muted">
+                    <small>作成日: {{ storage.created_at.strftime('%Y-%m-%d') }}</small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Storage Statistics Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ stats.total_providers }}</h3>
+                    <p class="text-muted mb-0">総プロバイダー数</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ stats.online_providers }}</h3>
+                    <p class="text-muted mb-0">オンライン</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info">{{ stats.total_capacity|filesizeformat }}</h3>
+                    <p class="text-muted mb-0">総容量</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ stats.used_capacity|filesizeformat }}</h3>
+                    <p class="text-muted mb-0">使用中</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Storage Modal -->
+<div class="modal fade" id="addStorageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-plus-circle"></i> ストレージプロバイダーを追加</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="storageForm">
+                    <!-- Basic Information -->
+                    <div class="config-section">
+                        <h6 class="mb-3">基本情報</h6>
+
+                        <div class="mb-3">
+                            <label class="form-label">プロバイダー名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="storageName" name="name"
+                                   placeholder="例: AWS S3 Production" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">プロバイダータイプ <span class="text-danger">*</span></label>
+                            <select class="form-select" id="providerType" name="provider_type" required>
+                                <option value="">選択してください</option>
+                                <option value="s3">Amazon S3</option>
+                                <option value="azure">Azure Blob Storage</option>
+                                <option value="gcp">Google Cloud Storage</option>
+                                <option value="nfs">NFS</option>
+                                <option value="smb">SMB/CIFS</option>
+                                <option value="local">ローカルストレージ</option>
+                                <option value="sftp">SFTP</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">説明</label>
+                            <textarea class="form-control" id="description" name="description" rows="2"
+                                      placeholder="ストレージプロバイダーの説明"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Connection Settings (Dynamic based on provider type) -->
+                    <div class="config-section" id="connectionSettings">
+                        <h6 class="mb-3">接続設定</h6>
+
+                        <!-- S3 Settings -->
+                        <div class="provider-settings" id="s3Settings" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">エンドポイント URL</label>
+                                <input type="text" class="form-control" name="s3_endpoint"
+                                       placeholder="https://s3.amazonaws.com">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">バケット名 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="s3_bucket" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">リージョン</label>
+                                <input type="text" class="form-control" name="s3_region"
+                                       placeholder="us-east-1">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">アクセスキーID <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control credential-input" name="s3_access_key" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">シークレットアクセスキー <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control credential-input" name="s3_secret_key" required>
+                            </div>
+                        </div>
+
+                        <!-- Azure Settings -->
+                        <div class="provider-settings" id="azureSettings" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">ストレージアカウント名 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="azure_account" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">コンテナ名 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="azure_container" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">アクセスキー <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control credential-input" name="azure_key" required>
+                            </div>
+                        </div>
+
+                        <!-- NFS Settings -->
+                        <div class="provider-settings" id="nfsSettings" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">NFSサーバー <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="nfs_server"
+                                       placeholder="192.168.1.100" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">エクスポートパス <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="nfs_path"
+                                       placeholder="/export/backups" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">マウントオプション</label>
+                                <input type="text" class="form-control" name="nfs_options"
+                                       placeholder="rw,sync,hard">
+                            </div>
+                        </div>
+
+                        <!-- Local Storage Settings -->
+                        <div class="provider-settings" id="localSettings" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">ストレージパス <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="local_path"
+                                       placeholder="/mnt/backups" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Settings -->
+                    <div class="config-section">
+                        <h6 class="mb-3">詳細設定</h6>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">最大同時接続数</label>
+                                <input type="number" class="form-control" name="max_connections"
+                                       value="5" min="1" max="100">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">接続タイムアウト (秒)</label>
+                                <input type="number" class="form-control" name="timeout"
+                                       value="30" min="5" max="300">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableEncryption"
+                                       name="enable_encryption" checked>
+                                <label class="form-check-label" for="enableEncryption">
+                                    暗号化を有効化
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableCompression"
+                                       name="enable_compression">
+                                <label class="form-check-label" for="enableCompression">
+                                    圧縮を有効化
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="isActive"
+                                       name="is_active" checked>
+                                <label class="form-check-label" for="isActive">
+                                    プロバイダーを有効化
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-info" id="testConnectionBtn">
+                    <i class="bi bi-arrow-repeat"></i> 接続テスト
+                </button>
+                <button type="button" class="btn btn-primary" id="saveStorageBtn">
+                    <i class="bi bi-save"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Storage Modal (loaded dynamically) -->
+<div class="modal fade" id="editStorageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <!-- Content loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Provider type change handler
+    document.getElementById('providerType').addEventListener('change', function() {
+        // Hide all provider-specific settings
+        document.querySelectorAll('.provider-settings').forEach(el => {
+            el.style.display = 'none';
+        });
+
+        // Show selected provider settings
+        const selectedType = this.value;
+        if (selectedType) {
+            const settingsDiv = document.getElementById(selectedType + 'Settings');
+            if (settingsDiv) {
+                settingsDiv.style.display = 'block';
+            }
+        }
+    });
+
+    // File size formatter
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+</script>
+
+<!-- Storage management functionality -->
+<script src="{{ url_for('static', filename='js/backup_schedule.js') }}"></script>
+{% endblock %}
