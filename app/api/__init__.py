@@ -9,7 +9,8 @@ from flask import Blueprint
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
 # Import routes after blueprint creation to avoid circular imports
-from app.api import alerts, backup, dashboard, jobs, media, reports, verification
+# Import v1 API routes
+from app.api import alerts, backup, dashboard, jobs, media, reports, v1, verification
 
 # Register error handlers
 from app.api.errors import register_error_handlers
