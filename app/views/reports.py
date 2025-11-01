@@ -17,6 +17,7 @@ from flask import (
 )
 from flask_login import current_user, login_required
 from sqlalchemy import and_, desc, or_
+from sqlalchemy.orm import joinedload
 
 from app.auth.decorators import role_required
 from app.models import BackupJob, Report, db
@@ -37,8 +38,8 @@ def list():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 20, type=int)
 
-    # Build query
-    query = Report.query
+    # Build query with eager loading of relationships
+    query = Report.query.options(joinedload(Report.generator))
 
     # Apply filters
     if report_type:
@@ -47,8 +48,8 @@ def list():
     if period_type:
         query = query.filter_by(period_type=period_type)
 
-    # Order by
-    query = query.order_by(desc(Report.generated_at))
+    # Order by (use created_at instead of generated_at as per model)
+    query = query.order_by(desc(Report.created_at))
 
     # Paginate
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)

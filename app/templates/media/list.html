@@ -188,8 +188,8 @@
                         {% for media in media_list %}
                         <tr>
                             <td class="text-center">
-                                {% if media.qr_code_path %}
-                                <img src="{{ url_for('static', filename=media.qr_code_path) }}"
+                                {% if media.qr_code %}
+                                <img src="data:image/png;base64,{{ media.qr_code }}"
                                      alt="QR Code" class="qr-code-small">
                                 {% else %}
                                 <span class="text-muted">-</span>
@@ -198,40 +198,42 @@
                             <td>
                                 <strong>{{ media.media_id }}</strong>
                             </td>
-                            <td>{{ media.label_name }}</td>
+                            <td>{{ media.media_id }}</td>
                             <td>
                                 {% if media.media_type == 'tape' %}
                                 <i class="bi bi-cassette text-primary"></i> テープ
-                                {% elif media.media_type == 'disk' %}
+                                {% elif media.media_type == 'external_hdd' or media.media_type == 'disk' %}
                                 <i class="bi bi-device-hdd text-success"></i> ディスク
-                                {% elif media.media_type == 'optical' %}
-                                <i class="bi bi-disc text-info"></i> 光学
+                                {% elif media.media_type == 'usb' %}
+                                <i class="bi bi-usb-drive text-info"></i> USB
                                 {% elif media.media_type == 'cloud' %}
                                 <i class="bi bi-cloud text-warning"></i> クラウド
+                                {% else %}
+                                <i class="bi bi-hdd text-secondary"></i> {{ media.media_type }}
                                 {% endif %}
                             </td>
-                            <td>{{ media.capacity_gb }} GB</td>
+                            <td>{{ media.capacity_gb|default(0) }} GB</td>
                             <td>
-                                {% if media.status == 'available' %}
+                                {% if media.current_status == 'available' %}
                                 <span class="badge bg-success status-badge">使用可能</span>
-                                {% elif media.status == 'in_use' %}
+                                {% elif media.current_status == 'in_use' %}
                                 <span class="badge bg-primary status-badge">使用中</span>
-                                {% elif media.status == 'lent' %}
-                                <span class="badge bg-warning status-badge">貸出中</span>
-                                {% elif media.status == 'maintenance' %}
-                                <span class="badge bg-info status-badge">メンテナンス</span>
-                                {% elif media.status == 'retired' %}
+                                {% elif media.current_status == 'stored' %}
+                                <span class="badge bg-info status-badge">保管中</span>
+                                {% elif media.current_status == 'retired' %}
                                 <span class="badge bg-danger status-badge">破棄予定</span>
+                                {% else %}
+                                <span class="badge bg-secondary status-badge">{{ media.current_status }}</span>
                                 {% endif %}
                             </td>
                             <td>
                                 <span class="badge location-badge">
-                                    <i class="bi bi-geo-alt"></i> {{ media.location }}
+                                    <i class="bi bi-geo-alt"></i> {{ media.storage_location|default('未設定') }}
                                 </span>
                             </td>
                             <td>
-                                {% if media.last_rotation_date %}
-                                {{ media.last_rotation_date.strftime('%Y/%m/%d') }}
+                                {% if media.purchase_date %}
+                                {{ media.purchase_date.strftime('%Y/%m/%d') }}
                                 {% else %}
                                 <span class="text-muted">未実施</span>
                                 {% endif %}

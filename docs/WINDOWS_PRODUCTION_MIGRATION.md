@@ -89,16 +89,16 @@ git --version
 Stop-Service -Name BackupManagementSystem -ErrorAction SilentlyContinue
 
 # サービス削除（存在する場合）
-if (Test-Path "C:\BackupSystem\nssm\nssm.exe") {
-    C:\BackupSystem\nssm\nssm.exe remove BackupManagementSystem confirm
+if (Test-Path "C:\temp\BackupSystem\nssm\nssm.exe") {
+    C:\temp\BackupSystem\nssm\nssm.exe remove BackupManagementSystem confirm
 }
 
 # 両方のフォルダを完全削除
-Remove-Item -Recurse -Force C:\BackupSystem -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force C:\temp\BackupSystem -ErrorAction SilentlyContinue
+
+
 
 # 削除確認
-Test-Path C:\BackupSystem        # False であることを確認
+Test-Path C:\temp\BackupSystem        # False であることを確認
 Test-Path C:\temp\BackupSystem   # False であることを確認
 
 Write-Host "✅ クリーンアップ完了" -ForegroundColor Green
@@ -147,17 +147,17 @@ Write-Host "✅ 最新コード取得完了" -ForegroundColor Green
 
 ---
 
-### ステップ3: C:\BackupSystemに移動（10秒）
+### ステップ3: C:\temp\BackupSystemに移動（10秒）
 
 **本番環境パスに移動します。**
 
 ```powershell
-# C:\temp\BackupSystemをC:\BackupSystemに移動
-Move-Item C:\temp\BackupSystem C:\BackupSystem
+# C:\temp\BackupSystemをC:\temp\BackupSystemに移動
+# インストール先は既にC:\temp\BackupSystemです
 
 # 移動確認
-Test-Path C:\BackupSystem        # True
-Test-Path C:\BackupSystem\.git   # True（Gitリポジトリごと移動）
+Test-Path C:\temp\BackupSystem        # True
+Test-Path C:\temp\BackupSystem\.git   # True（Gitリポジトリごと移動）
 
 Write-Host "✅ ディレクトリ移動完了" -ForegroundColor Green
 ```
@@ -174,7 +174,7 @@ Write-Host "✅ ディレクトリ移動完了" -ForegroundColor Green
 **SECRET_KEYとデータベースパスを設定します。**
 
 ```powershell
-cd C:\BackupSystem
+cd C:\temp\BackupSystem
 
 # .env.exampleをコピー
 Copy-Item .env.example .env
@@ -402,7 +402,7 @@ Get-Service -Name BackupManagementSystem
 - NSSM: Windowsサービス化ツール（Pythonアプリをサービスとして実行）
 - サービス化により、Windows起動時に自動起動
 - サービス管理（開始/停止/再起動）が可能
-- ログは `C:\BackupSystem\logs\` に自動記録
+- ログは `C:\temp\BackupSystem\logs\` に自動記録
 **─────────────────────────────────────────────────**
 
 ---
@@ -463,7 +463,7 @@ Write-Host "✅ ファイアウォール設定完了" -ForegroundColor Green
   ✅ SQLAlchemy がインストールされています (2.0.36)
 
 [ディレクトリ構造]
-  ✅ インストールディレクトリ: C:\BackupSystem
+  ✅ インストールディレクトリ: C:\temp\BackupSystem
   ✅ app ディレクトリが存在します
   ✅ data ディレクトリが存在します
   ✅ logs ディレクトリが存在します
@@ -564,23 +564,23 @@ Get-NetTCPConnection -LocalPort 5000 -State Listen
 
 ```powershell
 # アプリケーションログ
-Get-Content C:\BackupSystem\logs\app.log -Tail 50
+Get-Content C:\temp\BackupSystem\logs\app.log -Tail 50
 
 # サービスログ（標準出力）
-Get-Content C:\BackupSystem\logs\service_stdout.log -Tail 50
+Get-Content C:\temp\BackupSystem\logs\service_stdout.log -Tail 50
 
 # サービスログ（エラー出力）
-Get-Content C:\BackupSystem\logs\service_stderr.log -Tail 50
+Get-Content C:\temp\BackupSystem\logs\service_stderr.log -Tail 50
 
 # リアルタイムログ監視
-Get-Content C:\BackupSystem\logs\app.log -Wait
+Get-Content C:\temp\BackupSystem\logs\app.log -Wait
 ```
 
 ### データベース確認
 
 ```powershell
 # データベースファイル確認
-Test-Path C:\BackupSystem\data\backup_mgmt.db
+Test-Path C:\temp\BackupSystem\data\backup_mgmt.db
 
 # ユーザー確認スクリプト実行
 .\venv\Scripts\python.exe -c "from app import create_app, db; from app.models import User; app = create_app('production'); with app.app_context(): print(f'ユーザー数: {User.query.count()}'); [print(f'  - {u.username} ({u.email})') for u in User.query.all()]"
@@ -611,33 +611,75 @@ error: Microsoft Visual C++ 14.0 or greater is required.
 
 ---
 
-### 問題2: 400 Bad Requestエラー
+### 問題2: 400 Bad Requestエラー（HTTP/HTTPS問題）
 
 **症状**:
 ```
 400 Bad Request
-The browser (or proxy) sent a request that this server could not understand.
+リクエストが不正です。入力内容を確認してください。
 ```
 
-**原因**: `SECRET_KEY` が未設定または短すぎる
+**原因**: 本番モード(`production`)でHTTP接続を使用しているため、`SESSION_COOKIE_SECURE=True`がセッションCookieをブロック
 
-**対処法**:
+`★ Insight ─────────────────────────────────────`
+**本番環境のセキュリティ設定**
+1. **SESSION_COOKIE_SECURE=True**: ブラウザはHTTPS接続でのみCookieを送信
+2. **CSRF保護**: FlaskはCSRFトークンをセッションCookieで管理
+3. **400エラーの原因**: HTTP環境でCookieが送信されず、CSRF検証失敗
+`─────────────────────────────────────────────────`
+
+**対処法A: 診断スクリプトを実行（推奨）**
+
+```powershell
+cd C:\temp\BackupSystem
+.\venv\Scripts\python.exe scripts\diagnose_login.py
+```
+
+診断結果に基づいて対処してください。
+
+**対処法B: HTTP対応モードで起動**
+
+```powershell
+# HTTP対応スクリプト実行
+.\venv\Scripts\python.exe scripts\fix_production_http.py
+
+# サービス再起動
+Restart-Service BackupManagementSystem
+
+# ブラウザでアクセス
+Start-Process "http://192.168.3.92:5000"
+```
+
+**対処法C: 開発モードで起動（一時的）**
+
+```powershell
+# .envを編集
+notepad C:\temp\BackupSystem\.env
+# FLASK_ENV=production を FLASK_ENV=development に変更
+
+# サービス再起動
+Restart-Service BackupManagementSystem
+```
+
+**対処法D: SECRET_KEY確認（上記で解決しない場合）**
 
 ```powershell
 # SECRET_KEY確認
-Get-Content C:\BackupSystem\.env | Select-String "SECRET_KEY"
+Get-Content C:\temp\BackupSystem\.env | Select-String "SECRET_KEY"
 
-# 短い場合、再生成
-$secretKey = C:\BackupSystem\venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"
+# 再生成
+$secretKey = C:\temp\BackupSystem\venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"
 Write-Host "新しいSECRET_KEY: $secretKey"
 
 # .envを編集
-notepad C:\BackupSystem\.env
+notepad C:\temp\BackupSystem\.env
 # SECRET_KEY=（上記の値を貼り付け）
 
 # サービス再起動
 Restart-Service -Name BackupManagementSystem
 ```
+
+⚠️ **将来的な対応**: 本番環境では必ずHTTPS（nginx + SSL証明書）への移行を推奨
 
 ---
 
@@ -654,13 +696,13 @@ Status: Stopped
 #### 1. ログファイル確認
 
 ```powershell
-Get-Content C:\BackupSystem\logs\service_stderr.log -Tail 50
+Get-Content C:\temp\BackupSystem\logs\service_stderr.log -Tail 50
 ```
 
 #### 2. 手動起動テスト
 
 ```powershell
-cd C:\BackupSystem
+cd C:\temp\BackupSystem
 .\venv\Scripts\python.exe .\run.py --production
 ```
 
@@ -708,7 +750,7 @@ Stop-Process -Id <PID> -Force
 
 ```powershell
 # .envを編集
-notepad C:\BackupSystem\.env
+notepad C:\temp\BackupSystem\.env
 # PORT=8080 を追加
 
 # ファイアウォール再設定
@@ -731,7 +773,7 @@ Restart-Service -Name BackupManagementSystem
 
 ```powershell
 # データベース修復スクリプト実行
-cd C:\BackupSystem
+cd C:\temp\BackupSystem
 .\venv\Scripts\python.exe scripts\fix_login_issues.py
 ```
 
@@ -750,7 +792,7 @@ Get-NetFirewallRule -DisplayName "*Backup Management*" | Format-List *
 #### ルール再作成
 
 ```powershell
-cd C:\BackupSystem\deployment\windows
+cd C:\temp\BackupSystem\deployment\windows
 .\configure_firewall.ps1
 ```
 
@@ -771,7 +813,7 @@ Get-NetFirewallProfile | Select-Object Name, Enabled
 **スクリプト**: [scripts/powershell/veeam_integration.ps1](../scripts/powershell/veeam_integration.ps1)
 
 ```powershell
-cd C:\BackupSystem\scripts\powershell
+cd C:\temp\BackupSystem\scripts\powershell
 .\veeam_integration.ps1 -Register
 ```
 
@@ -782,7 +824,7 @@ cd C:\BackupSystem\scripts\powershell
 #### メール通知
 
 ```powershell
-notepad C:\BackupSystem\.env
+notepad C:\temp\BackupSystem\.env
 ```
 
 ```ini
@@ -817,7 +859,7 @@ Restart-Service -Name BackupManagementSystem
 **Prometheus + Grafana起動**:
 
 ```powershell
-cd C:\BackupSystem\deployment\windows
+cd C:\temp\BackupSystem\deployment\windows
 .\start_monitoring.ps1
 ```
 
@@ -832,7 +874,7 @@ cd C:\BackupSystem\deployment\windows
 #### Windows Server Backup
 
 ```powershell
-cd C:\BackupSystem\scripts\powershell
+cd C:\temp\BackupSystem\scripts\powershell
 .\wsb_integration.ps1 -Register
 ```
 
@@ -851,9 +893,9 @@ cd C:\BackupSystem\scripts\powershell
 
 # ステップ1: クリーンアップ
 Stop-Service -Name BackupManagementSystem -ErrorAction SilentlyContinue
-if (Test-Path "C:\BackupSystem\nssm\nssm.exe") { C:\BackupSystem\nssm\nssm.exe remove BackupManagementSystem confirm }
-Remove-Item -Recurse -Force C:\BackupSystem -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force C:\temp\BackupSystem -ErrorAction SilentlyContinue
+if (Test-Path "C:\temp\BackupSystem\nssm\nssm.exe") { C:\temp\BackupSystem\nssm\nssm.exe remove BackupManagementSystem confirm }
+
+
 
 # ステップ2: 最新コード取得
 cd C:\temp
@@ -861,9 +903,9 @@ git clone https://github.com/Kensan196948G/backup-management-system.git BackupSy
 cd BackupSystem
 git checkout develop
 
-# ステップ3: C:\BackupSystemに移動
-Move-Item C:\temp\BackupSystem C:\BackupSystem
-cd C:\BackupSystem
+# ステップ3: C:\temp\BackupSystemに移動
+# インストール先は既にC:\temp\BackupSystemです
+cd C:\temp\BackupSystem
 
 # ステップ4: 環境変数設定
 Copy-Item .env.example .env
@@ -926,7 +968,7 @@ Start-Process "http://192.168.3.92:5000"
 ### システム構成
 
 ```
-C:\BackupSystem\
+C:\temp\BackupSystem\
 ├── .git\                    ← Gitリポジトリ
 ├── app\                     ← アプリケーション（最新版）
 ├── scripts\                 ← スクリプト（最新版）
@@ -972,7 +1014,7 @@ C:\BackupSystem\
 
 ### トラブル時
 
-1. **ログ確認**: `C:\BackupSystem\logs\`
+1. **ログ確認**: `C:\temp\BackupSystem\logs\`
 2. **検証スクリプト実行**: `.\deployment\windows\verify_installation.ps1`
 3. **診断スクリプト実行**: `.\venv\Scripts\python.exe scripts\fix_login_issues.py`
 

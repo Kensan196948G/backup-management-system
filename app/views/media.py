@@ -75,11 +75,25 @@ def list():
     locations = db.session.query(OfflineMedia.storage_location).distinct().order_by(OfflineMedia.storage_location).all()
     locations = [loc[0] for loc in locations if loc[0]]
 
+    # Calculate media statistics
+    total_media = OfflineMedia.query.count()
+    in_use_count = OfflineMedia.query.filter_by(current_status="in_use").count()
+    lent_count = OfflineMedia.query.filter_by(current_status="lent").count()
+    retired_count = OfflineMedia.query.filter_by(current_status="retired").count()
+
+    media_stats = {
+        "total": total_media,
+        "in_use": in_use_count,
+        "lent": lent_count,
+        "retired": retired_count,
+    }
+
     return render_template(
         "media/list.html",
         media_list=media_list,
         pagination=pagination,
         locations=locations,
+        media_stats=media_stats,
         filters={
             "search": search,
             "type": media_type,

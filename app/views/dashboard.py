@@ -37,7 +37,8 @@ def index():
         recent_alerts = Alert.query.filter_by(is_acknowledged=False).order_by(Alert.created_at.desc()).limit(10).all()
 
         # Get upcoming jobs (scheduled jobs)
-        upcoming_jobs = BackupJob.query.filter_by(is_active=True).order_by(BackupJob.next_run.asc()).limit(5).all()
+        # Note: BackupJob doesn't have next_run field, sorting by job_name instead
+        upcoming_jobs = BackupJob.query.filter_by(is_active=True).order_by(BackupJob.job_name.asc()).limit(5).all()
 
         # Get recent executions
         recent_executions = BackupExecution.query.order_by(BackupExecution.execution_date.desc()).limit(10).all()
@@ -185,7 +186,7 @@ def api_storage_chart():
         # In production, you would calculate actual storage from BackupCopy table
         onsite = BackupJob.query.filter_by(is_active=True).count() * 70  # Mock data
         offsite = BackupJob.query.filter_by(is_active=True).count() * 60
-        offline = OfflineMedia.query.filter_by(status="in_use").count() * 50
+        offline = OfflineMedia.query.filter_by(current_status="in_use").count() * 50
 
         chart_data = {
             "labels": ["オンサイト", "オフサイト", "オフライン"],
@@ -241,13 +242,13 @@ def get_dashboard_statistics():
 
     # Offline media statistics
     total_media = OfflineMedia.query.count()
-    in_use_media = OfflineMedia.query.filter_by(status="in_use").count()
-    available_media = OfflineMedia.query.filter_by(status="available").count()
+    in_use_media = OfflineMedia.query.filter_by(current_status="in_use").count()
+    available_media = OfflineMedia.query.filter_by(current_status="available").count()
 
     # Recent verification tests
-    verification_passed = VerificationTest.query.filter_by(result="success").count()
+    verification_passed = VerificationTest.query.filter_by(test_result="success").count()
 
-    verification_failed = VerificationTest.query.filter_by(result="failed").count()
+    verification_failed = VerificationTest.query.filter_by(test_result="failed").count()
 
     return {
         "total_jobs": total_jobs,

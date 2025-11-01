@@ -121,23 +121,33 @@
                         <tr>
                             <td><strong>{{ report.id }}</strong></td>
                             <td>
-                                {% if report.report_type == 'periodic' %}
+                                {% if report.report_type == 'daily' or report.report_type == 'weekly' or report.report_type == 'monthly' %}
                                 <span class="badge bg-primary">定期</span>
                                 {% elif report.report_type == 'compliance' %}
                                 <span class="badge bg-success">コンプライアンス</span>
+                                {% elif report.report_type == 'audit' %}
+                                <span class="badge bg-warning">監査</span>
                                 {% else %}
-                                <span class="badge bg-info">カスタム</span>
+                                <span class="badge bg-info">{{ report.report_type }}</span>
                                 {% endif %}
                             </td>
-                            <td>{{ report.period_start.strftime('%Y/%m/%d') }} - {{ report.period_end.strftime('%Y/%m/%d') }}</td>
-                            <td>{{ report.generated_at.strftime('%Y/%m/%d %H:%M') }}</td>
-                            <td>{{ report.generated_by }}</td>
+                            <td>{{ report.date_from.strftime('%Y/%m/%d') }} - {{ report.date_to.strftime('%Y/%m/%d') }}</td>
+                            <td>{{ report.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
+                            <td>{{ report.generator.username if report.generator else '不明' }}</td>
                             <td>
+                                {% if report.file_format == 'pdf' %}
                                 <i class="bi bi-file-earmark-pdf text-danger"></i> PDF
+                                {% elif report.file_format == 'html' %}
+                                <i class="bi bi-file-earmark-code text-primary"></i> HTML
+                                {% elif report.file_format == 'csv' %}
+                                <i class="bi bi-file-earmark-spreadsheet text-success"></i> CSV
+                                {% else %}
+                                <i class="bi bi-file-earmark text-secondary"></i> {{ report.file_format }}
+                                {% endif %}
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{{ url_for('reports.view', report_id=report.id) }}" class="btn btn-outline-info">
+                                    <a href="{{ url_for('reports.detail', report_id=report.id) }}" class="btn btn-outline-info">
                                         <i class="bi bi-eye"></i> 表示
                                     </a>
                                     <a href="{{ url_for('reports.download', report_id=report.id) }}" class="btn btn-outline-primary">

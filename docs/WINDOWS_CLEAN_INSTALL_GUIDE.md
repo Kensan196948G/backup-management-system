@@ -18,7 +18,7 @@
 
 ## 🎯 このガイドについて
 
-2つのフォルダ（C:\BackupSystemとC:\temp\BackupSystem）を完全削除して、
+2つのフォルダ（C:\temp\BackupSystemとC:\temp\BackupSystem）を完全削除して、
 最新のコード（Python 3.13対応、すべての修正済み）でゼロから構築します。
 
 **これが最も確実で効率的な方法です。**
@@ -44,16 +44,16 @@
 Stop-Service -Name BackupManagementSystem -ErrorAction SilentlyContinue
 
 # サービス削除（存在する場合）
-if (Test-Path "C:\BackupSystem\nssm\nssm.exe") {
-    C:\BackupSystem\nssm\nssm.exe remove BackupManagementSystem confirm
+if (Test-Path "C:\temp\BackupSystem\nssm\nssm.exe") {
+    C:\temp\BackupSystem\nssm\nssm.exe remove BackupManagementSystem confirm
 }
 
 # 両方のフォルダを完全削除
-Remove-Item -Recurse -Force C:\BackupSystem -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force C:\temp\BackupSystem -ErrorAction SilentlyContinue
+
+
 
 # 削除確認
-Test-Path C:\BackupSystem        # False であることを確認
+Test-Path C:\temp\BackupSystem        # False であることを確認
 Test-Path C:\temp\BackupSystem   # False であることを確認
 
 Write-Host "✅ クリーンアップ完了" -ForegroundColor Green
@@ -90,15 +90,15 @@ Write-Host "✅ 最新コード取得完了" -ForegroundColor Green
 
 ---
 
-### ステップ3: C:\BackupSystemに移動（5秒）
+### ステップ3: C:\temp\BackupSystemに移動（5秒）
 
 ```powershell
-# C:\temp\BackupSystemをC:\BackupSystemに移動
-Move-Item C:\temp\BackupSystem C:\BackupSystem
+# C:\temp\BackupSystemをC:\temp\BackupSystemに移動
+# インストール先は既にC:\temp\BackupSystemです
 
 # 移動確認
-Test-Path C:\BackupSystem        # True
-Test-Path C:\BackupSystem\.git   # True（Gitリポジトリごと移動）
+Test-Path C:\temp\BackupSystem        # True
+Test-Path C:\temp\BackupSystem\.git   # True（Gitリポジトリごと移動）
 
 Write-Host "✅ ディレクトリ移動完了" -ForegroundColor Green
 ```
@@ -108,7 +108,7 @@ Write-Host "✅ ディレクトリ移動完了" -ForegroundColor Green
 ### ステップ4: 環境変数設定（2分）
 
 ```powershell
-cd C:\BackupSystem
+cd C:\temp\BackupSystem
 
 # .env.exampleをコピー
 Copy-Item .env.example .env
@@ -286,12 +286,12 @@ Start-Process "http://localhost:5000"
 
 ```powershell
 # SECRET_KEY確認
-cat C:\BackupSystem\.env | Select-String "SECRET_KEY"
+cat C:\temp\BackupSystem\.env | Select-String "SECRET_KEY"
 
 # 64文字のランダム文字列が設定されているか確認
 # もし空または短い場合、再生成:
-$secretKey = C:\BackupSystem\venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"
-notepad C:\BackupSystem\.env  # SECRET_KEY=xxxx を更新
+$secretKey = C:\temp\BackupSystem\venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"
+notepad C:\temp\BackupSystem\.env  # SECRET_KEY=xxxx を更新
 Restart-Service -Name BackupManagementSystem
 ```
 
@@ -300,7 +300,7 @@ Restart-Service -Name BackupManagementSystem
 **対処法**: ログ確認
 
 ```powershell
-cat C:\BackupSystem\logs\service_stderr.log
+cat C:\temp\BackupSystem\logs\service_stderr.log
 ```
 
 エラー内容に応じて対処。
@@ -312,7 +312,7 @@ cat C:\BackupSystem\logs\service_stderr.log
 ### システム構成
 
 ```
-C:\BackupSystem\
+C:\temp\BackupSystem\
 ├── .git\                    ← Gitリポジトリ
 ├── app\                     ← アプリケーション（最新版）
 ├── scripts\                 ← スクリプト（最新版）
@@ -363,9 +363,9 @@ C:\BackupSystem\
 
 # === クリーンアップ ===
 Stop-Service -Name BackupManagementSystem -ErrorAction SilentlyContinue
-if (Test-Path "C:\BackupSystem\nssm\nssm.exe") { C:\BackupSystem\nssm\nssm.exe remove BackupManagementSystem confirm }
-Remove-Item -Recurse -Force C:\BackupSystem -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force C:\temp\BackupSystem -ErrorAction SilentlyContinue
+if (Test-Path "C:\temp\BackupSystem\nssm\nssm.exe") { C:\temp\BackupSystem\nssm\nssm.exe remove BackupManagementSystem confirm }
+
+
 
 # === 最新コード取得 ===
 cd C:\temp
@@ -373,9 +373,9 @@ git clone https://github.com/Kensan196948G/backup-management-system.git BackupSy
 cd BackupSystem
 git checkout develop
 
-# === C:\BackupSystemに移動 ===
-Move-Item C:\temp\BackupSystem C:\BackupSystem
-cd C:\BackupSystem
+# === C:\temp\BackupSystemに移動 ===
+# インストール先は既にC:\temp\BackupSystemです
+cd C:\temp\BackupSystem
 
 # === 環境変数設定 ===
 Copy-Item .env.example .env
