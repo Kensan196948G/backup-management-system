@@ -17,8 +17,8 @@ from pathlib import Path
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, jsonify, render_template, request
-from flask_login import LoginManager
+from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask_login import LoginManager, current_user
 from flask_mail import Mail
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
@@ -226,6 +226,14 @@ def _register_blueprints(app):
         app.logger.warning(f"API blueprint not found: {e}")
 
     app.logger.info("All blueprints registered successfully")
+
+    # Register root route
+    @app.route("/")
+    def index():
+        """Redirect root URL to login page if not authenticated, otherwise to dashboard"""
+        if current_user.is_authenticated:
+            return redirect(url_for("dashboard.index"))
+        return redirect(url_for("auth.login"))
 
 
 def _register_error_handlers(app):

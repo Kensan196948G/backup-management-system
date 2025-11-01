@@ -147,7 +147,7 @@ def cleanup_old_logs(app):
             execution_retention_days = app.config.get("LOG_ROTATION_DAYS", 90)
             execution_threshold = datetime.utcnow() - timedelta(days=execution_retention_days)
 
-            deleted_executions = BackupExecution.query.filter(BackupExecution.start_time < execution_threshold).delete()
+            deleted_executions = BackupExecution.query.filter(BackupExecution.execution_date < execution_threshold).delete()
 
             db.session.commit()
 
