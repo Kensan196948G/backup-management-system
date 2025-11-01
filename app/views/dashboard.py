@@ -245,9 +245,9 @@ def get_dashboard_statistics():
     available_media = OfflineMedia.query.filter_by(current_status="available").count()
 
     # Recent verification tests
-    verification_passed = VerificationTest.query.filter_by(result="success").count()
+    verification_passed = VerificationTest.query.filter_by(test_result="success").count()
 
-    verification_failed = VerificationTest.query.filter_by(result="failed").count()
+    verification_failed = VerificationTest.query.filter_by(test_result="failed").count()
 
     return {
         "total_jobs": total_jobs,
