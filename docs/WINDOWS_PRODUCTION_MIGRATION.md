@@ -611,23 +611,63 @@ error: Microsoft Visual C++ 14.0 or greater is required.
 
 ---
 
-### 問題2: 400 Bad Requestエラー
+### 問題2: 400 Bad Requestエラー（HTTP/HTTPS問題）
 
 **症状**:
 ```
 400 Bad Request
-The browser (or proxy) sent a request that this server could not understand.
+リクエストが不正です。入力内容を確認してください。
 ```
 
-**原因**: `SECRET_KEY` が未設定または短すぎる
+**原因**: 本番モード(`production`)でHTTP接続を使用しているため、`SESSION_COOKIE_SECURE=True`がセッションCookieをブロック
 
-**対処法**:
+`★ Insight ─────────────────────────────────────`
+**本番環境のセキュリティ設定**
+1. **SESSION_COOKIE_SECURE=True**: ブラウザはHTTPS接続でのみCookieを送信
+2. **CSRF保護**: FlaskはCSRFトークンをセッションCookieで管理
+3. **400エラーの原因**: HTTP環境でCookieが送信されず、CSRF検証失敗
+`─────────────────────────────────────────────────`
+
+**対処法A: 診断スクリプトを実行（推奨）**
+
+```powershell
+cd C:\BackupSystem
+.\venv\Scripts\python.exe scripts\diagnose_login.py
+```
+
+診断結果に基づいて対処してください。
+
+**対処法B: HTTP対応モードで起動**
+
+```powershell
+# HTTP対応スクリプト実行
+.\venv\Scripts\python.exe scripts\fix_production_http.py
+
+# サービス再起動
+Restart-Service BackupManagementSystem
+
+# ブラウザでアクセス
+Start-Process "http://192.168.3.92:5000"
+```
+
+**対処法C: 開発モードで起動（一時的）**
+
+```powershell
+# .envを編集
+notepad C:\BackupSystem\.env
+# FLASK_ENV=production を FLASK_ENV=development に変更
+
+# サービス再起動
+Restart-Service BackupManagementSystem
+```
+
+**対処法D: SECRET_KEY確認（上記で解決しない場合）**
 
 ```powershell
 # SECRET_KEY確認
 Get-Content C:\BackupSystem\.env | Select-String "SECRET_KEY"
 
-# 短い場合、再生成
+# 再生成
 $secretKey = C:\BackupSystem\venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"
 Write-Host "新しいSECRET_KEY: $secretKey"
 
@@ -638,6 +678,8 @@ notepad C:\BackupSystem\.env
 # サービス再起動
 Restart-Service -Name BackupManagementSystem
 ```
+
+⚠️ **将来的な対応**: 本番環境では必ずHTTPS（nginx + SSL証明書）への移行を推奨
 
 ---
 
