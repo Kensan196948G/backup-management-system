@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-11-01T20:07:32.024997",
+  "errors": [
+    "❌ Database connection failed: No module named 'apscheduler'",
+    "❌ Flask app startup failed: No module named 'apscheduler'",
+    "❌ Models integrity check failed: No module named 'apscheduler'",
+    "❌ Routes check failed: No module named 'apscheduler'"
+  ],
+  "warnings": [],
+  "checks_passed": [
+    "✅ Templates check: OK",
+    "✅ Environment variables: OK"
+  ],
+  "issue_data": {
+    "issue_number": "11",
+    "issue_url": "https://github.com/Kensan196948G/backup-management-system/issues/11",
+    "errors": [
+      "❌ Database connection failed: No module named 'apscheduler'",
+      "❌ Flask app startup failed: No module named 'apscheduler'",
+      "❌ Models integrity check failed: No module named 'apscheduler'",
+      "❌ Routes check failed: No module named 'apscheduler'"
+    ],
+    "warnings": []
+  }
+}

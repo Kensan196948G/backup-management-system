@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-11-01T20:07:04.540876",
+  "errors": [
+    "❌ Database connection failed: No module named 'apscheduler'",
+    "❌ Flask app startup failed: No module named 'apscheduler'",
+    "❌ Models integrity check failed: No module named 'apscheduler'",
+    "❌ Routes check failed: No module named 'apscheduler'"
+  ],
+  "warnings": [],
+  "checks_passed": [
+    "✅ Templates check: OK",
+    "✅ Environment variables: OK"
+  ],
+  "issue_data": null
+}
