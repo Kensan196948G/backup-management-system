@@ -93,6 +93,10 @@ class User(UserMixin, db.Model):
         """Check if user can view data"""
         return self.is_active and self.role in ("admin", "operator", "viewer", "auditor")
 
+    def has_any_role(self, *roles):
+        """Check if user has any of the specified roles"""
+        return self.role in roles
+
     def __repr__(self):
         return f"<User {self.username} ({self.role})>"
 
