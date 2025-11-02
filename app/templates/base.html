@@ -68,6 +68,14 @@
                             <i class="bi bi-file-earmark-bar-graph"></i> レポート
                         </a>
                     </li>
+                    {% if current_user.role == 'admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint and 'settings' in request.endpoint %}active{% endif %}"
+                           href="{{ url_for('settings.index') }}">
+                            <i class="bi bi-gear"></i> システム設定
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
 
                 <ul class="navbar-nav">
