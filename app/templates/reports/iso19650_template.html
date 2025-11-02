@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ report_title }}</title>
+    <style>
+        .header-title {
+            string-set: header-title "ISO 19650 Information Management";
+        }
+        .header-date {
+            string-set: header-date "{{ generated_date.strftime('%Y-%m-%d') }}";
+        }
+    </style>
+</head>
+<body>
+    <!-- Cover Page -->
+    <div class="cover-page header-title">
+        <div class="cover-title">
+            ISO 19650:2018<br>
+            情報管理<br>
+            バックアップ情報管理レポート
+        </div>
+        <div class="cover-subtitle">
+            Organization and Digitization of Information<br>
+            Backup Information Management Report
+        </div>
+        <div class="cover-info">
+            <p>対象期間: {{ start_date.strftime('%Y年%m月%d日') }} - {{ end_date.strftime('%Y年%m月%d日') }}</p>
+            <p>作成日: {{ generated_date.strftime('%Y年%m月%d日 %H:%M') }} UTC</p>
+            <p>準拠規格: {{ standard }}</p>
+        </div>
+    </div>
+
+    <!-- Table of Contents -->
+    <div class="toc">
+        <h2>目次 (Table of Contents)</h2>
+        <div class="toc-item">1. 概要 (Overview)</div>
+        <div class="toc-item">2. 情報管理要求事項 (Information Management Requirements)</div>
+        <div class="toc-item">3. 情報ライフサイクル管理 (Information Lifecycle Management)</div>
+        <div class="toc-item">4. セキュリティと完全性 (Security and Integrity)</div>
+        <div class="toc-item">5. アーカイブと検索性 (Archive and Retrieval)</div>
+        <div class="toc-item">6. パフォーマンス指標 (Performance Indicators)</div>
+        <div class="toc-item">7. 改善計画 (Improvement Plan)</div>
+    </div>
+
+    <!-- 1. Overview -->
+    <div class="section header-date">
+        <h2>1. 概要</h2>
+        <h3>1.1 レポート目的</h3>
+        <p>
+            本レポートは、ISO 19650:2018「建築物及び土木構造物に関する情報の組織化及びデジタル化」に基づき、
+            バックアップ情報の管理状況を評価するものです。BIM(Building Information Modeling)データを含む
+            すべての情報資産のバックアップ管理が、情報管理要求事項に適合していることを確認します。
+        </p>
+
+        <h3>1.2 情報管理の範囲</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>項目</th>
+                    <th>内容</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>対象情報</td>
+                    <td>すべてのデジタル情報資産(BIMモデル、CADデータ、ドキュメント等)</td>
+                </tr>
+                <tr>
+                    <td>管理期間</td>
+                    <td>{{ start_date.strftime('%Y-%m-%d') }} - {{ end_date.strftime('%Y-%m-%d') }}</td>
+                </tr>
+                <tr>
+                    <td>管理対象ジョブ数</td>
+                    <td>{{ data.total_jobs or 0 }} ジョブ</td>
+                </tr>
+                <tr>
+                    <td>情報コンテナ数</td>
+                    <td>{{ data.total_containers or 0 }} コンテナ</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>1.3 準拠状況サマリー</h3>
+        <div style="margin: 1cm 0;">
+            <div class="metric-box">
+                <div class="metric-label">情報管理適合率</div>
+                <div class="metric-value info">{{ "%.1f"|format(data.compliance_rate or 0) }}%</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">検索可能性</div>
+                <div class="metric-value success">{{ "%.1f"|format(data.retrieval_rate or 100) }}%</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">完全性検証率</div>
+                <div class="metric-value info">{{ "%.1f"|format(data.verification_rate or 0) }}%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Information Management Requirements -->
+    <div class="section">
+        <h2>2. 情報管理要求事項</h2>
+        <h3>2.1 ISO 19650 要求事項の評価</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 10%;">条項</th>
+                    <th style="width: 25%;">要求事項</th>
+                    <th style="width: 35%;">説明</th>
+                    <th style="width: 15%;">状態</th>
+                    <th style="width: 15%;">エビデンス</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in requirements %}
+                <tr>
+                    <td><strong>{{ req.number }}</strong></td>
+                    <td>{{ req.title }}</td>
+                    <td>{{ req.description }}</td>
+                    <td>
+                        {% if req.status == 'compliant' %}
+                        <span class="status-badge status-success">適合</span>
+                        {% elif req.status == 'partial' %}
+                        <span class="status-badge status-warning">部分適合</span>
+                        {% else %}
+                        <span class="status-badge status-danger">不適合</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size: 9pt;">{{ req.evidence }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>2.2 情報交換要求事項 (EIR) への準拠</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>EIR項目</th>
+                    <th>要求事項</th>
+                    <th>実績</th>
+                    <th>状態</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>情報保持期間</td>
+                    <td>7年以上</td>
+                    <td>無期限(削除されるまで)</td>
+                    <td><span class="status-badge status-success">✓</span></td>
+                </tr>
+                <tr>
+                    <td>バックアップ頻度</td>
+                    <td>日次以上</td>
+                    <td>スケジュール通り実行</td>
+                    <td><span class="status-badge status-success">✓</span></td>
+                </tr>
+                <tr>
+                    <td>復旧可能性</td>
+                    <td>24時間以内</td>
+                    <td>検証テスト合格率 {{ "%.1f"|format(data.verification_rate or 0) }}%</td>
+                    <td>
+                        {% if (data.verification_rate or 0) >= 95 %}
+                        <span class="status-badge status-success">✓</span>
+                        {% else %}
+                        <span class="status-badge status-warning">△</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>地理的分散</td>
+                    <td>異なる地理的場所</td>
+                    <td>オフサイトバックアップ実装</td>
+                    <td><span class="status-badge status-success">✓</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 3. Information Lifecycle Management -->
+    <div class="section">
+        <h2>3. 情報ライフサイクル管理</h2>
+        <h3>3.1 ライフサイクル各段階での管理</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>段階</th>
+                    <th>管理内容</th>
+                    <th>バックアップ戦略</th>
+                    <th>実施状況</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>作成・取得</strong></td>
+                    <td>情報コンテナの初期作成</td>
+                    <td>初回フルバックアップ</td>
+                    <td><span class="status-badge status-success">実施中</span></td>
+                </tr>
+                <tr>
+                    <td><strong>共有・協働</strong></td>
+                    <td>CDE(共通データ環境)での管理</td>
+                    <td>増分バックアップ(日次)</td>
+                    <td><span class="status-badge status-success">実施中</span></td>
+                </tr>
+                <tr>
+                    <td><strong>承認・公開</strong></td>
+                    <td>バージョン管理と承認</td>
+                    <td>バージョン毎のスナップショット</td>
+                    <td><span class="status-badge status-success">実施中</span></td>
+                </tr>
+                <tr>
+                    <td><strong>アーカイブ</strong></td>
+                    <td>長期保存と検索性確保</td>
+                    <td>オフライン・イミュータブル保存</td>
+                    <td><span class="status-badge status-success">実施中</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>3.2 バックアップ実行統計</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>メトリクス</th>
+                    <th>値</th>
+                    <th>目標</th>
+                    <th>達成率</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>総実行回数</td>
+                    <td>{{ data.executions|length if data.executions else 0 }}</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr class="success">
+                    <td>成功率</td>
+                    <td>{{ "%.1f"|format(data.success_rate or 0) }}%</td>
+                    <td>95%以上</td>
+                    <td>
+                        {% if (data.success_rate or 0) >= 95 %}
+                        <span class="status-badge status-success">達成</span>
+                        {% else %}
+                        <span class="status-badge status-warning">未達</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>平均実行時間</td>
+                    <td>{{ "%.1f"|format(data.avg_duration or 0) }} 秒</td>
+                    <td>&lt; 3600秒</td>
+                    <td>
+                        {% if (data.avg_duration or 0) < 3600 %}
+                        <span class="status-badge status-success">達成</span>
+                        {% else %}
+                        <span class="status-badge status-warning">未達</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 4. Security and Integrity -->
+    <div class="section">
+        <h2>4. セキュリティと完全性</h2>
+        <h3>4.1 情報セキュリティ管理</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>セキュリティ対策</th>
+                    <th>実装状況</th>
+                    <th>評価</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>アクセス制御</td>
+                    <td>ロールベースアクセス制御(RBAC)実装</td>
+                    <td><span class="status-badge status-success">✓ 実装済</span></td>
+                </tr>
+                <tr>
+                    <td>暗号化</td>
+                    <td>転送時・保存時の暗号化</td>
+                    <td><span class="status-badge status-success">✓ 実装済</span></td>
+                </tr>
+                <tr>
+                    <td>監査ログ</td>
+                    <td>全操作のログ記録と保持</td>
+                    <td><span class="status-badge status-success">✓ 実装済</span></td>
+                </tr>
+                <tr>
+                    <td>完全性検証</td>
+                    <td>ハッシュ値による検証</td>
+                    <td><span class="status-badge status-success">✓ 実装済</span></td>
+                </tr>
+                <tr>
+                    <td>バージョン管理</td>
+                    <td>時系列でのバージョン追跡</td>
+                    <td><span class="status-badge status-success">✓ 実装済</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>4.2 データ完全性検証結果</h3>
+        {% if data.verification_tests %}
+        <table>
+            <thead>
+                <tr>
+                    <th>テストID</th>
+                    <th>ジョブ名</th>
+                    <th>テスト種類</th>
+                    <th>結果</th>
+                    <th>実施日</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for test in data.verification_tests[:15] %}
+                <tr>
+                    <td>{{ test.id }}</td>
+                    <td style="font-size: 9pt;">{{ test.job.job_name if test.job else '-' }}</td>
+                    <td>{{ test.test_type or 'integrity' }}</td>
+                    <td>
+                        {% if test.test_result == 'success' %}
+                        <span class="status-badge status-success">成功</span>
+                        {% else %}
+                        <span class="status-badge status-danger">失敗</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size: 9pt;">{{ test.test_date.strftime('%Y-%m-%d %H:%M') if test.test_date else '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>該当期間の検証テスト記録がありません。</p>
+        {% endif %}
+    </div>
+
+    <!-- 5. Archive and Retrieval -->
+    <div class="section">
+        <h2>5. アーカイブと検索性</h2>
+        <h3>5.1 アーカイブ戦略</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>アーカイブ層</th>
+                    <th>保存形式</th>
+                    <th>保存期間</th>
+                    <th>検索性</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>オンライン層</strong></td>
+                    <td>プライマリストレージ</td>
+                    <td>30日</td>
+                    <td><span class="status-badge status-success">即時アクセス</span></td>
+                </tr>
+                <tr>
+                    <td><strong>ニアライン層</strong></td>
+                    <td>セカンダリストレージ</td>
+                    <td>1年</td>
+                    <td><span class="status-badge status-info">数分以内</span></td>
+                </tr>
+                <tr>
+                    <td><strong>オフライン層</strong></td>
+                    <td>テープ/クラウドアーカイブ</td>
+                    <td>7年以上</td>
+                    <td><span class="status-badge status-warning">数時間以内</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>5.2 情報検索メタデータ</h3>
+        <p>すべてのバックアップ情報には以下のメタデータが付与され、検索性が確保されています:</p>
+        <ul>
+            <li><strong>基本情報:</strong> ジョブ名、実行日時、ファイルサイズ</li>
+            <li><strong>分類情報:</strong> プロジェクトコード、情報カテゴリ</li>
+            <li><strong>状態情報:</strong> バージョン番号、ステータス、完全性ハッシュ</li>
+            <li><strong>保管情報:</strong> 保管場所、メディアタイプ、保持期限</li>
+            <li><strong>セキュリティ:</strong> アクセス権限、暗号化状態</li>
+        </ul>
+    </div>
+
+    <!-- 6. Performance Indicators -->
+    <div class="section">
+        <h2>6. パフォーマンス指標</h2>
+        <h3>6.1 主要パフォーマンス指標 (KPI)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>KPI</th>
+                    <th>実績</th>
+                    <th>目標</th>
+                    <th>評価</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>バックアップ成功率</td>
+                    <td>{{ "%.1f"|format(data.success_rate or 0) }}%</td>
+                    <td>&gt;= 95%</td>
+                    <td>
+                        {% if (data.success_rate or 0) >= 95 %}
+                        <span class="status-badge status-success">達成</span>
+                        {% else %}
+                        <span class="status-badge status-warning">未達</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>復旧テスト成功率</td>
+                    <td>{{ "%.1f"|format(data.verification_rate or 0) }}%</td>
+                    <td>&gt;= 90%</td>
+                    <td>
+                        {% if (data.verification_rate or 0) >= 90 %}
+                        <span class="status-badge status-success">達成</span>
+                        {% else %}
+                        <span class="status-badge status-warning">未達</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>3-2-1-1-0 準拠率</td>
+                    <td>{{ "%.1f"|format(data.compliance_rate or 0) }}%</td>
+                    <td>&gt;= 95%</td>
+                    <td>
+                        {% if (data.compliance_rate or 0) >= 95 %}
+                        <span class="status-badge status-success">達成</span>
+                        {% else %}
+                        <span class="status-badge status-warning">未達</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>情報検索可能性</td>
+                    <td>{{ "%.1f"|format(data.retrieval_rate or 100) }}%</td>
+                    <td>= 100%</td>
+                    <td>
+                        {% if (data.retrieval_rate or 100) == 100 %}
+                        <span class="status-badge status-success">達成</span>
+                        {% else %}
+                        <span class="status-badge status-warning">未達</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>6.2 容量管理</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>メトリクス</th>
+                    <th>値</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>総バックアップ容量</td>
+                    <td>{{ "%.2f"|format((data.total_backup_size or 0) / 1024 / 1024 / 1024) }} GB</td>
+                </tr>
+                <tr>
+                    <td>月間増加率</td>
+                    <td>{{ "%.1f"|format(data.growth_rate or 5) }}%</td>
+                </tr>
+                <tr>
+                    <td>重複排除率</td>
+                    <td>{{ "%.1f"|format(data.dedup_ratio or 0) }}%</td>
+                </tr>
+                <tr>
+                    <td>予測容量(6ヶ月後)</td>
+                    <td>{{ "%.2f"|format((data.total_backup_size or 0) * 1.3 / 1024 / 1024 / 1024) }} GB</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 7. Improvement Plan -->
+    <div class="section">
+        <h2>7. 改善計画</h2>
+        <h3>7.1 特定された改善領域</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>優先度</th>
+                    <th>改善項目</th>
+                    <th>現状</th>
+                    <th>目標</th>
+                    <th>期限</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if (data.success_rate or 100) < 95 %}
+                <tr>
+                    <td><span class="status-badge status-danger">高</span></td>
+                    <td>バックアップ成功率の向上</td>
+                    <td>{{ "%.1f"|format(data.success_rate or 0) }}%</td>
+                    <td>95%以上</td>
+                    <td>1ヶ月以内</td>
+                </tr>
+                {% endif %}
+                {% if (data.verification_rate or 100) < 90 %}
+                <tr>
+                    <td><span class="status-badge status-warning">中</span></td>
+                    <td>復旧テストの強化</td>
+                    <td>{{ "%.1f"|format(data.verification_rate or 0) }}%</td>
+                    <td>90%以上</td>
+                    <td>2ヶ月以内</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td><span class="status-badge status-info">低</span></td>
+                    <td>自動化レベルの向上</td>
+                    <td>部分自動化</td>
+                    <td>完全自動化</td>
+                    <td>3ヶ月以内</td>
+                </tr>
+                <tr>
+                    <td><span class="status-badge status-info">低</span></td>
+                    <td>メタデータ管理の拡充</td>
+                    <td>基本メタデータ</td>
+                    <td>拡張メタデータ</td>
+                    <td>6ヶ月以内</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>7.2 推奨アクション</h3>
+        <ol>
+            <li><strong>短期(1-3ヶ月):</strong>
+                <ul>
+                    <li>失敗したバックアップジョブの原因分析と修正</li>
+                    <li>復旧テストスケジュールの見直しと定期実行</li>
+                    <li>監視アラートの最適化</li>
+                </ul>
+            </li>
+            <li><strong>中期(3-6ヶ月):</strong>
+                <ul>
+                    <li>BIMデータ専用バックアップポリシーの策定</li>
+                    <li>クラウドアーカイブ層の導入検討</li>
+                    <li>メタデータスキーマの拡張</li>
+                </ul>
+            </li>
+            <li><strong>長期(6-12ヶ月):</strong>
+                <ul>
+                    <li>AIを活用した異常検知システムの導入</li>
+                    <li>マルチクラウド戦略の実装</li>
+                    <li>ゼロトラストアーキテクチャへの移行</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+
+    <!-- Footer Note -->
+    <div class="footer-note">
+        <p>
+            本レポートは ISO 19650:2018 に基づき自動生成されました。<br>
+            Confidential - 本レポートは機密情報を含みます。権限のない複製・配布を禁じます。<br>
+            Generated by Backup Management System v1.0
+        </p>
+    </div>
+</body>
+</html>

@@ -175,7 +175,8 @@ def _init_extensions(app):
         """Handle unauthorized access"""
         if request.is_json or request.path.startswith("/api/"):
             return jsonify({"error": "Authentication required", "message": "Please login to access this resource"}), 401
-        return render_template("errors/401.html"), 401
+        # WebUIの場合はログインページにリダイレクト
+        return redirect(url_for("auth.login"))
 
     # Mail
     mail.init_app(app)
@@ -224,6 +225,15 @@ def _register_blueprints(app):
         app.logger.info("API blueprint registered")
     except ImportError as e:
         app.logger.warning(f"API blueprint not found: {e}")
+
+    # API v1 Authentication blueprint
+    try:
+        from app.api.v1.auth import auth_bp
+
+        app.register_blueprint(auth_bp)
+        app.logger.info("API v1 Auth blueprint registered")
+    except ImportError as e:
+        app.logger.warning(f"API v1 Auth blueprint not found: {e}")
 
     app.logger.info("All blueprints registered successfully")
 

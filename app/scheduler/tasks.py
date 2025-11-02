@@ -105,22 +105,120 @@ def check_verification_reminders(app):
             logger.info("Starting verification reminder check")
 
             reminder_days = app.config.get("VERIFICATION_REMINDER_DAYS", 7)
-            threshold_date = datetime.utcnow() + timedelta(days=reminder_days)
+            threshold_date = datetime.utcnow().date() + timedelta(days=reminder_days)
 
             # Find upcoming verification tests
             upcoming_tests = VerificationSchedule.query.filter(
-                VerificationSchedule.scheduled_date <= threshold_date, VerificationSchedule.status == "scheduled"
+                VerificationSchedule.next_test_date <= threshold_date, VerificationSchedule.is_active == True
             ).all()
 
             alert_manager = AlertManager()
 
-            for test in upcoming_tests:
-                alert_manager.create_verification_reminder(test)
+            for schedule in upcoming_tests:
+                alert_manager.create_verification_reminder(schedule)
 
             logger.info(f"Sent {len(upcoming_tests)} verification reminders")
 
         except Exception as e:
             logger.error(f"Error in verification reminder check: {e}", exc_info=True)
+
+
+def execute_scheduled_verification_tests(app):
+    """
+    Execute scheduled verification tests that are due
+    Executed: Daily at 2:00 AM
+
+    Args:
+        app: Flask application instance
+    """
+    with app.app_context():
+        from app.models import BackupJob, User, VerificationSchedule, db
+        from app.services.verification_service import (
+            VerificationType,
+            get_verification_service,
+        )
+
+        try:
+            logger.info("Starting scheduled verification test execution")
+
+            today = datetime.utcnow().date()
+
+            # Find verification schedules that are due
+            due_schedules = VerificationSchedule.query.filter(
+                VerificationSchedule.is_active == True, VerificationSchedule.next_test_date <= today
+            ).all()
+
+            if not due_schedules:
+                logger.info("No verification tests due today")
+                return
+
+            verification_service = get_verification_service()
+            executed_count = 0
+            failed_count = 0
+
+            for schedule in due_schedules:
+                try:
+                    # Get job and tester
+                    job = BackupJob.query.get(schedule.job_id)
+                    if not job or not job.is_active:
+                        logger.warning(f"Job {schedule.job_id} not found or inactive, skipping verification")
+                        continue
+
+                    # Use assigned tester or default to system user (ID 1)
+                    tester_id = schedule.assigned_to if schedule.assigned_to else 1
+
+                    # Execute integrity check (default for automated tests)
+                    logger.info(f"Executing scheduled verification for job {job.id}: {job.job_name}")
+
+                    result, details = verification_service.execute_verification_test(
+                        job_id=job.id, test_type=VerificationType.INTEGRITY, tester_id=tester_id, restore_target=None
+                    )
+
+                    # Update schedule
+                    next_test_date = verification_service._calculate_next_test_date(schedule.test_frequency)
+                    verification_service.update_verification_schedule(schedule.id, next_test_date)
+
+                    executed_count += 1
+
+                    logger.info(f"Verification test completed for job {job.id}: {result.value}")
+
+                except Exception as e:
+                    logger.error(f"Error executing scheduled verification for schedule {schedule.id}: {e}", exc_info=True)
+                    failed_count += 1
+
+            logger.info(f"Scheduled verification execution completed: {executed_count} executed, {failed_count} failed")
+
+        except Exception as e:
+            logger.error(f"Error in scheduled verification test execution: {e}", exc_info=True)
+
+
+def cleanup_verification_test_data(app):
+    """
+    Cleanup old verification test data
+    Executed: Weekly on Sunday at 4:00 AM
+
+    Args:
+        app: Flask application instance
+    """
+    with app.app_context():
+        from app.models import VerificationTest, db
+
+        try:
+            logger.info("Starting verification test data cleanup")
+
+            retention_days = app.config.get("VERIFICATION_TEST_RETENTION_DAYS", 365)
+            threshold_date = datetime.utcnow() - timedelta(days=retention_days)
+
+            # Delete old verification test records
+            deleted_count = VerificationTest.query.filter(VerificationTest.test_date < threshold_date).delete()
+
+            db.session.commit()
+
+            logger.info(f"Verification test cleanup completed: {deleted_count} records deleted")
+
+        except Exception as e:
+            logger.error(f"Error in verification test cleanup: {e}", exc_info=True)
+            db.session.rollback()
 
 
 def cleanup_old_logs(app):

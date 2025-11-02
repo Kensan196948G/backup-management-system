@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ report_title }}</title>
+    <style>
+        .header-title {
+            string-set: header-title "Audit Log Report";
+        }
+        .header-date {
+            string-set: header-date "{{ generated_date.strftime('%Y-%m-%d') }}";
+        }
+    </style>
+</head>
+<body>
+    <!-- Cover Page -->
+    <div class="cover-page header-title">
+        <div class="cover-title">
+            監査ログレポート<br>
+            Audit Log Report
+        </div>
+        <div class="cover-subtitle">
+            System Activity and Security Audit
+        </div>
+        <div class="cover-info">
+            <p>対象期間: {{ start_date.strftime('%Y年%m月%d日') }} - {{ end_date.strftime('%Y年%m月%d日') }}</p>
+            <p>作成日: {{ generated_date.strftime('%Y年%m月%d日 %H:%M') }} UTC</p>
+            <p>総アクション数: <strong>{{ data.total_actions or 0 }}</strong></p>
+        </div>
+    </div>
+
+    <!-- Table of Contents -->
+    <div class="toc">
+        <h2>目次</h2>
+        <div class="toc-item">1. 監査概要</div>
+        <div class="toc-item">2. アクティビティサマリー</div>
+        <div class="toc-item">3. ユーザー別アクティビティ</div>
+        <div class="toc-item">4. アクション種別分析</div>
+        <div class="toc-item">5. セキュリティイベント</div>
+        <div class="toc-item">6. 詳細ログ</div>
+        <div class="toc-item">7. 推奨事項</div>
+    </div>
+
+    <!-- 1. Audit Overview -->
+    <div class="section header-date">
+        <h2>1. 監査概要</h2>
+
+        <h3>1.1 監査目的</h3>
+        <p>
+            本レポートは、バックアップ管理システムにおける全ての操作履歴を記録し、
+            セキュリティ、コンプライアンス、および運用の透明性を確保することを目的としています。
+        </p>
+
+        <h3>1.2 監査範囲</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>項目</th>
+                    <th>内容</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>監査期間</td>
+                    <td>{{ start_date.strftime('%Y-%m-%d') }} - {{ end_date.strftime('%Y-%m-%d') }} ({{ (end_date - start_date).days }}日間)</td>
+                </tr>
+                <tr>
+                    <td>総記録数</td>
+                    <td>{{ data.audit_logs|length if data.audit_logs else 0 }} エントリ</td>
+                </tr>
+                <tr>
+                    <td>記録対象</td>
+                    <td>全ユーザーアクション、システムイベント、セキュリティイベント</td>
+                </tr>
+                <tr>
+                    <td>ログ保持期間</td>
+                    <td>90日間</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>1.3 主要メトリクス</h3>
+        <div style="margin: 1cm 0;">
+            <div class="metric-box">
+                <div class="metric-label">総アクション</div>
+                <div class="metric-value">{{ data.total_actions or 0 }}</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label success">成功</div>
+                <div class="metric-value success">{{ data.success_count or 0 }}</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label danger">失敗</div>
+                <div class="metric-value danger">{{ data.failed_count or 0 }}</div>
+            </div>
+        </div>
+
+        <p style="text-align: center;">
+            成功率:
+            <strong class="{% if ((data.success_count or 0) / (data.total_actions or 1) * 100) >= 95 %}success{% else %}warning{% endif %}">
+                {{ "%.1f"|format((data.success_count or 0) / (data.total_actions or 1) * 100) }}%
+            </strong>
+        </p>
+    </div>
+
+    <!-- 2. Activity Summary -->
+    <div class="section">
+        <h2>2. アクティビティサマリー</h2>
+
+        <h3>2.1 期間中のアクティビティ</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>メトリクス</th>
+                    <th>値</th>
+                    <th>割合</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>総アクション数</td>
+                    <td>{{ data.total_actions or 0 }}</td>
+                    <td>100.0%</td>
+                </tr>
+                <tr class="success">
+                    <td><span class="status-badge status-success">成功</span></td>
+                    <td>{{ data.success_count or 0 }}</td>
+                    <td>{{ "%.1f"|format((data.success_count or 0) / (data.total_actions or 1) * 100) }}%</td>
+                </tr>
+                <tr class="danger">
+                    <td><span class="status-badge status-danger">失敗</span></td>
+                    <td>{{ data.failed_count or 0 }}</td>
+                    <td>{{ "%.1f"|format((data.failed_count or 0) / (data.total_actions or 1) * 100) }}%</td>
+                </tr>
+                <tr>
+                    <td>1日あたり平均</td>
+                    <td>{{ "%.1f"|format((data.total_actions or 0) / ((end_date - start_date).days or 1)) }}</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>2.2 アクション種別分布</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>アクション種別</th>
+                    <th>実行回数</th>
+                    <th>成功</th>
+                    <th>失敗</th>
+                    <th>成功率</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for action_type, stats in data.action_type_stats.items() %}
+                <tr>
+                    <td><strong>{{ action_type }}</strong></td>
+                    <td>{{ stats.total }}</td>
+                    <td class="success">{{ stats.success }}</td>
+                    <td class="danger">{{ stats.failed }}</td>
+                    <td>
+                        <span class="{% if stats.success_rate >= 95 %}success{% elif stats.success_rate >= 80 %}warning{% else %}danger{% endif %}">
+                            {{ "%.1f"|format(stats.success_rate) }}%
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 3. User Activity -->
+    <div class="section">
+        <h2>3. ユーザー別アクティビティ</h2>
+
+        <h3>3.1 アクティブユーザー統計</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>メトリクス</th>
+                    <th>値</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>アクティブユーザー数</td>
+                    <td>{{ data.active_users_count or 0 }}</td>
+                </tr>
+                <tr>
+                    <td>最多アクションユーザー</td>
+                    <td>{{ data.most_active_user or '-' }}</td>
+                </tr>
+                <tr>
+                    <td>ユーザーあたり平均アクション</td>
+                    <td>{{ "%.1f"|format((data.total_actions or 0) / (data.active_users_count or 1)) }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>3.2 ユーザー別アクション数</h3>
+        {% if data.user_activity_stats %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ユーザー名</th>
+                    <th>ロール</th>
+                    <th>総アクション</th>
+                    <th>成功</th>
+                    <th>失敗</th>
+                    <th>最終アクセス</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user_stat in data.user_activity_stats[:20] %}
+                <tr>
+                    <td>{{ user_stat.username }}</td>
+                    <td>{{ user_stat.role }}</td>
+                    <td>{{ user_stat.total_actions }}</td>
+                    <td class="success">{{ user_stat.success_count }}</td>
+                    <td class="danger">{{ user_stat.failed_count }}</td>
+                    <td style="font-size: 9pt;">{{ user_stat.last_activity.strftime('%Y-%m-%d %H:%M') if user_stat.last_activity else '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>ユーザーアクティビティ統計が利用できません。</p>
+        {% endif %}
+    </div>
+
+    <!-- 4. Action Type Analysis -->
+    <div class="section">
+        <h2>4. アクション種別分析</h2>
+
+        <h3>4.1 主要アクション種別</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>アクション</th>
+                    <th>説明</th>
+                    <th>実行回数</th>
+                    <th>リスクレベル</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>LOGIN</strong></td>
+                    <td>ユーザーログイン</td>
+                    <td>{{ data.login_count or 0 }}</td>
+                    <td><span class="status-badge status-info">低</span></td>
+                </tr>
+                <tr>
+                    <td><strong>LOGOUT</strong></td>
+                    <td>ユーザーログアウト</td>
+                    <td>{{ data.logout_count or 0 }}</td>
+                    <td><span class="status-badge status-info">低</span></td>
+                </tr>
+                <tr>
+                    <td><strong>CREATE</strong></td>
+                    <td>リソース作成</td>
+                    <td>{{ data.create_count or 0 }}</td>
+                    <td><span class="status-badge status-warning">中</span></td>
+                </tr>
+                <tr>
+                    <td><strong>UPDATE</strong></td>
+                    <td>リソース更新</td>
+                    <td>{{ data.update_count or 0 }}</td>
+                    <td><span class="status-badge status-warning">中</span></td>
+                </tr>
+                <tr>
+                    <td><strong>DELETE</strong></td>
+                    <td>リソース削除</td>
+                    <td>{{ data.delete_count or 0 }}</td>
+                    <td><span class="status-badge status-danger">高</span></td>
+                </tr>
+                <tr>
+                    <td><strong>EXECUTE</strong></td>
+                    <td>バックアップ実行</td>
+                    <td>{{ data.execute_count or 0 }}</td>
+                    <td><span class="status-badge status-warning">中</span></td>
+                </tr>
+                <tr>
+                    <td><strong>VERIFY</strong></td>
+                    <td>検証テスト</td>
+                    <td>{{ data.verify_count or 0 }}</td>
+                    <td><span class="status-badge status-info">低</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>4.2 リソース種別分析</h3>
+        {% if data.resource_type_stats %}
+        <table>
+            <thead>
+                <tr>
+                    <th>リソース種別</th>
+                    <th>アクション数</th>
+                    <th>主なアクション</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for resource_type, stats in data.resource_type_stats.items() %}
+                <tr>
+                    <td><strong>{{ resource_type or 'その他' }}</strong></td>
+                    <td>{{ stats.count }}</td>
+                    <td style="font-size: 9pt;">{{ stats.top_actions|join(', ') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+
+    <!-- 5. Security Events -->
+    <div class="section">
+        <h2>5. セキュリティイベント</h2>
+
+        <h3>5.1 セキュリティ関連イベントサマリー</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>イベント種別</th>
+                    <th>発生回数</th>
+                    <th>深刻度</th>
+                    <th>状態</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>ログイン失敗</td>
+                    <td>{{ data.failed_login_count or 0 }}</td>
+                    <td>
+                        {% if (data.failed_login_count or 0) > 10 %}
+                        <span class="status-badge status-danger">高</span>
+                        {% elif (data.failed_login_count or 0) > 5 %}
+                        <span class="status-badge status-warning">中</span>
+                        {% else %}
+                        <span class="status-badge status-info">低</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if (data.failed_login_count or 0) > 10 %}
+                        <span class="status-badge status-warning">要調査</span>
+                        {% else %}
+                        <span class="status-badge status-success">正常</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>権限エラー</td>
+                    <td>{{ data.permission_error_count or 0 }}</td>
+                    <td>
+                        {% if (data.permission_error_count or 0) > 5 %}
+                        <span class="status-badge status-warning">中</span>
+                        {% else %}
+                        <span class="status-badge status-info">低</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if (data.permission_error_count or 0) > 5 %}
+                        <span class="status-badge status-warning">要確認</span>
+                        {% else %}
+                        <span class="status-badge status-success">正常</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>削除操作</td>
+                    <td>{{ data.delete_count or 0 }}</td>
+                    <td><span class="status-badge status-warning">中</span></td>
+                    <td><span class="status-badge status-info">監視中</span></td>
+                </tr>
+                <tr>
+                    <td>設定変更</td>
+                    <td>{{ data.config_change_count or 0 }}</td>
+                    <td><span class="status-badge status-warning">中</span></td>
+                    <td><span class="status-badge status-info">監視中</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>5.2 注意が必要なイベント</h3>
+        {% if data.security_events %}
+        <table>
+            <thead>
+                <tr>
+                    <th>日時</th>
+                    <th>ユーザー</th>
+                    <th>イベント</th>
+                    <th>詳細</th>
+                    <th>IPアドレス</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in data.security_events[:15] %}
+                <tr>
+                    <td style="font-size: 9pt;">{{ event.timestamp.strftime('%Y-%m-%d %H:%M') if event.timestamp else '-' }}</td>
+                    <td>{{ event.username or '-' }}</td>
+                    <td>
+                        <span class="status-badge
+                            {% if event.severity == 'high' %}status-danger
+                            {% elif event.severity == 'medium' %}status-warning
+                            {% else %}status-info{% endif %}">
+                            {{ event.event_type }}
+                        </span>
+                    </td>
+                    <td style="font-size: 9pt;">{{ event.description }}</td>
+                    <td style="font-size: 9pt;">{{ event.ip_address or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: #27ae60;">重大なセキュリティイベントは検出されませんでした。</p>
+        {% endif %}
+    </div>
+
+    <!-- 6. Detailed Logs -->
+    <div class="section">
+        <h2>6. 詳細ログ</h2>
+
+        <h3>6.1 最近のアクティビティ (最新50件)</h3>
+        {% if data.audit_logs %}
+        <table style="font-size: 8pt;">
+            <thead>
+                <tr>
+                    <th style="width: 12%;">日時</th>
+                    <th style="width: 10%;">ユーザー</th>
+                    <th style="width: 10%;">アクション</th>
+                    <th style="width: 12%;">リソース</th>
+                    <th style="width: 8%;">結果</th>
+                    <th style="width: 10%;">IPアドレス</th>
+                    <th style="width: 38%;">詳細</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in data.audit_logs[:50] %}
+                <tr>
+                    <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '-' }}</td>
+                    <td>{{ log.user.username if log.user else 'System' }}</td>
+                    <td>{{ log.action_type }}</td>
+                    <td>{{ log.resource_type or '-' }}</td>
+                    <td>
+                        {% if log.action_result == 'success' %}
+                        <span style="color: #27ae60;">✓</span>
+                        {% else %}
+                        <span style="color: #e74c3c;">✗</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ log.ip_address or '-' }}</td>
+                    <td>{{ log.description or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>該当期間の監査ログがありません。</p>
+        {% endif %}
+
+        <p style="font-size: 9pt; color: #7f8c8d; margin-top: 0.5cm;">
+            注: 完全な監査ログは{{ data.audit_logs|length if data.audit_logs else 0 }}エントリあります。
+            このレポートには最新50件のみ表示されています。
+        </p>
+    </div>
+
+    <!-- 7. Recommendations -->
+    <div class="section">
+        <h2>7. 推奨事項</h2>
+
+        <h3>7.1 セキュリティ改善推奨事項</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>優先度</th>
+                    <th>推奨事項</th>
+                    <th>理由</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if (data.failed_login_count or 0) > 10 %}
+                <tr>
+                    <td><span class="status-badge status-danger">高</span></td>
+                    <td>ログイン失敗の調査</td>
+                    <td>{{ data.failed_login_count }}件のログイン失敗が検出されました。ブルートフォース攻撃の可能性があります。</td>
+                </tr>
+                {% endif %}
+                {% if (data.permission_error_count or 0) > 5 %}
+                <tr>
+                    <td><span class="status-badge status-warning">中</span></td>
+                    <td>権限設定の見直し</td>
+                    <td>{{ data.permission_error_count }}件の権限エラーが発生しています。ロール設定を確認してください。</td>
+                </tr>
+                {% endif %}
+                {% if (data.delete_count or 0) > 0 %}
+                <tr>
+                    <td><span class="status-badge status-info">低</span></td>
+                    <td>削除操作の定期レビュー</td>
+                    <td>{{ data.delete_count }}件の削除操作が実行されました。適切な承認プロセスを確認してください。</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td><span class="status-badge status-info">低</span></td>
+                    <td>ログ保持期間の確認</td>
+                    <td>コンプライアンス要件に応じて、ログ保持期間が適切か定期的に確認してください。</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>7.2 運用改善推奨事項</h3>
+        <ul>
+            <li><strong>自動アラート設定:</strong> 異常なアクティビティパターンを検出したら自動的に管理者に通知</li>
+            <li><strong>定期レビュー:</strong> 月次で監査ログをレビューし、セキュリティポリシー遵守を確認</li>
+            <li><strong>ユーザー教育:</strong> セキュリティベストプラクティスについてユーザー教育を実施</li>
+            <li><strong>アクセス権限の最小化:</strong> 最小権限の原則に基づき、不要な権限を削除</li>
+            <li><strong>多要素認証:</strong> 重要な操作には多要素認証を要求することを検討</li>
+        </ul>
+
+        <h3>7.3 コンプライアンス</h3>
+        <p>
+            本監査ログは以下の規格・法令に対応しています:
+        </p>
+        <ul>
+            <li>ISO/IEC 27001:2013 - A.12.4 ログ取得及び監視</li>
+            <li>ISO/IEC 27001:2013 - A.18.1.3 知的財産権の保護</li>
+            <li>GDPR - Article 30 処理活動の記録</li>
+            <li>個人情報保護法 - 第25条 安全管理措置</li>
+        </ul>
+    </div>
+
+    <!-- Footer Note -->
+    <div class="footer-note">
+        <p>
+            本レポートは監査ログに基づき自動生成されました。<br>
+            Confidential - 本レポートは機密情報を含みます。権限のない複製・配布を禁じます。<br>
+            Generated by Backup Management System v1.0
+        </p>
+    </div>
+</body>
+</html>

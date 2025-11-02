@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ report_title }}</title>
+    <style>
+        .header-title {
+            string-set: header-title "ISO 27001 ISMS Report";
+        }
+        .header-date {
+            string-set: header-date "{{ generated_date.strftime('%Y-%m-%d') }}";
+        }
+    </style>
+</head>
+<body>
+    <!-- Cover Page -->
+    <div class="cover-page header-title">
+        <div class="cover-title">
+            ISO/IEC 27001:2013<br>
+            情報セキュリティマネジメント<br>
+            バックアップ監査レポート
+        </div>
+        <div class="cover-subtitle">
+            Information Security Management System<br>
+            Backup Audit Report
+        </div>
+        <div class="cover-info">
+            <p>対象期間: {{ start_date.strftime('%Y年%m月%d日') }} - {{ end_date.strftime('%Y年%m月%d日') }}</p>
+            <p>作成日: {{ generated_date.strftime('%Y年%m月%d日 %H:%M') }} UTC</p>
+            <p>準拠規格: {{ standard }}</p>
+        </div>
+    </div>
+
+    <!-- Table of Contents -->
+    <div class="toc">
+        <h2>目次 (Table of Contents)</h2>
+        <div class="toc-item">1. エグゼクティブサマリー (Executive Summary)</div>
+        <div class="toc-item">2. 監査範囲 (Audit Scope)</div>
+        <div class="toc-item">3. ISO 27001 管理策評価 (Control Assessment)</div>
+        <div class="toc-item">4. バックアップ統計 (Backup Statistics)</div>
+        <div class="toc-item">5. コンプライアンス分析 (Compliance Analysis)</div>
+        <div class="toc-item">6. 検証テスト結果 (Verification Test Results)</div>
+        <div class="toc-item">7. リスクと推奨事項 (Risks and Recommendations)</div>
+        <div class="toc-item">8. 承認 (Approval)</div>
+    </div>
+
+    <!-- 1. Executive Summary -->
+    <div class="section header-date">
+        <h2>1. エグゼクティブサマリー</h2>
+        <h3>1.1 監査概要</h3>
+        <p>
+            本レポートは、ISO/IEC 27001:2013 附属書A「A.12.3 情報のバックアップ」に基づき、
+            {{ start_date.strftime('%Y年%m月%d日') }}から{{ end_date.strftime('%Y年%m月%d日') }}までの
+            バックアップ管理システムの運用状況を評価したものです。
+        </p>
+
+        <h3>1.2 主要メトリクス</h3>
+        <div style="margin: 1cm 0;">
+            <div class="metric-box">
+                <div class="metric-label">アクティブジョブ</div>
+                <div class="metric-value">{{ data.total_jobs or 0 }}</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label success">成功率</div>
+                <div class="metric-value success">{{ "%.1f"|format(data.success_rate or 0) }}%</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label info">準拠率</div>
+                <div class="metric-value info">{{ "%.1f"|format(data.compliance_rate or 0) }}%</div>
+            </div>
+        </div>
+
+        <h3>1.3 総合評価</h3>
+        <p>
+            {% if data.compliance_rate >= 95 %}
+            <span class="status-badge status-success">✓ 適合 (COMPLIANT)</span>
+            バックアップ管理システムは、ISO 27001の要求事項を満たしています。
+            {% elif data.compliance_rate >= 80 %}
+            <span class="status-badge status-warning">△ 部分適合 (PARTIAL)</span>
+            一部の管理策について改善が必要です。
+            {% else %}
+            <span class="status-badge status-danger">✗ 不適合 (NON-COMPLIANT)</span>
+            重大な不適合が検出されました。早急な是正措置が必要です。
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- 2. Audit Scope -->
+    <div class="section">
+        <h2>2. 監査範囲</h2>
+        <h3>2.1 対象システム</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>項目</th>
+                    <th>詳細</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>システム名称</td>
+                    <td>Backup Management System</td>
+                </tr>
+                <tr>
+                    <td>監査期間</td>
+                    <td>{{ start_date.strftime('%Y-%m-%d') }} - {{ end_date.strftime('%Y-%m-%d') }}</td>
+                </tr>
+                <tr>
+                    <td>対象バックアップジョブ数</td>
+                    <td>{{ data.total_jobs or 0 }} ジョブ</td>
+                </tr>
+                <tr>
+                    <td>総実行回数</td>
+                    <td>{{ data.executions|length if data.executions else 0 }} 回</td>
+                </tr>
+                <tr>
+                    <td>準拠基準</td>
+                    <td>3-2-1-1-0 バックアップルール</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>2.2 監査基準</h3>
+        <ul>
+            <li>ISO/IEC 27001:2013 附属書A A.12.3 情報のバックアップ</li>
+            <li>ISO/IEC 27001:2013 附属書A A.12.4 ログ取得及び監視</li>
+            <li>ISO/IEC 27001:2013 附属書A A.18.1 法的及び契約上の要求事項の遵守</li>
+        </ul>
+    </div>
+
+    <!-- 3. Control Assessment -->
+    <div class="section">
+        <h2>3. ISO 27001 管理策評価</h2>
+        <h3>3.1 適用管理策の評価結果</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 10%;">管理策番号</th>
+                    <th style="width: 25%;">管理策名称</th>
+                    <th style="width: 35%;">要求事項</th>
+                    <th style="width: 15%;">状態</th>
+                    <th style="width: 15%;">エビデンス</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for clause in clauses %}
+                <tr>
+                    <td><strong>{{ clause.number }}</strong></td>
+                    <td>{{ clause.title }}</td>
+                    <td>{{ clause.description }}</td>
+                    <td>
+                        {% if clause.status == 'compliant' %}
+                        <span class="status-badge status-success">適合</span>
+                        {% elif clause.status == 'partial' %}
+                        <span class="status-badge status-warning">部分適合</span>
+                        {% else %}
+                        <span class="status-badge status-danger">不適合</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size: 9pt;">{{ clause.evidence }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>3.2 A.12.3 情報のバックアップ - 詳細評価</h3>
+        <div class="compliance-grid">
+            <div class="compliance-item">
+                <div class="compliance-check success">3</div>
+                <small>3コピー</small>
+            </div>
+            <div class="compliance-item">
+                <div class="compliance-check success">2</div>
+                <small>2メディア</small>
+            </div>
+            <div class="compliance-item">
+                <div class="compliance-check success">1</div>
+                <small>1オフサイト</small>
+            </div>
+            <div class="compliance-item">
+                <div class="compliance-check success">1</div>
+                <small>1オフライン</small>
+            </div>
+            <div class="compliance-item">
+                <div class="compliance-check success">0</div>
+                <small>0エラー</small>
+            </div>
+        </div>
+        <p style="text-align: center; color: #7f8c8d; font-size: 10pt;">
+            3-2-1-1-0 ルール準拠状況:
+            <strong class="{% if data.compliance_rate >= 95 %}success{% else %}danger{% endif %}">
+                {{ "%.1f"|format(data.compliance_rate or 0) }}%
+            </strong>
+        </p>
+    </div>
+
+    <!-- 4. Backup Statistics -->
+    <div class="section">
+        <h2>4. バックアップ統計</h2>
+        <h3>4.1 実行結果サマリー</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>ステータス</th>
+                    <th>実行回数</th>
+                    <th>割合</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="success">
+                    <td><span class="status-badge status-success">成功</span></td>
+                    <td>{{ data.success_count or 0 }}</td>
+                    <td>{{ "%.1f"|format((data.success_count or 0) / (data.executions|length if data.executions else 1) * 100) }}%</td>
+                </tr>
+                <tr class="warning">
+                    <td><span class="status-badge status-warning">警告</span></td>
+                    <td>{{ data.warning_count or 0 }}</td>
+                    <td>{{ "%.1f"|format((data.warning_count or 0) / (data.executions|length if data.executions else 1) * 100) }}%</td>
+                </tr>
+                <tr class="danger">
+                    <td><span class="status-badge status-danger">失敗</span></td>
+                    <td>{{ data.failed_count or 0 }}</td>
+                    <td>{{ "%.1f"|format((data.failed_count or 0) / (data.executions|length if data.executions else 1) * 100) }}%</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>4.2 容量分析</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>メトリクス</th>
+                    <th>値</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>総バックアップサイズ</td>
+                    <td>{{ "%.2f"|format((data.total_backup_size or 0) / 1024 / 1024 / 1024) }} GB</td>
+                </tr>
+                <tr>
+                    <td>平均バックアップサイズ</td>
+                    <td>{{ "%.2f"|format((data.avg_backup_size or 0) / 1024 / 1024) }} MB</td>
+                </tr>
+                <tr>
+                    <td>平均実行時間</td>
+                    <td>{{ "%.1f"|format(data.avg_duration or 0) }} 秒</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 5. Compliance Analysis -->
+    <div class="section">
+        <h2>5. コンプライアンス分析</h2>
+        <h3>5.1 準拠状況詳細</h3>
+        {% if data.compliance_statuses %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ジョブID</th>
+                    <th>ジョブ名</th>
+                    <th>総合ステータス</th>
+                    <th>3コピー</th>
+                    <th>2メディア</th>
+                    <th>1オフサイト</th>
+                    <th>確認日</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for status in data.compliance_statuses[:20] %}
+                <tr>
+                    <td>{{ status.job_id }}</td>
+                    <td style="font-size: 9pt;">{{ status.job.job_name if status.job else '-' }}</td>
+                    <td>
+                        {% if status.overall_status == 'compliant' %}
+                        <span class="status-badge status-success">✓</span>
+                        {% elif status.overall_status == 'warning' %}
+                        <span class="status-badge status-warning">△</span>
+                        {% else %}
+                        <span class="status-badge status-danger">✗</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">{{ '✓' if status.three_copies else '✗' }}</td>
+                    <td style="text-align: center;">{{ '✓' if status.two_media_types else '✗' }}</td>
+                    <td style="text-align: center;">{{ '✓' if status.one_offsite else '✗' }}</td>
+                    <td style="font-size: 9pt;">{{ status.check_date.strftime('%Y-%m-%d') if status.check_date else '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>該当期間のコンプライアンスチェック記録がありません。</p>
+        {% endif %}
+    </div>
+
+    <!-- 6. Verification Test Results -->
+    <div class="section">
+        <h2>6. 検証テスト結果</h2>
+        <h3>6.1 テスト実施状況</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>メトリクス</th>
+                    <th>値</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>総テスト実施回数</td>
+                    <td>{{ data.verification_tests|length if data.verification_tests else 0 }}</td>
+                </tr>
+                <tr class="success">
+                    <td>成功</td>
+                    <td>{{ data.test_success_count or 0 }}</td>
+                </tr>
+                <tr class="danger">
+                    <td>失敗</td>
+                    <td>{{ data.test_failed_count or 0 }}</td>
+                </tr>
+                <tr>
+                    <td><strong>検証成功率</strong></td>
+                    <td><strong>{{ "%.1f"|format(data.verification_rate or 0) }}%</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 7. Risks and Recommendations -->
+    <div class="section">
+        <h2>7. リスクと推奨事項</h2>
+        <h3>7.1 識別されたリスク</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%;">リスクレベル</th>
+                    <th style="width: 35%;">リスク内容</th>
+                    <th style="width: 50%;">推奨される対策</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if data.compliance_rate < 95 %}
+                <tr>
+                    <td><span class="status-badge status-danger">高</span></td>
+                    <td>3-2-1-1-0ルール準拠率が目標値を下回っています</td>
+                    <td>非準拠ジョブの原因調査と是正措置の実施</td>
+                </tr>
+                {% endif %}
+                {% if data.failed_count > 0 %}
+                <tr>
+                    <td><span class="status-badge status-warning">中</span></td>
+                    <td>バックアップ失敗が{{ data.failed_count }}件発生しています</td>
+                    <td>失敗したジョブの再設定とモニタリング強化</td>
+                </tr>
+                {% endif %}
+                {% if (data.verification_rate or 100) < 90 %}
+                <tr>
+                    <td><span class="status-badge status-warning">中</span></td>
+                    <td>検証テスト成功率が90%を下回っています</td>
+                    <td>検証プロセスの見直しとテストの定期実施</td>
+                </tr>
+                {% endif %}
+                {% if data.compliance_rate >= 95 and data.failed_count == 0 %}
+                <tr>
+                    <td><span class="status-badge status-success">低</span></td>
+                    <td>重大なリスクは検出されませんでした</td>
+                    <td>現状の運用を継続してください</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <h3>7.2 継続的改善の推奨事項</h3>
+        <ul>
+            <li>定期的なリストアテストの実施(最低月1回)</li>
+            <li>オフサイトバックアップの保管場所の定期確認</li>
+            <li>バックアップ容量のトレンド分析と容量計画の実施</li>
+            <li>ランサムウェア対策としてイミュータブルストレージの検討</li>
+            <li>復旧時間目標(RTO)と復旧ポイント目標(RPO)の定期的な見直し</li>
+        </ul>
+    </div>
+
+    <!-- 8. Approval -->
+    <div class="section">
+        <h2>8. 承認</h2>
+        <p>本レポートの内容を確認し、承認します。</p>
+
+        <div class="signature-box">
+            <div style="margin: 0.5cm 0;">
+                <strong>情報セキュリティ責任者 (CISO)</strong>
+                <div class="signature-line"></div>
+                <p style="font-size: 9pt; color: #7f8c8d;">署名 / 日付</p>
+            </div>
+
+            <div style="margin: 0.5cm 0;">
+                <strong>バックアップ管理者</strong>
+                <div class="signature-line"></div>
+                <p style="font-size: 9pt; color: #7f8c8d;">署名 / 日付</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Note -->
+    <div class="footer-note">
+        <p>
+            本レポートは ISO/IEC 27001:2013 附属書A に基づき自動生成されました。<br>
+            Confidential - 本レポートは機密情報を含みます。権限のない複製・配布を禁じます。<br>
+            Generated by Backup Management System v1.0
+        </p>
+    </div>
+</body>
+</html>
