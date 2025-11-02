@@ -326,6 +326,9 @@
                         <a class="nav-link" id="users-tab" data-bs-toggle="pill" href="#users" role="tab">
                             <i class="bi bi-people"></i> ユーザー管理
                         </a>
+                        <a class="nav-link" id="import-export-tab" data-bs-toggle="pill" href="#import-export" role="tab">
+                            <i class="bi bi-arrow-down-up"></i> インポート・エクスポート
+                        </a>
                     </div>
                 </div>
             </div>
@@ -932,6 +935,323 @@
                                     <div class="info-stat">
                                         <div class="info-stat-value" id="onlineUsers">0</div>
                                         <div class="info-stat-label">オンライン</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Import/Export Settings -->
+                    <div class="tab-pane fade" id="import-export" role="tabpanel">
+                        <!-- Export Settings -->
+                        <div class="settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-download"></i> エクスポート設定
+                            </div>
+                            <div class="card-body">
+                                <div class="info-box mb-3">
+                                    <i class="bi bi-info-circle"></i>
+                                    <strong>エクスポート機能について:</strong> システムの設定をファイルとして保存できます。バックアップや他のシステムへの設定移行に便利です。
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label">エクスポート形式</label>
+                                    <div class="setting-description">設定をエクスポートするファイル形式を選択してください</div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="export_format" id="export_json" value="json" checked>
+                                        <label class="form-check-label" for="export_json">
+                                            <strong>JSON形式</strong> - 構造化データ、システム間移行に最適
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="export_format" id="export_csv" value="csv">
+                                        <label class="form-check-label" for="export_csv">
+                                            <strong>CSV形式</strong> - 表形式データ、Excel等で編集可能
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label">エクスポート対象</label>
+                                    <div class="setting-description">エクスポートする設定項目を選択してください</div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="export_backup" name="export_backup" checked>
+                                                <label class="form-check-label" for="export_backup">
+                                                    バックアップ設定
+                                                </label>
+                                            </div>
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="export_notification" name="export_notification" checked>
+                                                <label class="form-check-label" for="export_notification">
+                                                    通知設定
+                                                </label>
+                                            </div>
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="export_schedule" name="export_schedule" checked>
+                                                <label class="form-check-label" for="export_schedule">
+                                                    スケジュール設定
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="export_storage" name="export_storage" checked>
+                                                <label class="form-check-label" for="export_storage">
+                                                    ストレージ設定
+                                                </label>
+                                            </div>
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="export_security" name="export_security">
+                                                <label class="form-check-label" for="export_security">
+                                                    セキュリティ設定
+                                                </label>
+                                            </div>
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="export_users" name="export_users">
+                                                <label class="form-check-label" for="export_users">
+                                                    ユーザー設定
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted d-block mt-2">
+                                        <i class="bi bi-exclamation-triangle"></i> セキュリティ設定とユーザー設定には機密情報が含まれます
+                                    </small>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label" for="export_filename">ファイル名</label>
+                                    <div class="setting-description">エクスポートファイルの名前（拡張子は自動的に付与されます）</div>
+                                    <input type="text" class="form-control" id="export_filename" name="export_filename"
+                                           value="backup-settings-20251102" placeholder="backup-settings-YYYYMMDD" style="max-width: 500px;">
+                                </div>
+
+                                <div class="setting-item">
+                                    <button type="button" class="btn btn-primary btn-lg" onclick="executeExport()">
+                                        <i class="bi bi-download"></i> エクスポート実行
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Import Settings -->
+                        <div class="settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-upload"></i> インポート設定
+                            </div>
+                            <div class="card-body">
+                                <div class="warning-box mb-3">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <strong>警告:</strong> インポートを実行すると現在の設定が上書きされます。事前に設定をエクスポートしてバックアップすることを強く推奨します。
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label">ファイルをアップロード</label>
+                                    <div class="setting-description">エクスポートしたJSON/CSVファイルをアップロードしてください</div>
+
+                                    <!-- File Upload Area -->
+                                    <div class="border border-2 border-dashed rounded p-4 text-center"
+                                         id="upload-area"
+                                         style="background-color: #f8f9fa; cursor: pointer;"
+                                         ondrop="handleFileDrop(event)"
+                                         ondragover="handleDragOver(event)"
+                                         ondragleave="handleDragLeave(event)"
+                                         onclick="document.getElementById('import_file').click()">
+                                        <div id="upload-placeholder">
+                                            <i class="bi bi-cloud-upload" style="font-size: 3rem; color: #667eea;"></i>
+                                            <p class="mb-0 mt-2"><strong>ファイルをドラッグ&ドロップ</strong></p>
+                                            <p class="text-muted mb-0">または クリックしてファイルを選択</p>
+                                            <small class="text-muted">対応形式: JSON, CSV (最大10MB)</small>
+                                        </div>
+                                        <div id="upload-selected" style="display: none;">
+                                            <i class="bi bi-file-earmark-check" style="font-size: 3rem; color: #198754;"></i>
+                                            <p class="mb-0 mt-2"><strong id="selected-filename"></strong></p>
+                                            <p class="text-muted mb-0"><span id="selected-filesize"></span></p>
+                                            <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="clearFileSelection(event)">
+                                                <i class="bi bi-x-circle"></i> クリア
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <input type="file" id="import_file" name="import_file" accept=".json,.csv" style="display: none;" onchange="handleFileSelect(event)">
+                                </div>
+
+                                <div class="setting-item" id="format-detection" style="display: none;">
+                                    <label class="setting-label">検出された形式</label>
+                                    <div class="alert alert-info mb-0">
+                                        <i class="bi bi-info-circle"></i>
+                                        <strong>形式:</strong> <span id="detected-format"></span>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item" id="preview-panel" style="display: none;">
+                                    <label class="setting-label">プレビュー</label>
+                                    <div class="setting-description">インポートされる設定内容を確認してください</div>
+                                    <div class="border rounded p-3" style="background-color: #f8f9fa; max-height: 300px; overflow-y: auto;">
+                                        <pre id="preview-content" style="margin: 0; font-size: 0.875rem;"></pre>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item" id="validation-results" style="display: none;">
+                                    <label class="setting-label">検証結果</label>
+                                    <div id="validation-content"></div>
+                                </div>
+
+                                <div class="setting-item" id="confirmation-section" style="display: none;">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="import_confirm" name="import_confirm">
+                                        <label class="form-check-label" for="import_confirm">
+                                            <strong>上記の設定をインポートすることを理解しました</strong>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item" id="import-actions" style="display: none;">
+                                    <button type="button" class="btn btn-success btn-lg" id="import-execute-btn" onclick="executeImport()" disabled>
+                                        <i class="bi bi-upload"></i> インポート実行
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-lg ms-2" onclick="cancelImport()">
+                                        <i class="bi bi-x-circle"></i> キャンセル
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Usage Guide -->
+                        <div class="settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-question-circle"></i> 使用ガイド
+                            </div>
+                            <div class="card-body">
+                                <div class="accordion" id="guideAccordion">
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingExport">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExport">
+                                                エクスポートとは？
+                                            </button>
+                                        </h2>
+                                        <div id="collapseExport" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                                            <div class="accordion-body">
+                                                <p><strong>エクスポート機能</strong>は、現在のシステム設定をファイルとして保存する機能です。</p>
+                                                <ul>
+                                                    <li>設定のバックアップとして保存できます</li>
+                                                    <li>他のシステムへ設定を移行する際に使用できます</li>
+                                                    <li>設定変更前の状態を保存しておくことができます</li>
+                                                    <li>JSON形式とCSV形式が選択できます</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingImport">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseImport">
+                                                インポートとは？
+                                            </button>
+                                        </h2>
+                                        <div id="collapseImport" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                                            <div class="accordion-body">
+                                                <p><strong>インポート機能</strong>は、エクスポートしたファイルから設定を復元する機能です。</p>
+                                                <ul>
+                                                    <li>以前エクスポートした設定を復元できます</li>
+                                                    <li>他のシステムから設定を移行できます</li>
+                                                    <li>インポート前に設定内容をプレビューできます</li>
+                                                    <li>自動的に設定の妥当性が検証されます</li>
+                                                </ul>
+                                                <div class="alert alert-warning mt-2">
+                                                    <i class="bi bi-exclamation-triangle"></i> インポートは現在の設定を上書きします。事前にエクスポートでバックアップを取ることを推奨します。
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingFormats">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFormats">
+                                                JSON vs CSV の違い
+                                            </button>
+                                        </h2>
+                                        <div id="collapseFormats" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                                            <div class="accordion-body">
+                                                <h6><i class="bi bi-filetype-json"></i> JSON形式</h6>
+                                                <ul>
+                                                    <li><strong>推奨:</strong> システム間での設定移行</li>
+                                                    <li>階層構造を保持できる</li>
+                                                    <li>完全な設定情報を含む</li>
+                                                    <li>プログラムで処理しやすい</li>
+                                                </ul>
+
+                                                <h6 class="mt-3"><i class="bi bi-filetype-csv"></i> CSV形式</h6>
+                                                <ul>
+                                                    <li><strong>推奨:</strong> 表形式での確認・編集</li>
+                                                    <li>ExcelやLibreOfficeで開ける</li>
+                                                    <li>設定値の一覧表示に適している</li>
+                                                    <li>複雑な階層構造には不向き</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingBackup">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBackup">
+                                                バックアップ推奨
+                                            </button>
+                                        </h2>
+                                        <div id="collapseBackup" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                                            <div class="accordion-body">
+                                                <h6>定期的なエクスポートを推奨するタイミング:</h6>
+                                                <ul>
+                                                    <li>重要な設定変更を行う前</li>
+                                                    <li>システムアップデート前</li>
+                                                    <li>月次/四半期ごとの定期バックアップ</li>
+                                                    <li>新しいバックアップジョブを追加した後</li>
+                                                </ul>
+
+                                                <h6 class="mt-3">エクスポートファイルの保管場所:</h6>
+                                                <ul>
+                                                    <li>バックアップシステムとは別の場所に保管</li>
+                                                    <li>クラウドストレージへのアップロード</li>
+                                                    <li>バージョン管理システム（Git等）での管理</li>
+                                                    <li>複数世代のファイルを保持</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingTroubleshooting">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTroubleshooting">
+                                                トラブルシューティング
+                                            </button>
+                                        </h2>
+                                        <div id="collapseTroubleshooting" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                                            <div class="accordion-body">
+                                                <h6>よくある問題と解決方法:</h6>
+
+                                                <p><strong>Q: インポートファイルが認識されない</strong></p>
+                                                <ul>
+                                                    <li>ファイル形式が正しいか確認（.json または .csv）</li>
+                                                    <li>ファイルが破損していないか確認</li>
+                                                    <li>ファイルサイズが10MB以下か確認</li>
+                                                </ul>
+
+                                                <p><strong>Q: 検証エラーが表示される</strong></p>
+                                                <ul>
+                                                    <li>インポートファイルのバージョンが古い可能性</li>
+                                                    <li>必須項目が不足している可能性</li>
+                                                    <li>設定値の形式が不正な可能性</li>
+                                                </ul>
+
+                                                <p><strong>Q: インポート後に問題が発生した</strong></p>
+                                                <ul>
+                                                    <li>エクスポートしたバックアップファイルを使用して元に戻す</li>
+                                                    <li>「デフォルトに戻す」機能を使用する</li>
+                                                    <li>問題のある設定項目を個別に修正する</li>
+                                                </ul>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1875,5 +2195,204 @@
             alert('エラーが発生しました: ' + error);
         });
     }
+
+    // ========================================
+    // Import/Export Functions
+    // ========================================
+
+    let uploadedFile = null;
+    let validatedData = null;
+
+    function executeExport() {
+        const format = document.querySelector('input[name="export_format"]:checked').value;
+        const sections = {
+            backup: document.getElementById('export_backup').checked,
+            notification: document.getElementById('export_notification').checked,
+            schedule: document.getElementById('export_schedule').checked,
+            storage: document.getElementById('export_storage').checked,
+            security: document.getElementById('export_security').checked,
+            users: document.getElementById('export_users').checked
+        };
+        const filename = document.getElementById('export_filename').value || 'backup-settings';
+        const params = new URLSearchParams({format: format, filename: filename, ...sections});
+        window.location.href = '/settings/export?' + params.toString();
+    }
+
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) processFile(file);
+    }
+
+    function handleDragOver(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        document.getElementById('upload-area').style.borderColor = '#667eea';
+        document.getElementById('upload-area').style.backgroundColor = '#e0f2fe';
+    }
+
+    function handleDragLeave(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        document.getElementById('upload-area').style.borderColor = '#dee2e6';
+        document.getElementById('upload-area').style.backgroundColor = '#f8f9fa';
+    }
+
+    function handleFileDrop(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        document.getElementById('upload-area').style.borderColor = '#dee2e6';
+        document.getElementById('upload-area').style.backgroundColor = '#f8f9fa';
+        const file = event.dataTransfer.files[0];
+        if (file) processFile(file);
+    }
+
+    function processFile(file) {
+        if (file.size > 10 * 1024 * 1024) {
+            alert('ファイルサイズが大きすぎます（最大10MB）');
+            return;
+        }
+        const extension = file.name.split('.').pop().toLowerCase();
+        if (!['json', 'csv'].includes(extension)) {
+            alert('対応していないファイル形式です（JSON/CSVのみ）');
+            return;
+        }
+        uploadedFile = file;
+        document.getElementById('upload-placeholder').style.display = 'none';
+        document.getElementById('upload-selected').style.display = 'block';
+        document.getElementById('selected-filename').textContent = file.name;
+        document.getElementById('selected-filesize').textContent = formatFileSize(file.size);
+        document.getElementById('format-detection').style.display = 'block';
+        document.getElementById('detected-format').textContent = extension.toUpperCase();
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const content = e.target.result;
+                let data = extension === 'json' ? JSON.parse(content) : parseCSV(content);
+                document.getElementById('preview-panel').style.display = 'block';
+                document.getElementById('preview-content').textContent = JSON.stringify(data, null, 2);
+                validateSettings(data);
+            } catch (error) {
+                alert('ファイルの読み込みに失敗しました: ' + error.message);
+                clearFileSelection();
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function validateSettings(data) {
+        const formData = new FormData();
+        formData.append('file', uploadedFile);
+        fetch('/settings/validate-import', {method: 'POST', body: formData})
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                showValidationResults(false, result.error.message, result.errors || []);
+            } else {
+                validatedData = result.data;
+                showValidationResults(true, result.message, result.warnings || []);
+            }
+        })
+        .catch(error => {
+            showValidationResults(false, 'サーバーエラー: ' + error.message);
+        });
+    }
+
+    function showValidationResults(isValid, message, issues = []) {
+        const validationContent = document.getElementById('validation-content');
+        document.getElementById('validation-results').style.display = 'block';
+        if (isValid) {
+            let html = '<div class="alert alert-success"><i class="bi bi-check-circle"></i> <strong>検証成功:</strong> ' + message + '</div>';
+            if (issues.length > 0) {
+                html += '<div class="alert alert-warning mt-2"><i class="bi bi-exclamation-triangle"></i> <strong>警告:</strong><ul class="mb-0 mt-2">';
+                issues.forEach(issue => { html += '<li>' + issue + '</li>'; });
+                html += '</ul></div>';
+            }
+            validationContent.innerHTML = html;
+            document.getElementById('confirmation-section').style.display = 'block';
+            document.getElementById('import-actions').style.display = 'block';
+            document.getElementById('import_confirm').addEventListener('change', function() {
+                document.getElementById('import-execute-btn').disabled = !this.checked;
+            });
+        } else {
+            let html = '<div class="alert alert-danger"><i class="bi bi-x-circle"></i> <strong>検証失敗:</strong> ' + message + '</div>';
+            if (issues.length > 0) {
+                html += '<div class="alert alert-danger mt-2"><strong>エラー詳細:</strong><ul class="mb-0 mt-2">';
+                issues.forEach(issue => { html += '<li>' + issue + '</li>'; });
+                html += '</ul></div>';
+            }
+            validationContent.innerHTML = html;
+            document.getElementById('confirmation-section').style.display = 'none';
+            document.getElementById('import-actions').style.display = 'none';
+        }
+    }
+
+    function executeImport() {
+        if (!validatedData) { alert('データが検証されていません'); return; }
+        if (!document.getElementById('import_confirm').checked) { alert('確認チェックボックスをチェックしてください'); return; }
+        if (!confirm('本当にインポートを実行しますか？現在の設定が上書きされます。')) return;
+        document.getElementById('import-execute-btn').disabled = true;
+        document.getElementById('import-execute-btn').innerHTML = '<i class="bi bi-hourglass-split"></i> インポート中...';
+        const formData = new FormData();
+        formData.append('file', uploadedFile);
+        formData.append('confirmed', 'true');
+        fetch('/settings/import', {method: 'POST', body: formData})
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert('インポートエラー: ' + result.error.message);
+                document.getElementById('import-execute-btn').innerHTML = '<i class="bi bi-upload"></i> インポート実行';
+                document.getElementById('import-execute-btn').disabled = false;
+            } else {
+                alert('設定をインポートしました。ページを再読み込みします。');
+                location.reload();
+            }
+        })
+        .catch(error => {
+            alert('エラーが発生しました: ' + error.message);
+            document.getElementById('import-execute-btn').innerHTML = '<i class="bi bi-upload"></i> インポート実行';
+            document.getElementById('import-execute-btn').disabled = false;
+        });
+    }
+
+    function cancelImport() {
+        clearFileSelection();
+    }
+
+    function clearFileSelection(event) {
+        if (event) event.stopPropagation();
+        uploadedFile = null;
+        validatedData = null;
+        document.getElementById('import_file').value = '';
+        document.getElementById('upload-placeholder').style.display = 'block';
+        document.getElementById('upload-selected').style.display = 'none';
+        document.getElementById('format-detection').style.display = 'none';
+        document.getElementById('preview-panel').style.display = 'none';
+        document.getElementById('validation-results').style.display = 'none';
+        document.getElementById('confirmation-section').style.display = 'none';
+        document.getElementById('import-actions').style.display = 'none';
+        document.getElementById('import_confirm').checked = false;
+    }
+
+    function parseCSV(content) {
+        const lines = content.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        const data = {};
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim());
+            const section = values[0];
+            const key = values[1];
+            const value = values[2];
+            if (!data[section]) data[section] = {};
+            data[section][key] = value;
+        }
+        return data;
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
 </script>
 {% endblock %}
