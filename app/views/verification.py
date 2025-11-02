@@ -143,7 +143,7 @@ def execute():
     # Get jobs for dropdown
     jobs = BackupJob.query.filter_by(is_active=True).all()
 
-    return render_template("verification/execute.html", jobs=jobs)
+    return render_template("verification/create.html", jobs=jobs)
 
 
 @verification_bp.route("/<int:test_id>/update", methods=["GET", "POST"])
