@@ -176,6 +176,111 @@
         padding: 0.5rem 1rem;
         font-size: 1rem;
     }
+
+    /* User Management Styles */
+    .badge-role {
+        padding: 0.35rem 0.65rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        border-radius: 6px;
+    }
+
+    .badge-role.role-admin {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .badge-role.role-operator {
+        background-color: #0d6efd;
+        color: white;
+    }
+
+    .badge-role.role-viewer {
+        background-color: #198754;
+        color: white;
+    }
+
+    .badge-role.role-auditor {
+        background-color: #ffc107;
+        color: #000;
+    }
+
+    .status-active {
+        color: #198754;
+        font-weight: 600;
+    }
+
+    .status-inactive {
+        color: #dc3545;
+        font-weight: 600;
+    }
+
+    .password-strength-meter {
+        height: 5px;
+        background-color: #e9ecef;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+
+    .password-strength-bar {
+        height: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .password-strength-weak {
+        background-color: #dc3545;
+        width: 33%;
+    }
+
+    .password-strength-medium {
+        background-color: #ffc107;
+        width: 66%;
+    }
+
+    .password-strength-strong {
+        background-color: #198754;
+        width: 100%;
+    }
+
+    .btn-action {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        margin: 0 0.125rem;
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: white;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    table.dataTable tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+    }
+
+    .invalid-feedback {
+        display: none;
+    }
+
+    .is-invalid ~ .invalid-feedback {
+        display: block;
+    }
 </style>
 {% endblock %}
 
@@ -217,6 +322,9 @@
                         </a>
                         <a class="nav-link" id="system-tab" data-bs-toggle="pill" href="#system" role="tab">
                             <i class="bi bi-info-circle"></i> システム情報
+                        </a>
+                        <a class="nav-link" id="users-tab" data-bs-toggle="pill" href="#users" role="tab">
+                            <i class="bi bi-people"></i> ユーザー管理
                         </a>
                     </div>
                 </div>
@@ -753,6 +861,82 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- User Management -->
+                    <div class="tab-pane fade" id="users" role="tabpanel">
+                        <div class="settings-card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="bi bi-people"></i> ユーザー管理
+                                </div>
+                                <button type="button" class="btn btn-primary btn-sm" onclick="showAddUserModal()">
+                                    <i class="bi bi-person-plus"></i> 新規ユーザー追加
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="info-box mb-3">
+                                    <i class="bi bi-info-circle"></i>
+                                    <strong>情報:</strong> システムユーザーの追加、編集、削除を行います。ユーザーの権限によってアクセス可能な機能が制限されます。
+                                </div>
+
+                                <!-- Users DataTable -->
+                                <div class="table-responsive">
+                                    <table id="usersTable" class="table table-hover" style="width:100%">
+                                        <thead>
+                                            <tr>
+                                                <th>ユーザー名</th>
+                                                <th>メール</th>
+                                                <th>氏名</th>
+                                                <th>部署</th>
+                                                <th>権限</th>
+                                                <th>ステータス</th>
+                                                <th>最終ログイン</th>
+                                                <th>アクション</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Data will be loaded via AJAX -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- User Statistics -->
+                        <div class="settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-graph-up"></i> ユーザー統計
+                            </div>
+                            <div class="card-body">
+                                <div class="system-info-grid">
+                                    <div class="info-stat">
+                                        <div class="info-stat-value" id="totalUsers">0</div>
+                                        <div class="info-stat-label">総ユーザー数</div>
+                                    </div>
+                                    <div class="info-stat">
+                                        <div class="info-stat-value" id="activeUsers">0</div>
+                                        <div class="info-stat-label">アクティブ</div>
+                                    </div>
+                                    <div class="info-stat">
+                                        <div class="info-stat-value" id="adminUsers">0</div>
+                                        <div class="info-stat-label">管理者</div>
+                                    </div>
+                                    <div class="info-stat">
+                                        <div class="info-stat-value" id="operatorUsers">0</div>
+                                        <div class="info-stat-label">オペレーター</div>
+                                    </div>
+                                    <div class="info-stat">
+                                        <div class="info-stat-value" id="lockedUsers">0</div>
+                                        <div class="info-stat-label">ロック中</div>
+                                    </div>
+                                    <div class="info-stat">
+                                        <div class="info-stat-value" id="onlineUsers">0</div>
+                                        <div class="info-stat-label">オンライン</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Action Buttons -->
@@ -779,6 +963,255 @@
         </div>
     </div>
 </div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addUserModalLabel">
+                    <i class="bi bi-person-plus"></i> 新規ユーザー追加
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="add_username" class="form-label">ユーザー名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="add_username" name="username" required>
+                            <div class="invalid-feedback">ユーザー名は必須です（3-50文字、英数字とアンダースコアのみ）</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="add_email" class="form-label">メールアドレス <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="add_email" name="email" required>
+                            <div class="invalid-feedback">有効なメールアドレスを入力してください</div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="add_full_name" class="form-label">氏名</label>
+                            <input type="text" class="form-control" id="add_full_name" name="full_name">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="add_department" class="form-label">部署</label>
+                            <input type="text" class="form-control" id="add_department" name="department">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_role" class="form-label">権限 <span class="text-danger">*</span></label>
+                        <select class="form-select" id="add_role" name="role" required>
+                            <option value="">選択してください</option>
+                            <option value="admin">管理者 - すべての機能にアクセス可能</option>
+                            <option value="operator">オペレーター - バックアップの実行と管理</option>
+                            <option value="viewer">閲覧者 - 読み取り専用アクセス</option>
+                            <option value="auditor">監査者 - ログとレポートの閲覧</option>
+                        </select>
+                        <div class="invalid-feedback">権限を選択してください</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="add_password" class="form-label">パスワード <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="add_password" name="password" required>
+                            <div class="password-strength-meter">
+                                <div class="password-strength-bar" id="add_password_strength"></div>
+                            </div>
+                            <small class="text-muted d-block mt-1" id="add_password_hint">
+                                最低8文字、大文字・小文字・数字・特殊文字を含む
+                            </small>
+                            <div class="invalid-feedback">パスワード要件を満たしていません</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="add_confirm_password" class="form-label">パスワード確認 <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="add_confirm_password" name="confirm_password" required>
+                            <div class="invalid-feedback">パスワードが一致しません</div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="add_is_active" name="is_active" checked>
+                            <label class="form-check-label" for="add_is_active">
+                                アクティブ（ログイン可能）
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> キャンセル
+                </button>
+                <button type="button" class="btn btn-primary" onclick="createUser()">
+                    <i class="bi bi-check-circle"></i> 作成
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editUserModalLabel">
+                    <i class="bi bi-person-gear"></i> ユーザー編集
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" id="edit_user_id" name="user_id">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_username" class="form-label">ユーザー名</label>
+                            <input type="text" class="form-control" id="edit_username" name="username" readonly>
+                            <small class="text-muted">ユーザー名は変更できません</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_email" class="form-label">メールアドレス <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="edit_email" name="email" required>
+                            <div class="invalid-feedback">有効なメールアドレスを入力してください</div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_full_name" class="form-label">氏名</label>
+                            <input type="text" class="form-control" id="edit_full_name" name="full_name">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_department" class="form-label">部署</label>
+                            <input type="text" class="form-control" id="edit_department" name="department">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_role" class="form-label">権限 <span class="text-danger">*</span></label>
+                        <select class="form-select" id="edit_role" name="role" required>
+                            <option value="admin">管理者 - すべての機能にアクセス可能</option>
+                            <option value="operator">オペレーター - バックアップの実行と管理</option>
+                            <option value="viewer">閲覧者 - 読み取り専用アクセス</option>
+                            <option value="auditor">監査者 - ログとレポートの閲覧</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="edit_change_password" name="change_password">
+                            <label class="form-check-label fw-bold" for="edit_change_password">
+                                パスワードを変更する
+                            </label>
+                        </div>
+                    </div>
+                    <div id="edit_password_section" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="edit_password" class="form-label">新しいパスワード</label>
+                                <input type="password" class="form-control" id="edit_password" name="password">
+                                <div class="password-strength-meter">
+                                    <div class="password-strength-bar" id="edit_password_strength"></div>
+                                </div>
+                                <small class="text-muted d-block mt-1">
+                                    最低8文字、大文字・小文字・数字・特殊文字を含む
+                                </small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="edit_confirm_password" class="form-label">パスワード確認</label>
+                                <input type="password" class="form-control" id="edit_confirm_password" name="confirm_password">
+                                <div class="invalid-feedback">パスワードが一致しません</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
+                            <label class="form-check-label" for="edit_is_active">
+                                アクティブ（ログイン可能）
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> キャンセル
+                </button>
+                <button type="button" class="btn btn-primary" onclick="updateUser()">
+                    <i class="bi bi-check-circle"></i> 更新
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title text-white" id="deleteUserModalLabel">
+                    <i class="bi bi-exclamation-triangle"></i> ユーザー削除
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="danger-box mb-3">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>警告:</strong> この操作は取り消せません！
+                </div>
+                <p>以下のユーザーを削除しようとしています:</p>
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <p class="mb-1"><strong>ユーザー名:</strong> <span id="delete_username"></span></p>
+                        <p class="mb-1"><strong>メール:</strong> <span id="delete_email"></span></p>
+                        <p class="mb-0"><strong>氏名:</strong> <span id="delete_full_name"></span></p>
+                    </div>
+                </div>
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="delete_confirm" required>
+                    <label class="form-check-label fw-bold text-danger" for="delete_confirm">
+                        このユーザーを削除することを理解しました
+                    </label>
+                </div>
+                <input type="hidden" id="delete_user_id">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> キャンセル
+                </button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteUser()" id="deleteUserBtn" disabled>
+                    <i class="bi bi-trash"></i> 削除
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resetPasswordModalLabel">
+                    <i class="bi bi-key"></i> パスワードリセット
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>ユーザー <strong id="reset_username"></strong> のパスワードをリセットします。</p>
+                <p>一時パスワードがメールで送信されます。</p>
+                <input type="hidden" id="reset_user_id">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> キャンセル
+                </button>
+                <button type="button" class="btn btn-warning" onclick="confirmResetPassword()">
+                    <i class="bi bi-key"></i> リセット
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -975,5 +1408,472 @@
             });
         }
     });
+
+    // User Management Functions
+    let usersTable;
+
+    // Initialize DataTable
+    $(document).ready(function() {
+        if ($('#usersTable').length) {
+            usersTable = $('#usersTable').DataTable({
+                ajax: {
+                    url: '/settings/users',
+                    dataSrc: 'users'
+                },
+                columns: [
+                    { data: 'username' },
+                    { data: 'email' },
+                    { data: 'full_name' },
+                    { data: 'department' },
+                    {
+                        data: 'role',
+                        render: function(data) {
+                            const roleClasses = {
+                                'admin': 'role-admin',
+                                'operator': 'role-operator',
+                                'viewer': 'role-viewer',
+                                'auditor': 'role-auditor'
+                            };
+                            const roleNames = {
+                                'admin': '管理者',
+                                'operator': 'オペレーター',
+                                'viewer': '閲覧者',
+                                'auditor': '監査者'
+                            };
+                            return `<span class="badge badge-role ${roleClasses[data]}">${roleNames[data]}</span>`;
+                        }
+                    },
+                    {
+                        data: 'is_active',
+                        render: function(data, type, row) {
+                            if (data) {
+                                return '<span class="status-active"><i class="bi bi-check-circle"></i> アクティブ</span>';
+                            } else {
+                                return '<span class="status-inactive"><i class="bi bi-x-circle"></i> 無効</span>';
+                            }
+                        }
+                    },
+                    {
+                        data: 'last_login',
+                        render: function(data) {
+                            return data ? new Date(data).toLocaleString('ja-JP') : '-';
+                        }
+                    },
+                    {
+                        data: null,
+                        orderable: false,
+                        render: function(data, type, row) {
+                            let actions = `
+                                <button class="btn btn-sm btn-outline-primary btn-action" onclick="showEditUserModal(${row.id})" title="編集">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                            `;
+
+                            if (row.is_active) {
+                                actions += `
+                                    <button class="btn btn-sm btn-outline-warning btn-action" onclick="toggleUserStatus(${row.id}, false)" title="無効化">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                `;
+                            } else {
+                                actions += `
+                                    <button class="btn btn-sm btn-outline-success btn-action" onclick="toggleUserStatus(${row.id}, true)" title="有効化">
+                                        <i class="bi bi-check-circle"></i>
+                                    </button>
+                                `;
+                            }
+
+                            if (row.account_locked_until && new Date(row.account_locked_until) > new Date()) {
+                                actions += `
+                                    <button class="btn btn-sm btn-outline-info btn-action" onclick="unlockUser(${row.id})" title="ロック解除">
+                                        <i class="bi bi-unlock"></i>
+                                    </button>
+                                `;
+                            }
+
+                            actions += `
+                                <button class="btn btn-sm btn-outline-warning btn-action" onclick="showResetPasswordModal(${row.id}, '${row.username}')" title="パスワードリセット">
+                                    <i class="bi bi-key"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger btn-action" onclick="showDeleteUserModal(${row.id}, '${row.username}', '${row.email}', '${row.full_name || ''}')" title="削除">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            `;
+
+                            return actions;
+                        }
+                    }
+                ],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/ja.json'
+                },
+                order: [[0, 'asc']],
+                pageLength: 25,
+                drawCallback: function() {
+                    updateUserStatistics();
+                }
+            });
+        }
+    });
+
+    // Update user statistics
+    function updateUserStatistics() {
+        fetch('/settings/users')
+            .then(response => response.json())
+            .then(data => {
+                const users = data.users;
+                $('#totalUsers').text(users.length);
+                $('#activeUsers').text(users.filter(u => u.is_active).length);
+                $('#adminUsers').text(users.filter(u => u.role === 'admin').length);
+                $('#operatorUsers').text(users.filter(u => u.role === 'operator').length);
+                $('#lockedUsers').text(users.filter(u => u.account_locked_until && new Date(u.account_locked_until) > new Date()).length);
+                // Online users would require session tracking
+                $('#onlineUsers').text('N/A');
+            });
+    }
+
+    // Show add user modal
+    function showAddUserModal() {
+        $('#addUserForm')[0].reset();
+        $('#add_password_strength').removeClass().addClass('password-strength-bar');
+        $('.is-invalid').removeClass('is-invalid');
+        new bootstrap.Modal(document.getElementById('addUserModal')).show();
+    }
+
+    // Password strength checker
+    function checkPasswordStrength(password, strengthElementId) {
+        const strengthBar = document.getElementById(strengthElementId);
+        let strength = 0;
+
+        if (password.length >= 8) strength++;
+        if (password.length >= 12) strength++;
+        if (/[a-z]/.test(password)) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^a-zA-Z0-9]/.test(password)) strength++;
+
+        strengthBar.className = 'password-strength-bar';
+        if (strength < 3) {
+            strengthBar.classList.add('password-strength-weak');
+        } else if (strength < 5) {
+            strengthBar.classList.add('password-strength-medium');
+        } else {
+            strengthBar.classList.add('password-strength-strong');
+        }
+
+        return strength >= 4;
+    }
+
+    // Add password strength listeners
+    $('#add_password').on('input', function() {
+        checkPasswordStrength($(this).val(), 'add_password_strength');
+    });
+
+    $('#edit_password').on('input', function() {
+        checkPasswordStrength($(this).val(), 'edit_password_strength');
+    });
+
+    // Toggle password section in edit modal
+    $('#edit_change_password').on('change', function() {
+        $('#edit_password_section').toggle(this.checked);
+        if (!this.checked) {
+            $('#edit_password').val('');
+            $('#edit_confirm_password').val('');
+        }
+    });
+
+    // Enable delete button when checkbox is checked
+    $('#delete_confirm').on('change', function() {
+        $('#deleteUserBtn').prop('disabled', !this.checked);
+    });
+
+    // Validate username
+    function validateUsername(username) {
+        const regex = /^[a-zA-Z0-9_]{3,50}$/;
+        return regex.test(username);
+    }
+
+    // Validate email
+    function validateEmail(email) {
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return regex.test(email);
+    }
+
+    // Validate password
+    function validatePassword(password) {
+        return password.length >= 8 &&
+               /[a-z]/.test(password) &&
+               /[A-Z]/.test(password) &&
+               /[0-9]/.test(password) &&
+               /[^a-zA-Z0-9]/.test(password);
+    }
+
+    // Create user
+    function createUser() {
+        const form = document.getElementById('addUserForm');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        // Validation
+        let isValid = true;
+        $('.is-invalid').removeClass('is-invalid');
+
+        if (!validateUsername(data.username)) {
+            $('#add_username').addClass('is-invalid');
+            isValid = false;
+        }
+
+        if (!validateEmail(data.email)) {
+            $('#add_email').addClass('is-invalid');
+            isValid = false;
+        }
+
+        if (!data.role) {
+            $('#add_role').addClass('is-invalid');
+            isValid = false;
+        }
+
+        if (!validatePassword(data.password)) {
+            $('#add_password').addClass('is-invalid');
+            isValid = false;
+        }
+
+        if (data.password !== data.confirm_password) {
+            $('#add_confirm_password').addClass('is-invalid');
+            isValid = false;
+        }
+
+        if (!isValid) {
+            return;
+        }
+
+        // Convert checkbox value
+        data.is_active = $('#add_is_active').is(':checked');
+
+        // Send request
+        fetch('/settings/users/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert('エラー: ' + result.error.message);
+            } else {
+                alert('ユーザーを作成しました');
+                bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
+                usersTable.ajax.reload();
+            }
+        })
+        .catch(error => {
+            alert('エラーが発生しました: ' + error);
+        });
+    }
+
+    // Show edit user modal
+    function showEditUserModal(userId) {
+        fetch('/settings/users')
+            .then(response => response.json())
+            .then(data => {
+                const user = data.users.find(u => u.id === userId);
+                if (user) {
+                    $('#edit_user_id').val(user.id);
+                    $('#edit_username').val(user.username);
+                    $('#edit_email').val(user.email);
+                    $('#edit_full_name').val(user.full_name || '');
+                    $('#edit_department').val(user.department || '');
+                    $('#edit_role').val(user.role);
+                    $('#edit_is_active').prop('checked', user.is_active);
+                    $('#edit_change_password').prop('checked', false);
+                    $('#edit_password_section').hide();
+                    $('#edit_password').val('');
+                    $('#edit_confirm_password').val('');
+                    $('.is-invalid').removeClass('is-invalid');
+
+                    new bootstrap.Modal(document.getElementById('editUserModal')).show();
+                }
+            });
+    }
+
+    // Update user
+    function updateUser() {
+        const userId = $('#edit_user_id').val();
+        const data = {
+            email: $('#edit_email').val(),
+            full_name: $('#edit_full_name').val(),
+            department: $('#edit_department').val(),
+            role: $('#edit_role').val(),
+            is_active: $('#edit_is_active').is(':checked')
+        };
+
+        // Validation
+        let isValid = true;
+        $('.is-invalid').removeClass('is-invalid');
+
+        if (!validateEmail(data.email)) {
+            $('#edit_email').addClass('is-invalid');
+            isValid = false;
+        }
+
+        // If changing password
+        if ($('#edit_change_password').is(':checked')) {
+            const password = $('#edit_password').val();
+            const confirmPassword = $('#edit_confirm_password').val();
+
+            if (!validatePassword(password)) {
+                $('#edit_password').addClass('is-invalid');
+                isValid = false;
+            }
+
+            if (password !== confirmPassword) {
+                $('#edit_confirm_password').addClass('is-invalid');
+                isValid = false;
+            }
+
+            if (isValid) {
+                data.password = password;
+            }
+        }
+
+        if (!isValid) {
+            return;
+        }
+
+        // Send request
+        fetch(`/settings/users/${userId}/update`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert('エラー: ' + result.error.message);
+            } else {
+                alert('ユーザー情報を更新しました');
+                bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+                usersTable.ajax.reload();
+            }
+        })
+        .catch(error => {
+            alert('エラーが発生しました: ' + error);
+        });
+    }
+
+    // Show delete user modal
+    function showDeleteUserModal(userId, username, email, fullName) {
+        $('#delete_user_id').val(userId);
+        $('#delete_username').text(username);
+        $('#delete_email').text(email);
+        $('#delete_full_name').text(fullName || '-');
+        $('#delete_confirm').prop('checked', false);
+        $('#deleteUserBtn').prop('disabled', true);
+
+        new bootstrap.Modal(document.getElementById('deleteUserModal')).show();
+    }
+
+    // Confirm delete user
+    function confirmDeleteUser() {
+        const userId = $('#delete_user_id').val();
+
+        fetch(`/settings/users/${userId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert('エラー: ' + result.error.message);
+            } else {
+                alert('ユーザーを削除しました');
+                bootstrap.Modal.getInstance(document.getElementById('deleteUserModal')).hide();
+                usersTable.ajax.reload();
+            }
+        })
+        .catch(error => {
+            alert('エラーが発生しました: ' + error);
+        });
+    }
+
+    // Toggle user status
+    function toggleUserStatus(userId, activate) {
+        const action = activate ? '有効化' : '無効化';
+
+        if (confirm(`このユーザーを${action}しますか?`)) {
+            fetch(`/settings/users/${userId}/toggle-status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ is_active: activate })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.error) {
+                    alert('エラー: ' + result.error.message);
+                } else {
+                    alert(`ユーザーを${action}しました`);
+                    usersTable.ajax.reload();
+                }
+            })
+            .catch(error => {
+                alert('エラーが発生しました: ' + error);
+            });
+        }
+    }
+
+    // Unlock user
+    function unlockUser(userId) {
+        if (confirm('このユーザーのロックを解除しますか?')) {
+            fetch(`/settings/users/${userId}/unlock`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.error) {
+                    alert('エラー: ' + result.error.message);
+                } else {
+                    alert('ユーザーのロックを解除しました');
+                    usersTable.ajax.reload();
+                }
+            })
+            .catch(error => {
+                alert('エラーが発生しました: ' + error);
+            });
+        }
+    }
+
+    // Show reset password modal
+    function showResetPasswordModal(userId, username) {
+        $('#reset_user_id').val(userId);
+        $('#reset_username').text(username);
+
+        new bootstrap.Modal(document.getElementById('resetPasswordModal')).show();
+    }
+
+    // Confirm reset password
+    function confirmResetPassword() {
+        const userId = $('#reset_user_id').val();
+
+        fetch(`/settings/users/${userId}/reset-password`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert('エラー: ' + result.error.message);
+            } else {
+                alert('パスワードをリセットしました。一時パスワードをメールで送信しました。');
+                bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal')).hide();
+            }
+        })
+        .catch(error => {
+            alert('エラーが発生しました: ' + error);
+        });
+    }
 </script>
 {% endblock %}
