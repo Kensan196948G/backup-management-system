@@ -205,6 +205,7 @@ def _register_blueprints(app):
             jobs_bp,
             media_bp,
             reports_bp,
+            settings_bp,
             verification_bp,
         )
 
@@ -213,6 +214,7 @@ def _register_blueprints(app):
         app.register_blueprint(media_bp)
         app.register_blueprint(verification_bp)
         app.register_blueprint(reports_bp)
+        app.register_blueprint(settings_bp)
         app.logger.info("Views blueprints registered")
     except ImportError as e:
         app.logger.warning(f"Views blueprints not found: {e}")
