@@ -18,6 +18,77 @@
         color: #0066cc;
         border: 1px solid #b3d9ff;
     }
+
+    /* Timeline styles */
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 10px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -24px;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #0d6efd;
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px #dee2e6;
+    }
+    .timeline-content {
+        padding-left: 10px;
+    }
+
+    /* Modal enhancements */
+    .modal-header {
+        border-bottom: 3px solid rgba(0,0,0,.1);
+    }
+    .modal-footer {
+        border-top: 1px solid rgba(0,0,0,.1);
+    }
+
+    /* Fade animation for modals */
+    .modal.fade .modal-dialog {
+        transition: transform 0.3s ease-out;
+        transform: translate(0, -50px);
+    }
+    .modal.show .modal-dialog {
+        transform: none;
+    }
+
+    /* Tab styles */
+    .nav-tabs .nav-link {
+        color: #495057;
+        font-weight: 500;
+    }
+    .nav-tabs .nav-link:hover {
+        border-color: #e9ecef #e9ecef #dee2e6;
+    }
+    .nav-tabs .nav-link.active {
+        color: #0d6efd;
+        font-weight: 600;
+    }
+
+    /* Action button hover effects */
+    .btn-group .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0,0,0,.2);
+        transition: all 0.2s ease;
+    }
 </style>
 {% endblock %}
 
@@ -240,18 +311,29 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{{ url_for('media.detail', media_id=media.id) }}"
-                                       class="btn btn-outline-info" title="詳細">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <a href="{{ url_for('media.edit', media_id=media.id) }}"
-                                       class="btn btn-outline-primary" title="編集">
+                                    <button type="button" class="btn btn-outline-info btn-detail"
+                                            data-media-id="{{ media.id }}"
+                                            data-media-label="{{ media.media_id }}"
+                                            title="詳細を表示">
+                                        <i class="bi bi-info-circle"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary btn-edit"
+                                            data-media-id="{{ media.id }}"
+                                            title="編集">
                                         <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <a href="{{ url_for('media.lend', media_id=media.id) }}"
-                                       class="btn btn-outline-warning" title="貸出/返却">
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning btn-lend"
+                                            data-media-id="{{ media.id }}"
+                                            data-media-label="{{ media.media_id }}"
+                                            title="貸出/返却">
                                         <i class="bi bi-box-arrow-right"></i>
-                                    </a>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-retire"
+                                            data-media-id="{{ media.id }}"
+                                            data-media-label="{{ media.media_id }}"
+                                            title="破棄">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -261,11 +343,385 @@
             </div>
         </div>
     </div>
+
+    <!-- Detail Modal -->
+    <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="detailModalLabel">
+                        <i class="bi bi-info-circle"></i> メディア詳細
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs mb-3" id="detailTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-info" type="button" role="tab">
+                                <i class="bi bi-info-square"></i> 基本情報
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="qr-tab" data-bs-toggle="tab" data-bs-target="#qr-info" type="button" role="tab">
+                                <i class="bi bi-qr-code"></i> QRコード
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="location-tab" data-bs-toggle="tab" data-bs-target="#location-info" type="button" role="tab">
+                                <i class="bi bi-geo-alt"></i> 保管場所
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="usage-tab" data-bs-toggle="tab" data-bs-target="#usage-info" type="button" role="tab">
+                                <i class="bi bi-graph-up"></i> 使用履歴
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="backup-tab" data-bs-toggle="tab" data-bs-target="#backup-info" type="button" role="tab">
+                                <i class="bi bi-hdd-rack"></i> バックアップ
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="detailTabContent">
+                        <!-- Basic Info Tab -->
+                        <div class="tab-pane fade show active" id="basic-info" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <th class="bg-light" style="width: 40%">メディアID</th>
+                                            <td id="detail-media-id">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="bg-light">メディアタイプ</th>
+                                            <td id="detail-media-type">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="bg-light">容量</th>
+                                            <td id="detail-capacity">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="bg-light">ステータス</th>
+                                            <td id="detail-status">-</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <th class="bg-light" style="width: 40%">保管場所</th>
+                                            <td id="detail-location">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="bg-light">購入日</th>
+                                            <td id="detail-purchase-date">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="bg-light">シリアル番号</th>
+                                            <td id="detail-serial">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="bg-light">最終更新</th>
+                                            <td id="detail-updated">-</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> <strong>備考:</strong>
+                                <span id="detail-notes">情報なし</span>
+                            </div>
+                        </div>
+
+                        <!-- QR Code Tab -->
+                        <div class="tab-pane fade" id="qr-info" role="tabpanel">
+                            <div class="text-center py-4">
+                                <img id="detail-qr-image" src="" alt="QR Code" class="img-fluid" style="max-width: 300px; border: 2px solid #ddd; padding: 15px; background: white;">
+                                <div class="mt-3">
+                                    <p class="text-muted">スキャンしてメディア情報を確認</p>
+                                    <button class="btn btn-primary" onclick="downloadQR()">
+                                        <i class="bi bi-download"></i> QRコードをダウンロード
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="printQR()">
+                                        <i class="bi bi-printer"></i> 印刷
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location Tab -->
+                        <div class="tab-pane fade" id="location-info" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div id="location-map" style="height: 400px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 5px; position: relative;">
+                                        <div class="d-flex align-items-center justify-content-center h-100">
+                                            <div class="text-center">
+                                                <i class="bi bi-map fs-1 text-muted"></i>
+                                                <p class="text-muted mt-2">保管場所マップ</p>
+                                                <div id="location-map-content"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-header bg-primary text-white">
+                                            <i class="bi bi-geo-alt-fill"></i> 保管情報
+                                        </div>
+                                        <div class="card-body">
+                                            <p><strong>建物:</strong> <span id="location-building">-</span></p>
+                                            <p><strong>フロア:</strong> <span id="location-floor">-</span></p>
+                                            <p><strong>ラック:</strong> <span id="location-rack">-</span></p>
+                                            <p><strong>位置:</strong> <span id="location-position">-</span></p>
+                                            <hr>
+                                            <p class="text-muted mb-0"><small>最終確認: <span id="location-verified">-</span></small></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Usage History Tab -->
+                        <div class="tab-pane fade" id="usage-info" role="tabpanel">
+                            <div class="card mb-3">
+                                <div class="card-header bg-success text-white">
+                                    <i class="bi bi-graph-up"></i> 使用状況統計
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="usageChart" height="80"></canvas>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-header">
+                                    <i class="bi bi-clock-history"></i> 最近のアクティビティ
+                                </div>
+                                <div class="card-body">
+                                    <div class="timeline" id="usage-timeline">
+                                        <p class="text-muted">読み込み中...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Associated Backups Tab -->
+                        <div class="tab-pane fade" id="backup-info" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>バックアップID</th>
+                                            <th>ジョブ名</th>
+                                            <th>実行日時</th>
+                                            <th>サイズ</th>
+                                            <th>ステータス</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="backup-list">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">読み込み中...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> 閉じる
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="editModalLabel">
+                        <i class="bi bi-pencil"></i> メディア編集
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="edit-form">
+                    <div class="modal-body">
+                        <input type="hidden" id="edit-media-id" name="media_id">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="edit-label" class="form-label">ラベル名 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="edit-label" name="label" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="edit-type" class="form-label">メディアタイプ <span class="text-danger">*</span></label>
+                                <select class="form-select" id="edit-type" name="media_type" required>
+                                    <option value="">選択してください</option>
+                                    <option value="tape">テープ (LTO)</option>
+                                    <option value="external_hdd">外付けHDD</option>
+                                    <option value="usb">USBドライブ</option>
+                                    <option value="cloud">クラウドストレージ</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="edit-capacity" class="form-label">容量 (GB) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="edit-capacity" name="capacity" min="0" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="edit-status" class="form-label">ステータス <span class="text-danger">*</span></label>
+                                <select class="form-select" id="edit-status" name="status" required>
+                                    <option value="available">使用可能</option>
+                                    <option value="in_use">使用中</option>
+                                    <option value="stored">保管中</option>
+                                    <option value="maintenance">メンテナンス中</option>
+                                    <option value="retired">破棄予定</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="edit-location" class="form-label">保管場所</label>
+                                <input type="text" class="form-control" id="edit-location" name="location" placeholder="例: 倉庫A-1-R5">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="edit-serial" class="form-label">シリアル番号</label>
+                                <input type="text" class="form-control" id="edit-serial" name="serial_number">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-notes" class="form-label">備考</label>
+                            <textarea class="form-control" id="edit-notes" name="notes" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> キャンセル
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> 更新
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lend Modal -->
+    <div class="modal fade" id="lendModal" tabindex="-1" aria-labelledby="lendModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="lendModalLabel">
+                        <i class="bi bi-box-arrow-right"></i> メディア貸出
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="lend-form">
+                    <div class="modal-body">
+                        <input type="hidden" id="lend-media-id" name="media_id">
+                        <div class="alert alert-info">
+                            <strong>メディア:</strong> <span id="lend-media-label">-</span>
+                        </div>
+                        <div class="mb-3">
+                            <label for="lend-borrower" class="form-label">貸出先 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="lend-borrower" name="borrower" required placeholder="担当者名または部署名">
+                        </div>
+                        <div class="mb-3">
+                            <label for="lend-purpose" class="form-label">貸出目的 <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="lend-purpose" name="purpose" rows="3" required placeholder="貸出の理由や目的を記入してください"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="lend-return-date" class="form-label">返却予定日</label>
+                            <input type="date" class="form-control" id="lend-return-date" name="return_date">
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="lend-confirm" required>
+                            <label class="form-check-label" for="lend-confirm">
+                                メディアの取り扱いに関する注意事項を確認しました
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> キャンセル
+                        </button>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-check-circle"></i> 貸出実行
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Retire Confirmation Modal -->
+    <div class="modal fade" id="retireModal" tabindex="-1" aria-labelledby="retireModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="retireModalLabel">
+                        <i class="bi bi-exclamation-triangle"></i> メディア破棄確認
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="retire-form">
+                    <div class="modal-body">
+                        <input type="hidden" id="retire-media-id" name="media_id">
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <strong>警告:</strong> この操作は取り消せません。
+                        </div>
+                        <p>以下のメディアを破棄しますか?</p>
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title" id="retire-media-label">-</h6>
+                                <p class="card-text text-muted mb-0">このメディアに関連するすべてのデータが削除されます。</p>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="retire-reason" class="form-label">破棄理由 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="retire-reason" name="reason" required>
+                                <option value="">選択してください</option>
+                                <option value="old">耐用年数超過</option>
+                                <option value="damaged">物理的損傷</option>
+                                <option value="obsolete">技術的陳腐化</option>
+                                <option value="capacity">容量不足</option>
+                                <option value="other">その他</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="retire-notes" class="form-label">備考</label>
+                            <textarea class="form-control" id="retire-notes" name="notes" rows="2" placeholder="詳細な理由があれば記入してください"></textarea>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="retire-confirm" required>
+                            <label class="form-check-label" for="retire-confirm">
+                                この操作を理解し、メディアを破棄することを確認します
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> キャンセル
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> 破棄実行
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+let usageChart = null;
+
 $(document).ready(function() {
     // Initialize DataTable
     const table = $('#media-table').DataTable({
@@ -328,6 +784,432 @@ $(document).ready(function() {
         $('#filter-form')[0].reset();
         table.search('').columns().search('').draw();
     });
+
+    // ===== DETAIL MODAL =====
+    $('.btn-detail').on('click', function() {
+        const mediaId = $(this).data('media-id');
+        const mediaLabel = $(this).data('media-label');
+
+        // Load media details via API
+        fetch(`/api/media/${mediaId}`)
+            .then(response => response.json())
+            .then(data => {
+                // Populate basic info
+                $('#detail-media-id').text(data.media_id || '-');
+                $('#detail-media-type').html(getMediaTypeIcon(data.media_type));
+                $('#detail-capacity').text((data.capacity_gb || 0) + ' GB');
+                $('#detail-status').html(getStatusBadge(data.current_status));
+                $('#detail-location').text(data.storage_location || '未設定');
+                $('#detail-purchase-date').text(data.purchase_date ? new Date(data.purchase_date).toLocaleDateString('ja-JP') : '-');
+                $('#detail-serial').text(data.serial_number || '-');
+                $('#detail-updated').text(data.updated_at ? new Date(data.updated_at).toLocaleString('ja-JP') : '-');
+                $('#detail-notes').text(data.notes || '情報なし');
+
+                // QR Code
+                if (data.qr_code) {
+                    $('#detail-qr-image').attr('src', 'data:image/png;base64,' + data.qr_code);
+                } else {
+                    $('#detail-qr-image').attr('src', '');
+                }
+
+                // Location details (parse storage_location)
+                parseLocationInfo(data.storage_location);
+
+                // Load usage history and chart
+                loadUsageHistory(mediaId);
+
+                // Load associated backups
+                loadAssociatedBackups(mediaId);
+
+                // Show modal
+                $('#detailModal').modal('show');
+            })
+            .catch(error => {
+                console.error('Error loading media details:', error);
+                alert('メディア情報の読み込みに失敗しました');
+            });
+    });
+
+    // ===== EDIT MODAL =====
+    $('.btn-edit').on('click', function() {
+        const mediaId = $(this).data('media-id');
+
+        // Load current media data
+        fetch(`/api/media/${mediaId}`)
+            .then(response => response.json())
+            .then(data => {
+                $('#edit-media-id').val(data.id);
+                $('#edit-label').val(data.media_id);
+                $('#edit-type').val(data.media_type);
+                $('#edit-capacity').val(data.capacity_gb);
+                $('#edit-status').val(data.current_status);
+                $('#edit-location').val(data.storage_location);
+                $('#edit-serial').val(data.serial_number);
+                $('#edit-notes').val(data.notes);
+
+                $('#editModal').modal('show');
+            })
+            .catch(error => {
+                console.error('Error loading media for edit:', error);
+                alert('メディア情報の読み込みに失敗しました');
+            });
+    });
+
+    // Handle edit form submission
+    $('#edit-form').on('submit', function(e) {
+        e.preventDefault();
+        const mediaId = $('#edit-media-id').val();
+        const formData = {
+            media_id: $('#edit-label').val(),
+            media_type: $('#edit-type').val(),
+            capacity_gb: parseInt($('#edit-capacity').val()),
+            current_status: $('#edit-status').val(),
+            storage_location: $('#edit-location').val(),
+            serial_number: $('#edit-serial').val(),
+            notes: $('#edit-notes').val()
+        };
+
+        fetch(`/api/media/${mediaId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            $('#editModal').modal('hide');
+            alert('メディア情報を更新しました');
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Error updating media:', error);
+            alert('メディア情報の更新に失敗しました');
+        });
+    });
+
+    // ===== LEND MODAL =====
+    $('.btn-lend').on('click', function() {
+        const mediaId = $(this).data('media-id');
+        const mediaLabel = $(this).data('media-label');
+
+        $('#lend-media-id').val(mediaId);
+        $('#lend-media-label').text(mediaLabel);
+
+        // Reset form
+        $('#lend-form')[0].reset();
+        $('#lend-media-id').val(mediaId);
+
+        $('#lendModal').modal('show');
+    });
+
+    // Handle lend form submission
+    $('#lend-form').on('submit', function(e) {
+        e.preventDefault();
+        const mediaId = $('#lend-media-id').val();
+        const formData = {
+            borrower: $('#lend-borrower').val(),
+            purpose: $('#lend-purpose').val(),
+            expected_return_date: $('#lend-return-date').val()
+        };
+
+        fetch(`/api/media/${mediaId}/lend`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            $('#lendModal').modal('hide');
+            alert('メディアを貸出しました');
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Error lending media:', error);
+            alert('メディアの貸出に失敗しました');
+        });
+    });
+
+    // ===== RETIRE MODAL =====
+    $('.btn-retire').on('click', function() {
+        const mediaId = $(this).data('media-id');
+        const mediaLabel = $(this).data('media-label');
+
+        $('#retire-media-id').val(mediaId);
+        $('#retire-media-label').text(mediaLabel);
+
+        // Reset form
+        $('#retire-form')[0].reset();
+        $('#retire-media-id').val(mediaId);
+
+        $('#retireModal').modal('show');
+    });
+
+    // Handle retire form submission
+    $('#retire-form').on('submit', function(e) {
+        e.preventDefault();
+        const mediaId = $('#retire-media-id').val();
+        const formData = {
+            reason: $('#retire-reason').val(),
+            notes: $('#retire-notes').val()
+        };
+
+        fetch(`/api/media/${mediaId}/retire`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            $('#retireModal').modal('hide');
+            alert('メディアを破棄しました');
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Error retiring media:', error);
+            alert('メディアの破棄に失敗しました');
+        });
+    });
 });
+
+// Helper function to get media type icon
+function getMediaTypeIcon(mediaType) {
+    const icons = {
+        'tape': '<i class="bi bi-cassette text-primary"></i> テープ',
+        'external_hdd': '<i class="bi bi-device-hdd text-success"></i> 外付けHDD',
+        'disk': '<i class="bi bi-device-hdd text-success"></i> ディスク',
+        'usb': '<i class="bi bi-usb-drive text-info"></i> USB',
+        'cloud': '<i class="bi bi-cloud text-warning"></i> クラウド'
+    };
+    return icons[mediaType] || '<i class="bi bi-hdd text-secondary"></i> ' + mediaType;
+}
+
+// Helper function to get status badge
+function getStatusBadge(status) {
+    const badges = {
+        'available': '<span class="badge bg-success">使用可能</span>',
+        'in_use': '<span class="badge bg-primary">使用中</span>',
+        'stored': '<span class="badge bg-info">保管中</span>',
+        'lent': '<span class="badge bg-warning">貸出中</span>',
+        'maintenance': '<span class="badge bg-secondary">メンテナンス中</span>',
+        'retired': '<span class="badge bg-danger">破棄予定</span>'
+    };
+    return badges[status] || '<span class="badge bg-secondary">' + status + '</span>';
+}
+
+// Parse location information
+function parseLocationInfo(location) {
+    if (!location) {
+        $('#location-building').text('-');
+        $('#location-floor').text('-');
+        $('#location-rack').text('-');
+        $('#location-position').text('-');
+        $('#location-verified').text('-');
+        $('#location-map-content').html('<p class="text-muted">保管場所: 未設定</p>');
+        return;
+    }
+
+    // Parse location string (e.g., "倉庫A-1-R5" -> Building: 倉庫A, Floor: 1, Rack: R5)
+    const parts = location.split('-');
+    $('#location-building').text(parts[0] || '-');
+    $('#location-floor').text(parts[1] || '-');
+    $('#location-rack').text(parts[2] || '-');
+    $('#location-position').text(location);
+    $('#location-verified').text(new Date().toLocaleDateString('ja-JP'));
+
+    // Create simple location map visualization
+    $('#location-map-content').html(`
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+            <div class="text-center">
+                <div class="badge bg-primary fs-3 p-3 mb-2">
+                    <i class="bi bi-geo-alt-fill"></i>
+                </div>
+                <h5>${location}</h5>
+                <p class="text-muted mb-0">保管場所マップ機能は開発中です</p>
+            </div>
+        </div>
+    `);
+}
+
+// Load usage history and create chart
+function loadUsageHistory(mediaId) {
+    fetch(`/api/media/${mediaId}/usage-history`)
+        .then(response => response.json())
+        .then(data => {
+            // Create usage chart
+            const ctx = document.getElementById('usageChart');
+            if (usageChart) {
+                usageChart.destroy();
+            }
+
+            // Sample data for demonstration
+            const labels = data.labels || ['1月', '2月', '3月', '4月', '5月', '6月'];
+            const usageData = data.usage || [12, 19, 15, 25, 22, 30];
+
+            usageChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '使用回数',
+                        data: usageData,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        title: {
+                            display: true,
+                            text: '月別使用履歴'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 5
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Create timeline
+            createUsageTimeline(data.timeline || []);
+        })
+        .catch(error => {
+            console.error('Error loading usage history:', error);
+            $('#usage-timeline').html('<p class="text-muted">使用履歴の読み込みに失敗しました</p>');
+
+            // Create sample chart anyway
+            const ctx = document.getElementById('usageChart');
+            if (usageChart) {
+                usageChart.destroy();
+            }
+            usageChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    datasets: [{
+                        label: '使用回数',
+                        data: [12, 19, 15, 25, 22, 30],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    }
+                }
+            });
+        });
+}
+
+// Create usage timeline
+function createUsageTimeline(timeline) {
+    if (!timeline || timeline.length === 0) {
+        $('#usage-timeline').html(`
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <small class="text-muted">${new Date().toLocaleDateString('ja-JP')}</small>
+                    <p class="mb-1"><strong>メディア登録</strong></p>
+                    <p class="text-muted mb-0">システムに登録されました</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <p class="text-muted">その他のアクティビティはありません</p>
+                </div>
+            </div>
+        `);
+        return;
+    }
+
+    let html = '';
+    timeline.forEach(item => {
+        html += `
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <small class="text-muted">${new Date(item.date).toLocaleString('ja-JP')}</small>
+                    <p class="mb-1"><strong>${item.action}</strong></p>
+                    <p class="text-muted mb-0">${item.description}</p>
+                </div>
+            </div>
+        `;
+    });
+    $('#usage-timeline').html(html);
+}
+
+// Load associated backups
+function loadAssociatedBackups(mediaId) {
+    fetch(`/api/media/${mediaId}/backups`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.backups || data.backups.length === 0) {
+                $('#backup-list').html('<tr><td colspan="5" class="text-center text-muted">関連するバックアップはありません</td></tr>');
+                return;
+            }
+
+            let html = '';
+            data.backups.forEach(backup => {
+                html += `
+                    <tr>
+                        <td><code>${backup.id}</code></td>
+                        <td>${backup.job_name}</td>
+                        <td>${new Date(backup.executed_at).toLocaleString('ja-JP')}</td>
+                        <td>${(backup.size_mb / 1024).toFixed(2)} GB</td>
+                        <td>${getStatusBadge(backup.status)}</td>
+                    </tr>
+                `;
+            });
+            $('#backup-list').html(html);
+        })
+        .catch(error => {
+            console.error('Error loading backups:', error);
+            $('#backup-list').html('<tr><td colspan="5" class="text-center text-muted">バックアップ情報の読み込みに失敗しました</td></tr>');
+        });
+}
+
+// QR Code download function
+function downloadQR() {
+    const qrImage = document.getElementById('detail-qr-image');
+    const link = document.createElement('a');
+    link.download = 'media-qr-code.png';
+    link.href = qrImage.src;
+    link.click();
+}
+
+// QR Code print function
+function printQR() {
+    const qrImage = document.getElementById('detail-qr-image');
+    const printWindow = window.open('', '', 'height=600,width=800');
+    printWindow.document.write('<html><head><title>QR Code Print</title>');
+    printWindow.document.write('<style>body{text-align:center;padding:50px;}</style>');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write('<h2>メディア QRコード</h2>');
+    printWindow.document.write('<img src="' + qrImage.src + '" style="max-width:400px;"/>');
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.print();
+}
 </script>
 {% endblock %}

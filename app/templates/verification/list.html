@@ -15,6 +15,87 @@
         display: inline-block;
         margin-right: 5px;
     }
+
+    /* Timeline styles */
+    .timeline-point {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 2px currentColor;
+    }
+    .timeline-line {
+        width: 2px;
+        height: 30px;
+        background: #dee2e6;
+        margin-left: 9px;
+    }
+    .timeline-container {
+        position: relative;
+    }
+
+    /* Log viewer styles */
+    .log-line {
+        padding: 4px 0;
+        line-height: 1.6;
+        border-bottom: 1px solid #333;
+    }
+    .log-line:last-child {
+        border-bottom: none;
+    }
+    .log-line.hidden {
+        display: none;
+    }
+    .log-timestamp {
+        color: #858585;
+        font-weight: 600;
+        margin-right: 8px;
+    }
+    .log-level {
+        margin: 0 8px;
+        font-size: 0.75rem;
+        min-width: 70px;
+        display: inline-block;
+        text-align: center;
+    }
+    .log-message {
+        color: #d4d4d4;
+    }
+
+    /* Modal enhancements */
+    .modal-xl {
+        max-width: 1200px;
+    }
+
+    /* Scrollable modal body */
+    .modal-dialog-scrollable .modal-body {
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+    }
+
+    /* Log viewer scrollbar */
+    .log-viewer-content::-webkit-scrollbar {
+        width: 10px;
+    }
+    .log-viewer-content::-webkit-scrollbar-track {
+        background: #2d2d2d;
+    }
+    .log-viewer-content::-webkit-scrollbar-thumb {
+        background: #555;
+        border-radius: 5px;
+    }
+    .log-viewer-content::-webkit-scrollbar-thumb:hover {
+        background: #777;
+    }
+
+    /* Hover effects for action buttons */
+    .btn-group .btn {
+        transition: all 0.2s ease;
+    }
+    .btn-group .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
 </style>
 {% endblock %}
 
@@ -246,15 +327,29 @@
                             <td>{{ test.tester.username if test.tester else '不明' }}</td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-primary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#detailModal{{ test.id }}"
+                                            title="詳細表示">
+                                        <i class="bi bi-info-circle"></i>
+                                    </button>
                                     <a href="{{ url_for('verification.detail', test_id=test.id) }}"
-                                       class="btn btn-outline-info" title="詳細">
+                                       class="btn btn-outline-info" title="完全詳細">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    {% if test.test_result == 'failed' %}
-                                    <a href="{{ url_for('verification.execute') }}"
-                                       class="btn btn-outline-warning" title="再実行">
+                                    <button type="button" class="btn btn-outline-secondary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#logModal{{ test.id }}"
+                                            title="ログ表示">
+                                        <i class="bi bi-file-text"></i>
+                                    </button>
+                                    {% if test.test_result == 'failed' or test.test_result == 'success' %}
+                                    <button type="button" class="btn btn-outline-warning"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#rerunModal{{ test.id }}"
+                                            title="再実行">
                                         <i class="bi bi-arrow-repeat"></i>
-                                    </a>
+                                    </button>
                                     {% endif %}
                                 </div>
                             </td>
@@ -265,6 +360,457 @@
             </div>
         </div>
     </div>
+
+    <!-- Modals for each test -->
+    {% for test in tests %}
+    <!-- Detail Modal -->
+    <div class="modal fade" id="detailModal{{ test.id }}" tabindex="-1" aria-labelledby="detailModalLabel{{ test.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="detailModalLabel{{ test.id }}">
+                        <i class="bi bi-info-circle"></i> テスト詳細 - ID: {{ test.id }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Test Overview -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-clipboard-data"></i> テスト概要
+                            </h6>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <small class="text-muted">テスト結果</small>
+                                    <div class="mt-2">
+                                        {% if test.test_result == 'success' %}
+                                        <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                                        <p class="mt-2 mb-0 fw-bold text-success">成功</p>
+                                        {% elif test.test_result == 'failed' %}
+                                        <i class="bi bi-x-circle-fill text-danger fs-1"></i>
+                                        <p class="mt-2 mb-0 fw-bold text-danger">失敗</p>
+                                        {% else %}
+                                        <i class="bi bi-dash-circle-fill text-secondary fs-1"></i>
+                                        <p class="mt-2 mb-0 fw-bold text-secondary">{{ test.test_result }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <small class="text-muted">所要時間</small>
+                                    <div class="mt-2">
+                                        <i class="bi bi-clock-fill text-info fs-1"></i>
+                                        <p class="mt-2 mb-0 fw-bold">
+                                            {% if test.duration_seconds %}
+                                            {{ (test.duration_seconds / 60)|round(1) }} 分
+                                            {% else %}
+                                            -
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <small class="text-muted">検証済ファイル</small>
+                                    <div class="mt-2">
+                                        <i class="bi bi-file-earmark-check-fill text-primary fs-1"></i>
+                                        <p class="mt-2 mb-0 fw-bold">
+                                            {{ test.files_verified|default(0) }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <small class="text-muted">問題発見</small>
+                                    <div class="mt-2">
+                                        {% if test.issues_found %}
+                                        <i class="bi bi-exclamation-triangle-fill text-warning fs-1"></i>
+                                        <p class="mt-2 mb-0 fw-bold text-warning">{{ test.issues_found }}</p>
+                                        {% else %}
+                                        <i class="bi bi-shield-check-fill text-success fs-1"></i>
+                                        <p class="mt-2 mb-0 fw-bold text-success">なし</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Test Parameters -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-gear"></i> テストパラメータ
+                            </h6>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm table-bordered">
+                                <tbody>
+                                    <tr>
+                                        <th class="bg-light" width="40%">ジョブ名</th>
+                                        <td>
+                                            {% if test.job %}
+                                            {{ test.job.job_name }}
+                                            {% else %}
+                                            <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">テストタイプ</th>
+                                        <td>
+                                            {% if test.test_type == 'full_restore' %}
+                                            <span class="badge bg-primary">完全復元</span>
+                                            {% elif test.test_type == 'partial' %}
+                                            <span class="badge bg-info">部分検証</span>
+                                            {% elif test.test_type == 'integrity' %}
+                                            <span class="badge bg-secondary">整合性</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">{{ test.test_type }}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">復元先</th>
+                                        <td>
+                                            <code>{{ test.restore_target|default('N/A') }}</code>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm table-bordered">
+                                <tbody>
+                                    <tr>
+                                        <th class="bg-light" width="40%">実施日時</th>
+                                        <td>{{ test.test_date.strftime('%Y年%m月%d日 %H:%M') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">実施者</th>
+                                        <td>{{ test.tester.username if test.tester else '不明' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">メディア</th>
+                                        <td>{{ test.restore_target|default('N/A') }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Checksum Comparison -->
+                    {% if test.checksum_match is not none %}
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-shield-check"></i> チェックサム比較結果
+                            </h6>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="alert {% if test.checksum_match %}alert-success{% else %}alert-danger{% endif %} d-flex align-items-center">
+                                <i class="bi {% if test.checksum_match %}bi-check-circle-fill{% else %}bi-x-circle-fill{% endif %} fs-4 me-3"></i>
+                                <div class="flex-grow-1">
+                                    <strong>
+                                        {% if test.checksum_match %}
+                                        チェックサム一致: ファイル整合性が確認されました
+                                        {% else %}
+                                        チェックサム不一致: ファイル整合性に問題があります
+                                        {% endif %}
+                                    </strong>
+                                    <p class="mb-0 mt-2">
+                                        検証アルゴリズム: SHA-256 | 検証ファイル数: {{ test.files_verified|default(0) }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- File Integrity Report -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-file-earmark-check"></i> ファイル整合性レポート
+                            </h6>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-md-4">
+                                            <div class="border-end">
+                                                <h3 class="text-primary mb-0">{{ test.files_verified|default(0) }}</h3>
+                                                <small class="text-muted">検証済ファイル</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="border-end">
+                                                <h3 class="text-success mb-0">{{ (test.files_verified|default(0) - test.issues_found|default(0)) }}</h3>
+                                                <small class="text-muted">正常</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h3 class="{% if test.issues_found %}text-danger{% else %}text-success{% endif %} mb-0">
+                                                {{ test.issues_found|default(0) }}
+                                            </h3>
+                                            <small class="text-muted">エラー</small>
+                                        </div>
+                                    </div>
+                                    {% if test.issues_found %}
+                                    <hr>
+                                    <div class="alert alert-warning mb-0">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        <strong>注意:</strong> {{ test.issues_found }} 件のファイルに問題が見つかりました。
+                                        詳細は完全詳細ページをご確認ください。
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Visualization -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-clock-history"></i> タイムライン
+                            </h6>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="timeline-container p-3 bg-light rounded">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="timeline-point bg-primary"></div>
+                                    <div class="ms-3">
+                                        <strong>テスト開始</strong>
+                                        <br>
+                                        <small class="text-muted">{{ test.test_date.strftime('%Y/%m/%d %H:%M:%S') }}</small>
+                                    </div>
+                                </div>
+                                <div class="timeline-line"></div>
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="timeline-point bg-info"></div>
+                                    <div class="ms-3">
+                                        <strong>検証実行中</strong>
+                                        <br>
+                                        <small class="text-muted">{{ test.files_verified|default(0) }} ファイルを検証</small>
+                                    </div>
+                                </div>
+                                <div class="timeline-line"></div>
+                                <div class="d-flex align-items-center">
+                                    <div class="timeline-point {% if test.test_result == 'success' %}bg-success{% else %}bg-danger{% endif %}"></div>
+                                    <div class="ms-3">
+                                        <strong>テスト完了</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            {% if test.duration_seconds %}
+                                            所要時間: {{ (test.duration_seconds / 60)|round(1) }} 分
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ url_for('verification.detail', test_id=test.id) }}" class="btn btn-primary">
+                        <i class="bi bi-eye"></i> 完全詳細を表示
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Re-run Modal -->
+    <div class="modal fade" id="rerunModal{{ test.id }}" tabindex="-1" aria-labelledby="rerunModalLabel{{ test.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title" id="rerunModalLabel{{ test.id }}">
+                        <i class="bi bi-arrow-repeat"></i> テスト再実行確認
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>テストID {{ test.id }}</strong> を再実行します
+                    </div>
+                    <p><strong>元のテスト情報:</strong></p>
+                    <ul>
+                        <li>ジョブ: {{ test.job.job_name if test.job else 'N/A' }}</li>
+                        <li>タイプ: {{ test.test_type }}</li>
+                        <li>実施日: {{ test.test_date.strftime('%Y/%m/%d %H:%M') }}</li>
+                        <li>結果:
+                            {% if test.test_result == 'success' %}
+                            <span class="badge bg-success">成功</span>
+                            {% else %}
+                            <span class="badge bg-danger">失敗</span>
+                            {% endif %}
+                        </li>
+                    </ul>
+
+                    <hr>
+
+                    <form id="rerunForm{{ test.id }}">
+                        <div class="mb-3">
+                            <label class="form-label"><strong>再実行オプション:</strong></label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="rerunType{{ test.id }}"
+                                       id="sameConfig{{ test.id }}" value="same" checked>
+                                <label class="form-check-label" for="sameConfig{{ test.id }}">
+                                    同じ設定で再実行
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="rerunType{{ test.id }}"
+                                       id="fullVerify{{ test.id }}" value="full">
+                                <label class="form-check-label" for="fullVerify{{ test.id }}">
+                                    完全検証で再実行
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="rerunType{{ test.id }}"
+                                       id="quickVerify{{ test.id }}" value="quick">
+                                <label class="form-check-label" for="quickVerify{{ test.id }}">
+                                    クイック検証で再実行
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="rerunNotes{{ test.id }}" class="form-label">備考 (任意)</label>
+                            <textarea class="form-control" id="rerunNotes{{ test.id }}" rows="2"
+                                      placeholder="再実行の理由や特記事項を入力..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> キャンセル
+                    </button>
+                    <button type="button" class="btn btn-warning" onclick="executeRerun({{ test.id }})">
+                        <i class="bi bi-arrow-repeat"></i> 再実行
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Viewer Modal -->
+    <div class="modal fade" id="logModal{{ test.id }}" tabindex="-1" aria-labelledby="logModalLabel{{ test.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="logModalLabel{{ test.id }}">
+                        <i class="bi bi-file-text"></i> テストログ - ID: {{ test.id }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="log-viewer-header p-3 bg-light border-bottom">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="filterLog('all', {{ test.id }})">
+                                        <i class="bi bi-list"></i> すべて
+                                    </button>
+                                    <button type="button" class="btn btn-outline-info" onclick="filterLog('info', {{ test.id }})">
+                                        <i class="bi bi-info-circle"></i> INFO
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning" onclick="filterLog('warning', {{ test.id }})">
+                                        <i class="bi bi-exclamation-triangle"></i> WARNING
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" onclick="filterLog('error', {{ test.id }})">
+                                        <i class="bi bi-x-circle"></i> ERROR
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="downloadLog({{ test.id }})">
+                                    <i class="bi bi-download"></i> ログダウンロード
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="log-viewer-content p-3" style="background-color: #1e1e1e; color: #d4d4d4; font-family: 'Courier New', monospace; font-size: 0.875rem; max-height: 500px; overflow-y: auto;">
+                        <div id="logContent{{ test.id }}">
+                            <div class="log-line info">
+                                <span class="log-timestamp text-muted">[{{ test.test_date.strftime('%Y-%m-%d %H:%M:%S') }}]</span>
+                                <span class="log-level badge bg-info">INFO</span>
+                                <span class="log-message">検証テスト開始: ID={{ test.id }}</span>
+                            </div>
+                            <div class="log-line info">
+                                <span class="log-timestamp text-muted">[{{ test.test_date.strftime('%Y-%m-%d %H:%M:%S') }}]</span>
+                                <span class="log-level badge bg-info">INFO</span>
+                                <span class="log-message">テストタイプ: {{ test.test_type }}</span>
+                            </div>
+                            <div class="log-line info">
+                                <span class="log-timestamp text-muted">[{{ test.test_date.strftime('%Y-%m-%d %H:%M:%S') }}]</span>
+                                <span class="log-level badge bg-info">INFO</span>
+                                <span class="log-message">対象ジョブ: {{ test.job.job_name if test.job else 'N/A' }}</span>
+                            </div>
+                            <div class="log-line info">
+                                <span class="log-timestamp text-muted">[{{ test.test_date.strftime('%Y-%m-%d %H:%M:%S') }}]</span>
+                                <span class="log-level badge bg-info">INFO</span>
+                                <span class="log-message">ファイル検証開始...</span>
+                            </div>
+                            <div class="log-line info">
+                                <span class="log-timestamp text-muted">[{{ test.test_date.strftime('%Y-%m-%d %H:%M:%S') }}]</span>
+                                <span class="log-level badge bg-success">SUCCESS</span>
+                                <span class="log-message">{{ test.files_verified|default(0) }} ファイルを検証完了</span>
+                            </div>
+                            {% if test.issues_found %}
+                            <div class="log-line warning">
+                                <span class="log-timestamp text-muted">[{{ test.test_date.strftime('%Y-%m-%d %H:%M:%S') }}]</span>
+                                <span class="log-level badge bg-warning">WARNING</span>
+                                <span class="log-message">{{ test.issues_found }} 件の問題を検出</span>
+                            </div>
+                            {% endif %}
+                            {% if test.test_result == 'success' %}
+                            <div class="log-line info">
+                                <span class="log-timestamp text-muted">[{{ test.test_date.strftime('%Y-%m-%d %H:%M:%S') }}]</span>
+                                <span class="log-level badge bg-success">SUCCESS</span>
+                                <span class="log-message">検証テスト正常終了</span>
+                            </div>
+                            {% elif test.test_result == 'failed' %}
+                            <div class="log-line error">
+                                <span class="log-timestamp text-muted">[{{ test.test_date.strftime('%Y-%m-%d %H:%M:%S') }}]</span>
+                                <span class="log-level badge bg-danger">ERROR</span>
+                                <span class="log-message">検証テスト失敗</span>
+                            </div>
+                            {% endif %}
+                            {% if test.duration_seconds %}
+                            <div class="log-line info">
+                                <span class="log-timestamp text-muted">[{{ test.test_date.strftime('%Y-%m-%d %H:%M:%S') }}]</span>
+                                <span class="log-level badge bg-info">INFO</span>
+                                <span class="log-message">総実行時間: {{ (test.duration_seconds / 60)|round(2) }} 分</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 </div>
 {% endblock %}
 
@@ -329,29 +875,163 @@ $(document).ready(function() {
         $('#filter-form')[0].reset();
         table.search('').columns().search('').draw();
     });
+
+    // Add fade animation to modals
+    $('.modal').on('show.bs.modal', function() {
+        $(this).find('.modal-dialog').addClass('animate__animated animate__fadeInDown');
+    });
+
+    $('.modal').on('hidden.bs.modal', function() {
+        $(this).find('.modal-dialog').removeClass('animate__animated animate__fadeInDown');
+    });
 });
 
-function retryTest(testId) {
-    if (confirm('このテストを再実行しますか？')) {
-        fetch(`/verification/${testId}/retry`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('テストを再実行しました');
+/**
+ * Execute test re-run with selected options
+ */
+function executeRerun(testId) {
+    const rerunType = $(`input[name="rerunType${testId}"]:checked`).val();
+    const notes = $(`#rerunNotes${testId}`).val();
+
+    const payload = {
+        test_id: testId,
+        rerun_type: rerunType,
+        notes: notes
+    };
+
+    // Show loading state
+    const btn = event.target;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> 処理中...';
+    btn.disabled = true;
+
+    fetch(`/api/verification/${testId}/rerun`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+
+        if (data.success) {
+            // Close modal
+            $(`#rerunModal${testId}`).modal('hide');
+
+            // Show success message
+            showToast('success', '再実行成功', `テストID ${testId} の再実行を開始しました`);
+
+            // Reload page after 2 seconds
+            setTimeout(() => {
                 location.reload();
-            } else {
-                alert('テストの再実行に失敗しました: ' + data.message);
-            }
-        })
-        .catch(error => {
-            alert('エラーが発生しました: ' + error);
-        });
+            }, 2000);
+        } else {
+            showToast('error', '再実行失敗', data.message || 'テストの再実行に失敗しました');
+        }
+    })
+    .catch(error => {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+        showToast('error', 'エラー', 'エラーが発生しました: ' + error.message);
+    });
+}
+
+/**
+ * Filter log messages by level
+ */
+function filterLog(level, testId) {
+    const logContent = $(`#logContent${testId}`);
+    const logLines = logContent.find('.log-line');
+
+    if (level === 'all') {
+        logLines.removeClass('hidden');
+    } else {
+        logLines.addClass('hidden');
+        logLines.filter(`.${level}`).removeClass('hidden');
     }
+
+    // Update button states
+    const buttonGroup = logContent.closest('.modal-body').find('.btn-group button');
+    buttonGroup.removeClass('active');
+    buttonGroup.filter(`[onclick*="${level}"]`).addClass('active');
+}
+
+/**
+ * Download log file
+ */
+function downloadLog(testId) {
+    const logContent = $(`#logContent${testId}`).text();
+    const blob = new Blob([logContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `verification_test_${testId}_log.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    showToast('success', 'ダウンロード完了', `テストID ${testId} のログをダウンロードしました`);
+}
+
+/**
+ * Show toast notification
+ */
+function showToast(type, title, message) {
+    const toastColors = {
+        success: 'bg-success',
+        error: 'bg-danger',
+        warning: 'bg-warning',
+        info: 'bg-info'
+    };
+
+    const toastIcons = {
+        success: 'bi-check-circle-fill',
+        error: 'bi-x-circle-fill',
+        warning: 'bi-exclamation-triangle-fill',
+        info: 'bi-info-circle-fill'
+    };
+
+    const toastHtml = `
+        <div class="toast align-items-center text-white ${toastColors[type]} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi ${toastIcons[type]} me-2"></i>
+                    <strong>${title}</strong>
+                    <p class="mb-0 mt-1">${message}</p>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+
+    // Create toast container if it doesn't exist
+    if (!$('#toast-container').length) {
+        $('body').append('<div id="toast-container" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>');
+    }
+
+    const $toast = $(toastHtml);
+    $('#toast-container').append($toast);
+
+    const toast = new bootstrap.Toast($toast[0], {
+        autohide: true,
+        delay: 5000
+    });
+    toast.show();
+
+    // Remove toast after hidden
+    $toast.on('hidden.bs.toast', function() {
+        $(this).remove();
+    });
+}
+
+// Legacy function for compatibility
+function retryTest(testId) {
+    $(`#rerunModal${testId}`).modal('show');
 }
 </script>
 {% endblock %}

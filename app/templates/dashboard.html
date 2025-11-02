@@ -140,6 +140,335 @@
             font-size: 1.25rem;
         }
     }
+
+    /* Enhanced Interactive Elements Styles */
+    .detail-icon {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+
+    .detail-icon:hover {
+        background-color: #e9ecef;
+        transform: scale(1.1);
+    }
+
+    .detail-icon i {
+        font-size: 1.1rem;
+    }
+
+    /* Storage Chart Clickable */
+    .chart-clickable {
+        cursor: pointer;
+        position: relative;
+    }
+
+    .chart-clickable::after {
+        content: '\f1c1';
+        font-family: 'bootstrap-icons';
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(54, 185, 204, 0.9);
+        color: white;
+        padding: 0.5rem;
+        border-radius: 50%;
+        font-size: 0.875rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .chart-clickable:hover::after {
+        opacity: 1;
+    }
+
+    /* Floating Action Button (FAB) */
+    .fab-container {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 1040;
+    }
+
+    .fab-main {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-size: 1.5rem;
+    }
+
+    .fab-main:hover {
+        transform: scale(1.1) rotate(90deg);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .fab-main.active {
+        transform: rotate(45deg);
+        background: linear-gradient(135deg, #e74a3b 0%, #c0392b 100%);
+    }
+
+    .fab-actions {
+        position: absolute;
+        bottom: 70px;
+        right: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(20px);
+    }
+
+    .fab-actions.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .fab-action {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: white;
+        border: none;
+        border-radius: 2rem;
+        padding: 0.75rem 1.25rem;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        animation: fabSlideIn 0.3s ease forwards;
+    }
+
+    .fab-action:hover {
+        transform: translateX(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .fab-action i {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: white;
+    }
+
+    .fab-action:nth-child(1) { animation-delay: 0.05s; }
+    .fab-action:nth-child(2) { animation-delay: 0.1s; }
+    .fab-action:nth-child(3) { animation-delay: 0.15s; }
+    .fab-action:nth-child(4) { animation-delay: 0.2s; }
+
+    @keyframes fabSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .fab-action-label {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    /* Timeline Styles */
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 0.5rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -1.44rem;
+        top: 0.25rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #4e73df;
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px #4e73df;
+    }
+
+    .timeline-item.success::before {
+        background: #1cc88a;
+        box-shadow: 0 0 0 2px #1cc88a;
+    }
+
+    .timeline-item.failed::before {
+        background: #e74a3b;
+        box-shadow: 0 0 0 2px #e74a3b;
+    }
+
+    /* File List Styles */
+    .file-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .file-item {
+        padding: 0.75rem;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: background-color 0.2s ease;
+    }
+
+    .file-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .file-item:last-child {
+        border-bottom: none;
+    }
+
+    /* Performance Metrics */
+    .metric-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .metric-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-bottom: 0.25rem;
+    }
+
+    .metric-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #212529;
+    }
+
+    /* Alert Detail Styles */
+    .resolution-step {
+        padding: 0.75rem;
+        background: #f8f9fa;
+        border-left: 3px solid #4e73df;
+        margin-bottom: 0.5rem;
+        border-radius: 0.25rem;
+    }
+
+    .resolution-step.completed {
+        background: #d4edda;
+        border-left-color: #1cc88a;
+    }
+
+    .acknowledge-btn {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(78, 115, 223, 0.7);
+        }
+        50% {
+            box-shadow: 0 0 0 10px rgba(78, 115, 223, 0);
+        }
+    }
+
+    /* Storage Detail Modal */
+    .provider-item {
+        padding: 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s ease;
+    }
+
+    .provider-item:hover {
+        box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .capacity-bar {
+        height: 30px;
+        border-radius: 0.25rem;
+        position: relative;
+        background: #e9ecef;
+        overflow: hidden;
+    }
+
+    .capacity-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #1cc88a 0%, #17a673 100%);
+        transition: width 0.5s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    .capacity-fill.warning {
+        background: linear-gradient(90deg, #f6c23e 0%, #dda20a 100%);
+    }
+
+    .capacity-fill.danger {
+        background: linear-gradient(90deg, #e74a3b 0%, #c0392b 100%);
+    }
+
+    /* Trend Chart */
+    .trend-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .trend-indicator.up {
+        background: #fef5e7;
+        color: #e74a3b;
+    }
+
+    .trend-indicator.down {
+        background: #d4edda;
+        color: #1cc88a;
+    }
+
+    .trend-indicator.stable {
+        background: #e9ecef;
+        color: #6c757d;
+    }
 </style>
 {% endblock %}
 
@@ -308,7 +637,7 @@
                         <i class="bi bi-bar-chart"></i> ストレージ使用状況
                     </h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body chart-clickable" onclick="showStorageDetailModal()" title="クリックで詳細を表示">
                     <canvas id="storageChart" style="max-height: 250px;"></canvas>
                 </div>
             </div>
@@ -336,6 +665,9 @@
                                             <small class="text-muted">
                                                 {{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}
                                             </small>
+                                        </div>
+                                        <div class="detail-icon" onclick="showAlertDetailModal({{ alert.id }})" title="詳細を表示">
+                                            <i class="bi bi-info-circle text-primary"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -417,6 +749,7 @@
                                         <th>ジョブ名</th>
                                         <th>ステータス</th>
                                         <th>実行時刻</th>
+                                        <th class="text-center">詳細</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -441,6 +774,11 @@
                                             <td>
                                                 {{ execution.start_time.strftime('%Y-%m-%d %H:%M') }}
                                             </td>
+                                            <td class="text-center">
+                                                <div class="detail-icon d-inline-block" onclick="showExecutionDetailModal({{ execution.id }})" title="実行詳細を表示">
+                                                    <i class="bi bi-file-earmark-text text-primary"></i>
+                                                </div>
+                                            </td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
@@ -452,6 +790,31 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Floating Action Button (FAB) -->
+    <div class="fab-container">
+        <div class="fab-actions" id="fabActions">
+            <button class="fab-action" onclick="window.location.href='{{ url_for('jobs.create') }}'">
+                <i class="bi bi-plus-circle bg-primary"></i>
+                <span class="fab-action-label">新規バックアップジョブ</span>
+            </button>
+            <button class="fab-action" onclick="triggerManualBackup()">
+                <i class="bi bi-play-circle bg-success"></i>
+                <span class="fab-action-label">手動バックアップ実行</span>
+            </button>
+            <button class="fab-action" onclick="window.location.href='{{ url_for('reports.generate') }}'">
+                <i class="bi bi-file-earmark-bar-graph bg-info"></i>
+                <span class="fab-action-label">レポート生成</span>
+            </button>
+            <button class="fab-action" onclick="checkSystemHealth()">
+                <i class="bi bi-heart-pulse bg-danger"></i>
+                <span class="fab-action-label">システムヘルスチェック</span>
+            </button>
+        </div>
+        <button class="fab-main" id="fabMain" onclick="toggleFab()">
+            <i class="bi bi-plus-lg"></i>
+        </button>
     </div>
 </div>
 
@@ -893,12 +1256,592 @@
         </div>
     </div>
 </div>
+
+<!-- Execution Detail Modal -->
+<div class="modal fade" id="executionDetailModal" tabindex="-1" aria-labelledby="executionDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-success-gradient">
+                <h5 class="modal-title" id="executionDetailModalLabel">
+                    <i class="bi bi-file-earmark-text"></i> 実行詳細
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs" id="executionTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="exec-timeline-tab" data-bs-toggle="tab" data-bs-target="#exec-timeline" type="button" role="tab">
+                            <i class="bi bi-clock-history"></i> タイムライン
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="exec-files-tab" data-bs-toggle="tab" data-bs-target="#exec-files" type="button" role="tab">
+                            <i class="bi bi-files"></i> ファイルリスト
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="exec-errors-tab" data-bs-toggle="tab" data-bs-target="#exec-errors" type="button" role="tab">
+                            <i class="bi bi-exclamation-triangle"></i> エラー詳細
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="exec-metrics-tab" data-bs-toggle="tab" data-bs-target="#exec-metrics" type="button" role="tab">
+                            <i class="bi bi-speedometer2"></i> パフォーマンス
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content pt-3" id="executionTabContent">
+                    <!-- Timeline Tab -->
+                    <div class="tab-pane fade show active" id="exec-timeline" role="tabpanel">
+                        <div class="timeline">
+                            <div class="timeline-item success">
+                                <strong>バックアップ開始</strong>
+                                <p class="mb-1 text-muted small">2025-11-02 14:30:00</p>
+                                <p class="mb-0">ジョブが正常に開始されました</p>
+                            </div>
+                            <div class="timeline-item success">
+                                <strong>ソース検証</strong>
+                                <p class="mb-1 text-muted small">2025-11-02 14:30:15</p>
+                                <p class="mb-0">ソースディレクトリの検証が完了しました (1,234ファイル)</p>
+                            </div>
+                            <div class="timeline-item success">
+                                <strong>データ転送</strong>
+                                <p class="mb-1 text-muted small">2025-11-02 14:30:30</p>
+                                <p class="mb-0">データ転送を開始しました (総容量: 45.6 GB)</p>
+                            </div>
+                            <div class="timeline-item success">
+                                <strong>圧縮処理</strong>
+                                <p class="mb-1 text-muted small">2025-11-02 14:45:20</p>
+                                <p class="mb-0">データの圧縮が完了しました (圧縮率: 35%)</p>
+                            </div>
+                            <div class="timeline-item success">
+                                <strong>検証処理</strong>
+                                <p class="mb-1 text-muted small">2025-11-02 14:50:10</p>
+                                <p class="mb-0">バックアップデータの整合性検証が完了しました</p>
+                            </div>
+                            <div class="timeline-item success">
+                                <strong>バックアップ完了</strong>
+                                <p class="mb-1 text-muted small">2025-11-02 14:52:30</p>
+                                <p class="mb-0">すべての処理が正常に完了しました</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Files Tab -->
+                    <div class="tab-pane fade" id="exec-files" role="tabpanel">
+                        <div class="mb-3">
+                            <input type="text" class="form-control" placeholder="ファイル名で検索..." id="fileSearchInput" onkeyup="filterFiles()">
+                        </div>
+                        <div class="file-list" id="fileList">
+                            <div class="file-item">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-file-earmark text-primary me-2"></i>
+                                    <div>
+                                        <div class="fw-bold">/data/documents/project_report.pdf</div>
+                                        <small class="text-muted">最終更新: 2025-11-01 18:30</small>
+                                    </div>
+                                </div>
+                                <span class="badge bg-secondary">2.4 MB</span>
+                            </div>
+                            <div class="file-item">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-file-earmark-spreadsheet text-success me-2"></i>
+                                    <div>
+                                        <div class="fw-bold">/data/spreadsheets/budget_2025.xlsx</div>
+                                        <small class="text-muted">最終更新: 2025-11-02 09:15</small>
+                                    </div>
+                                </div>
+                                <span class="badge bg-secondary">1.8 MB</span>
+                            </div>
+                            <div class="file-item">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-file-earmark-image text-warning me-2"></i>
+                                    <div>
+                                        <div class="fw-bold">/data/images/logo_v2.png</div>
+                                        <small class="text-muted">最終更新: 2025-10-28 14:20</small>
+                                    </div>
+                                </div>
+                                <span class="badge bg-secondary">856 KB</span>
+                            </div>
+                            <div class="file-item">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-folder text-info me-2"></i>
+                                    <div>
+                                        <div class="fw-bold">/data/archives/2024_q4/</div>
+                                        <small class="text-muted">1,234ファイル</small>
+                                    </div>
+                                </div>
+                                <span class="badge bg-secondary">15.6 GB</span>
+                            </div>
+                            <div class="file-item">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-file-earmark-code text-danger me-2"></i>
+                                    <div>
+                                        <div class="fw-bold">/data/source_code/app.py</div>
+                                        <small class="text-muted">最終更新: 2025-11-02 13:45</small>
+                                    </div>
+                                </div>
+                                <span class="badge bg-secondary">45 KB</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-center">
+                            <small class="text-muted">表示: 5件 / 全1,234件</small>
+                        </div>
+                    </div>
+
+                    <!-- Errors Tab -->
+                    <div class="tab-pane fade" id="exec-errors" role="tabpanel">
+                        <div class="alert alert-success">
+                            <h6><i class="bi bi-check-circle"></i> エラーなし</h6>
+                            <p class="mb-0">このバックアップ実行ではエラーは発生しませんでした。</p>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">警告メッセージ</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-warning mb-2">
+                                    <small><strong>警告:</strong> ファイル /data/temp/cache.tmp はスキップされました (一時ファイル)</small>
+                                </div>
+                                <div class="alert alert-warning mb-0">
+                                    <small><strong>警告:</strong> ディレクトリ /data/logs は除外設定により処理されませんでした</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Metrics Tab -->
+                    <div class="tab-pane fade" id="exec-metrics" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="metric-card">
+                                    <div class="metric-label">実行時間</div>
+                                    <div class="metric-value text-primary">22分 30秒</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="metric-card">
+                                    <div class="metric-label">転送速度</div>
+                                    <div class="metric-value text-success">34.2 MB/s</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="metric-card">
+                                    <div class="metric-label">処理ファイル数</div>
+                                    <div class="metric-value text-info">1,234 ファイル</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="metric-card">
+                                    <div class="metric-label">データ量</div>
+                                    <div class="metric-value text-warning">45.6 GB</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="metric-card">
+                                    <div class="metric-label">圧縮率</div>
+                                    <div class="metric-value text-success">35%</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="metric-card">
+                                    <div class="metric-label">重複除外</div>
+                                    <div class="metric-value text-info">8.2 GB 削減</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">リソース使用状況</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <small>CPU使用率 (平均)</small>
+                                        <small>45%</small>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-primary" role="progressbar" style="width: 45%"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <small>メモリ使用率 (最大)</small>
+                                        <small>68%</small>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: 68%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <small>ネットワーク帯域 (平均)</small>
+                                        <small>85%</small>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: 85%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> 閉じる
+                </button>
+                <button type="button" class="btn btn-primary">
+                    <i class="bi bi-download"></i> ログをダウンロード
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Detail Modal -->
+<div class="modal fade" id="alertDetailModal" tabindex="-1" aria-labelledby="alertDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-warning-gradient">
+                <h5 class="modal-title" id="alertDetailModalLabel">
+                    <i class="bi bi-exclamation-triangle"></i> アラート詳細
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning border-start border-5 border-warning">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-exclamation-triangle-fill text-warning fs-3 me-3"></i>
+                        <div class="flex-grow-1">
+                            <h5 class="alert-heading">バックアップストレージ容量不足</h5>
+                            <p class="mb-1">プライマリバックアップストレージの使用率が85%を超えました。早急な対応が必要です。</p>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small><strong>重要度:</strong> <span class="badge bg-warning">警告</span></small>
+                                </div>
+                                <div class="col-md-6">
+                                    <small><strong>発生日時:</strong> 2025-11-02 10:30:45</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="bi bi-list-check"></i> 推奨される解決手順</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="resolution-step completed">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <div class="flex-grow-1">
+                                    <strong>1. ストレージ使用状況の確認</strong>
+                                    <p class="mb-0 small text-muted">現在のストレージ使用状況を詳細に分析</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="resolution-step">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-circle text-muted me-2"></i>
+                                <div class="flex-grow-1">
+                                    <strong>2. 古いバックアップの削除</strong>
+                                    <p class="mb-0 small text-muted">保持期間を過ぎたバックアップを削除してスペースを確保</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="resolution-step">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-circle text-muted me-2"></i>
+                                <div class="flex-grow-1">
+                                    <strong>3. ストレージ容量の拡張</strong>
+                                    <p class="mb-0 small text-muted">必要に応じて追加ストレージの調達を検討</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="resolution-step">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-circle text-muted me-2"></i>
+                                <div class="flex-grow-1">
+                                    <strong>4. アーカイブストレージへの移行</strong>
+                                    <p class="mb-0 small text-muted">長期保管データをアーカイブストレージに移動</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="bi bi-link-45deg"></i> 関連情報</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted d-block">関連ジョブ</small>
+                                <a href="#" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-briefcase"></i> 日次バックアップ - サーバー1
+                                </a>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted d-block">関連メディア</small>
+                                <a href="#" class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-hdd"></i> プライマリストレージ (SRV-01)
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-info">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="bi bi-info-circle"></i> 詳細情報</h6>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">現在の使用率:</dt>
+                            <dd class="col-sm-8">85.4%</dd>
+                            <dt class="col-sm-4">使用容量:</dt>
+                            <dd class="col-sm-8">4.27 TB / 5.00 TB</dd>
+                            <dt class="col-sm-4">空き容量:</dt>
+                            <dd class="col-sm-8">730 GB</dd>
+                            <dt class="col-sm-4">推定残り日数:</dt>
+                            <dd class="col-sm-8 mb-0">約12日間 (現在のペースで)</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> 閉じる
+                </button>
+                <button type="button" class="btn btn-success acknowledge-btn" onclick="acknowledgeAlert()">
+                    <i class="bi bi-check2-circle"></i> 確認済みにする
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Storage Detail Modal -->
+<div class="modal fade" id="storageDetailModal" tabindex="-1" aria-labelledby="storageDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-info-gradient">
+                <h5 class="modal-title" id="storageDetailModalLabel">
+                    <i class="bi bi-bar-chart"></i> ストレージ詳細情報
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs" id="storageTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="storage-overview-tab" data-bs-toggle="tab" data-bs-target="#storage-overview" type="button" role="tab">
+                            <i class="bi bi-pie-chart"></i> 概要
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="storage-providers-tab" data-bs-toggle="tab" data-bs-target="#storage-providers" type="button" role="tab">
+                            <i class="bi bi-server"></i> プロバイダー
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="storage-trending-tab" data-bs-toggle="tab" data-bs-target="#storage-trending" type="button" role="tab">
+                            <i class="bi bi-graph-up"></i> 容量推移
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content pt-3" id="storageTabContent">
+                    <!-- Overview Tab -->
+                    <div class="tab-pane fade show active" id="storage-overview" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">総ストレージ容量</h6>
+                                        <div class="metric-value text-primary">15.5 TB</div>
+                                        <canvas id="storageOverviewChart" style="max-height: 200px;" class="mt-3"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">使用状況サマリー</h6>
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>使用中</span>
+                                                <strong>11.2 TB (72%)</strong>
+                                            </div>
+                                            <div class="capacity-bar">
+                                                <div class="capacity-fill" style="width: 72%">72%</div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>空き容量</span>
+                                                <strong>4.3 TB (28%)</strong>
+                                            </div>
+                                            <div class="capacity-bar">
+                                                <div class="capacity-fill" style="width: 28%; background: #6c757d;">28%</div>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">平均使用率 (全プロバイダー)</span>
+                                            <span class="trend-indicator up">
+                                                <i class="bi bi-arrow-up"></i> 72%
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Providers Tab -->
+                    <div class="tab-pane fade" id="storage-providers" role="tabpanel">
+                        <div class="provider-item">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <h6 class="mb-0"><i class="bi bi-hdd-fill text-primary"></i> プライマリストレージ (SRV-01)</h6>
+                                    <small class="text-muted">種類: NAS Storage / 場所: データセンター A</small>
+                                </div>
+                                <span class="badge bg-warning">85%</span>
+                            </div>
+                            <div class="capacity-bar">
+                                <div class="capacity-fill warning" style="width: 85%">4.27 TB / 5.00 TB</div>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-clock-history"></i> 最終更新: 2025-11-02 14:30
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="provider-item">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <h6 class="mb-0"><i class="bi bi-cloud-fill text-info"></i> クラウドバックアップ (AWS S3)</h6>
+                                    <small class="text-muted">種類: Cloud Storage / リージョン: ap-northeast-1</small>
+                                </div>
+                                <span class="badge bg-success">45%</span>
+                            </div>
+                            <div class="capacity-bar">
+                                <div class="capacity-fill" style="width: 45%">2.25 TB / 5.00 TB</div>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-clock-history"></i> 最終更新: 2025-11-02 14:28
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="provider-item">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <h6 class="mb-0"><i class="bi bi-hdd-rack text-success"></i> セカンダリストレージ (SRV-02)</h6>
+                                    <small class="text-muted">種類: SAN Storage / 場所: データセンター B</small>
+                                </div>
+                                <span class="badge bg-success">68%</span>
+                            </div>
+                            <div class="capacity-bar">
+                                <div class="capacity-fill" style="width: 68%">3.74 TB / 5.50 TB</div>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-clock-history"></i> 最終更新: 2025-11-02 14:25
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="provider-item">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <h6 class="mb-0"><i class="bi bi-cassette text-warning"></i> オフラインメディア</h6>
+                                    <small class="text-muted">種類: LTO Tape / 場所: オフサイト保管庫</small>
+                                </div>
+                                <span class="badge bg-info">N/A</span>
+                            </div>
+                            <div class="alert alert-info mb-0 mt-2">
+                                <small>
+                                    <i class="bi bi-info-circle"></i>
+                                    オフラインメディアは45個登録されています。総容量: 約12 TB
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trending Tab -->
+                    <div class="tab-pane fade" id="storage-trending" role="tabpanel">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">ストレージ使用量の推移 (過去30日間)</h6>
+                                <canvas id="storageTrendChart" style="max-height: 300px;"></canvas>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h6 class="text-muted">今月の増加量</h6>
+                                        <div class="metric-value text-danger">+1.2 TB</div>
+                                        <span class="trend-indicator up">
+                                            <i class="bi bi-arrow-up"></i> +10.7%
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h6 class="text-muted">平均日次増加量</h6>
+                                        <div class="metric-value text-warning">42 GB/日</div>
+                                        <span class="trend-indicator up">
+                                            <i class="bi bi-arrow-up"></i> +5%
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h6 class="text-muted">容量予測 (30日後)</h6>
+                                        <div class="metric-value text-info">12.4 TB</div>
+                                        <span class="trend-indicator stable">
+                                            <i class="bi bi-dash"></i> 80%
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-warning mt-3">
+                            <h6><i class="bi bi-exclamation-triangle"></i> 容量アラート予測</h6>
+                            <p class="mb-0">現在のペースで使用が続くと、約18日後にプライマリストレージが90%に達する見込みです。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> 閉じる
+                </button>
+                <button type="button" class="btn btn-primary">
+                    <i class="bi bi-gear"></i> ストレージ設定
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
     // Modal instances
     let complianceModal, successModal, alertsModal, mediaModal;
+    let executionDetailModal, alertDetailModal, storageDetailModal;
 
     // Initialize modals on page load
     document.addEventListener('DOMContentLoaded', function() {
@@ -906,15 +1849,34 @@
         successModal = new bootstrap.Modal(document.getElementById('successModal'));
         alertsModal = new bootstrap.Modal(document.getElementById('alertsModal'));
         mediaModal = new bootstrap.Modal(document.getElementById('mediaModal'));
+        executionDetailModal = new bootstrap.Modal(document.getElementById('executionDetailModal'));
+        alertDetailModal = new bootstrap.Modal(document.getElementById('alertDetailModal'));
+        storageDetailModal = new bootstrap.Modal(document.getElementById('storageDetailModal'));
 
         // ESC key handler for all modals
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                [complianceModal, successModal, alertsModal, mediaModal].forEach(modal => {
+                [complianceModal, successModal, alertsModal, mediaModal,
+                 executionDetailModal, alertDetailModal, storageDetailModal].forEach(modal => {
                     if (modal && modal._isShown) {
                         modal.hide();
                     }
                 });
+                // Also close FAB if open
+                const fabMain = document.getElementById('fabMain');
+                const fabActions = document.getElementById('fabActions');
+                if (fabActions.classList.contains('active')) {
+                    toggleFab();
+                }
+            }
+        });
+
+        // Close FAB when clicking outside
+        document.addEventListener('click', function(e) {
+            const fabContainer = document.querySelector('.fab-container');
+            const fabActions = document.getElementById('fabActions');
+            if (fabActions.classList.contains('active') && !fabContainer.contains(e.target)) {
+                toggleFab();
             }
         });
     });
@@ -1222,5 +2184,154 @@
             });
         })
         .catch(error => console.error('Error loading storage chart:', error));
+    // New Interactive Elements Functions
+
+    // FAB Toggle Function
+    function toggleFab() {
+        const fabMain = document.getElementById('fabMain');
+        const fabActions = document.getElementById('fabActions');
+        fabMain.classList.toggle('active');
+        fabActions.classList.toggle('active');
+    }
+
+    // Show Execution Detail Modal
+    function showExecutionDetailModal(executionId) {
+        console.log('Opening execution detail for ID:', executionId);
+        executionDetailModal.show();
+    }
+
+    // Show Alert Detail Modal
+    function showAlertDetailModal(alertId) {
+        console.log('Opening alert detail for ID:', alertId);
+        alertDetailModal.show();
+    }
+
+    // Show Storage Detail Modal
+    function showStorageDetailModal() {
+        console.log('Opening storage detail modal');
+        storageDetailModal.show();
+        setTimeout(() => {
+            initStorageOverviewChart();
+            initStorageTrendChart();
+        }, 300);
+    }
+
+    // Acknowledge Alert
+    function acknowledgeAlert() {
+        alert('アラートが確認済みとしてマークされました');
+        alertDetailModal.hide();
+    }
+
+    // Trigger Manual Backup
+    function triggerManualBackup() {
+        if (confirm('手動バックアップを開始しますか?')) {
+            alert('手動バックアップが開始されました');
+            toggleFab();
+        }
+    }
+
+    // Check System Health
+    function checkSystemHealth() {
+        alert('システムヘルスチェックを開始しました。結果は数分後に表示されます。');
+        toggleFab();
+    }
+
+    // Filter Files in Execution Detail
+    function filterFiles() {
+        const input = document.getElementById('fileSearchInput');
+        const filter = input.value.toLowerCase();
+        const fileList = document.getElementById('fileList');
+        const items = fileList.getElementsByClassName('file-item');
+        for (let i = 0; i < items.length; i++) {
+            const fileName = items[i].getElementsByClassName('fw-bold')[0].textContent;
+            if (fileName.toLowerCase().indexOf(filter) > -1) {
+                items[i].style.display = '';
+            } else {
+                items[i].style.display = 'none';
+            }
+        }
+    }
+
+    // Initialize Storage Overview Chart
+    function initStorageOverviewChart() {
+        const ctx = document.getElementById('storageOverviewChart');
+        if (!ctx) return;
+        new Chart(ctx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['使用中', '空き容量'],
+                datasets: [{
+                    data: [11.2, 4.3],
+                    backgroundColor: ['#36b9cc', '#e9ecef']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + ' TB';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Initialize Storage Trend Chart
+    function initStorageTrendChart() {
+        const ctx = document.getElementById('storageTrendChart');
+        if (!ctx) return;
+        const labels = [];
+        const data = [];
+        const today = new Date();
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            labels.push(date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }));
+            data.push(10 + (29 - i) * 0.04 + (Math.random() * 0.2 - 0.1));
+        }
+        new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'ストレージ使用量 (TB)',
+                    data: data,
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 10,
+                        max: 13,
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' TB';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 </script>
 {% endblock %}

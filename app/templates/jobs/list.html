@@ -137,15 +137,31 @@
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <a href="{{ url_for('jobs.detail', job_id=job.id) }}"
-                                               class="btn btn-sm btn-outline-primary" title="詳細">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-primary"
+                                                    onclick="showJobDetailModal({{ job.id }})"
+                                                    title="詳細">
                                                 <i class="bi bi-eye"></i>
-                                            </a>
+                                            </button>
                                             {% if current_user.can_edit() %}
-                                                <a href="{{ url_for('jobs.edit', job_id=job.id) }}"
-                                                   class="btn btn-sm btn-outline-secondary" title="編集">
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                        onclick="showEditModal({{ job.id }})"
+                                                        title="編集">
                                                     <i class="bi bi-pencil"></i>
-                                                </a>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-success"
+                                                        onclick="showRunNowModal({{ job.id }}, '{{ job.job_name }}')"
+                                                        title="今すぐ実行">
+                                                    <i class="bi bi-play-fill"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        onclick="showDeleteModal({{ job.id }}, '{{ job.job_name }}')"
+                                                        title="削除">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
                                             {% endif %}
                                         </div>
                                     </td>
@@ -197,10 +213,181 @@
         </div>
     </div>
 </div>
+
+<!-- Job Detail Modal -->
+<div class="modal fade" id="jobDetailModal" tabindex="-1" aria-labelledby="jobDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="jobDetailModalLabel">
+                    <i class="bi bi-info-circle"></i> ジョブ詳細
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Tabs -->
+                <ul class="nav nav-tabs mb-3" id="jobDetailTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab"
+                                data-bs-target="#overview" type="button" role="tab">
+                            <i class="bi bi-info-circle"></i> 概要
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="history-tab" data-bs-toggle="tab"
+                                data-bs-target="#history" type="button" role="tab">
+                            <i class="bi bi-clock-history"></i> 実行履歴
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="statistics-tab" data-bs-toggle="tab"
+                                data-bs-target="#statistics" type="button" role="tab">
+                            <i class="bi bi-bar-chart"></i> 統計
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="jobDetailTabContent">
+                    <!-- Overview Tab -->
+                    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                        <div id="jobOverviewContent">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">読み込み中...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- History Tab -->
+                    <div class="tab-pane fade" id="history" role="tabpanel">
+                        <div id="jobHistoryContent">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">読み込み中...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Tab -->
+                    <div class="tab-pane fade" id="statistics" role="tabpanel">
+                        <div id="jobStatisticsContent">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">読み込み中...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Job Modal -->
+<div class="modal fade" id="editJobModal" tabindex="-1" aria-labelledby="editJobModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editJobModalLabel">
+                    <i class="bi bi-pencil"></i> ジョブ編集
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="editJobFormContent">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">読み込み中...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Run Now Confirmation Modal -->
+<div class="modal fade" id="runNowModal" tabindex="-1" aria-labelledby="runNowModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="runNowModalLabel">
+                    <i class="bi bi-play-fill"></i> ジョブ実行確認
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> 以下のジョブを今すぐ実行します。よろしいですか？
+                </div>
+                <p class="mb-0">
+                    <strong>ジョブ名:</strong> <span id="runNowJobName"></span>
+                </p>
+                <input type="hidden" id="runNowJobId" value="">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> キャンセル
+                </button>
+                <button type="button" class="btn btn-success" onclick="executeRunNow()">
+                    <i class="bi bi-play-fill"></i> 実行
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteJobModal" tabindex="-1" aria-labelledby="deleteJobModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteJobModalLabel">
+                    <i class="bi bi-trash"></i> ジョブ削除確認
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>警告:</strong> この操作は取り消せません。
+                </div>
+                <p class="mb-0">
+                    <strong>削除するジョブ:</strong> <span id="deleteJobName"></span>
+                </p>
+                <input type="hidden" id="deleteJobId" value="">
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="confirmDelete">
+                    <label class="form-check-label" for="confirmDelete">
+                        削除を実行することを理解しました
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> キャンセル
+                </button>
+                <button type="button" class="btn btn-danger" onclick="executeDelete()" id="deleteConfirmBtn" disabled>
+                    <i class="bi bi-trash"></i> 削除
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    let executionHistoryChart = null;
+    let successRateChart = null;
+
     $(document).ready(function() {
         // Initialize DataTables
         $('#jobsTable').DataTable({
@@ -212,6 +399,550 @@
                 url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/ja.json'
             }
         });
+
+        // Enable delete button when checkbox is checked
+        $('#confirmDelete').on('change', function() {
+            $('#deleteConfirmBtn').prop('disabled', !this.checked);
+        });
+
+        // Reset checkbox when modal is hidden
+        $('#deleteJobModal').on('hidden.bs.modal', function() {
+            $('#confirmDelete').prop('checked', false);
+            $('#deleteConfirmBtn').prop('disabled', true);
+        });
     });
+
+    // Show Job Detail Modal
+    function showJobDetailModal(jobId) {
+        const modal = new bootstrap.Modal(document.getElementById('jobDetailModal'));
+        modal.show();
+
+        // Load job overview
+        loadJobOverview(jobId);
+
+        // Load data when tabs are clicked
+        $('#history-tab').one('click', function() {
+            loadJobHistory(jobId);
+        });
+        $('#statistics-tab').one('click', function() {
+            loadJobStatistics(jobId);
+        });
+    }
+
+    // Load Job Overview
+    function loadJobOverview(jobId) {
+        fetch(`/api/jobs/${jobId}`)
+            .then(response => response.json())
+            .then(data => {
+                const job = data.job;
+                const html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="border-bottom pb-2 mb-3">基本情報</h6>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <th style="width: 40%;">ジョブID</th>
+                                        <td>${job.id}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>ジョブ名</th>
+                                        <td><strong>${job.job_name}</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <th>種別</th>
+                                        <td><span class="badge bg-secondary">${job.job_type}</span></td>
+                                    </tr>
+                                    <tr>
+                                        <th>対象サーバー</th>
+                                        <td>${job.target_server}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>担当者</th>
+                                        <td>${job.owner ? job.owner.username : 'N/A'}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>ステータス</th>
+                                        <td>
+                                            ${job.is_active
+                                                ? '<span class="badge bg-success">有効</span>'
+                                                : '<span class="badge bg-secondary">無効</span>'}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="border-bottom pb-2 mb-3">スケジュール設定</h6>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <th style="width: 40%;">スケジュール</th>
+                                        <td>${job.schedule || 'なし'}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>保持期間</th>
+                                        <td>${job.retention_days || 'N/A'} 日</td>
+                                    </tr>
+                                    <tr>
+                                        <th>最終実行日時</th>
+                                        <td>${job.last_run ? new Date(job.last_run).toLocaleString('ja-JP') : '未実行'}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>次回実行予定</th>
+                                        <td>${job.next_run ? new Date(job.next_run).toLocaleString('ja-JP') : 'N/A'}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>作成日時</th>
+                                        <td>${new Date(job.created_at).toLocaleString('ja-JP')}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>更新日時</th>
+                                        <td>${new Date(job.updated_at).toLocaleString('ja-JP')}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6 class="border-bottom pb-2 mb-3">バックアップ設定</h6>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <th style="width: 20%;">ソースパス</th>
+                                        <td><code>${job.source_path || 'N/A'}</code></td>
+                                    </tr>
+                                    <tr>
+                                        <th>保存先</th>
+                                        <td><code>${job.destination_path || 'N/A'}</code></td>
+                                    </tr>
+                                    <tr>
+                                        <th>除外パターン</th>
+                                        <td><code>${job.exclude_patterns || 'なし'}</code></td>
+                                    </tr>
+                                    <tr>
+                                        <th>説明</th>
+                                        <td>${job.description || 'なし'}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('jobOverviewContent').innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error loading job overview:', error);
+                document.getElementById('jobOverviewContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill"></i> データの読み込みに失敗しました
+                    </div>
+                `;
+            });
+    }
+
+    // Load Job History
+    function loadJobHistory(jobId) {
+        fetch(`/api/jobs/${jobId}/executions?limit=10`)
+            .then(response => response.json())
+            .then(data => {
+                const executions = data.executions || [];
+
+                if (executions.length === 0) {
+                    document.getElementById('jobHistoryContent').innerHTML = `
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> 実行履歴はありません
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = `
+                    <h6 class="mb-3">最近の実行履歴（最大10件）</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>実行ID</th>
+                                    <th>開始時刻</th>
+                                    <th>終了時刻</th>
+                                    <th>ステータス</th>
+                                    <th>処理時間</th>
+                                    <th>データサイズ</th>
+                                    <th>メッセージ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                executions.forEach(exec => {
+                    const statusBadge = exec.status === 'success'
+                        ? '<span class="badge bg-success">成功</span>'
+                        : exec.status === 'failed'
+                        ? '<span class="badge bg-danger">失敗</span>'
+                        : '<span class="badge bg-warning">実行中</span>';
+
+                    const duration = exec.end_time && exec.start_time
+                        ? Math.round((new Date(exec.end_time) - new Date(exec.start_time)) / 1000)
+                        : 'N/A';
+
+                    const dataSize = exec.backup_size
+                        ? formatBytes(exec.backup_size)
+                        : 'N/A';
+
+                    html += `
+                        <tr>
+                            <td>${exec.id}</td>
+                            <td>${new Date(exec.start_time).toLocaleString('ja-JP')}</td>
+                            <td>${exec.end_time ? new Date(exec.end_time).toLocaleString('ja-JP') : '-'}</td>
+                            <td>${statusBadge}</td>
+                            <td>${duration !== 'N/A' ? duration + '秒' : 'N/A'}</td>
+                            <td>${dataSize}</td>
+                            <td>${exec.error_message || '-'}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                document.getElementById('jobHistoryContent').innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error loading job history:', error);
+                document.getElementById('jobHistoryContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill"></i> データの読み込みに失敗しました
+                    </div>
+                `;
+            });
+    }
+
+    // Load Job Statistics
+    function loadJobStatistics(jobId) {
+        fetch(`/api/jobs/${jobId}/statistics`)
+            .then(response => response.json())
+            .then(data => {
+                const stats = data.statistics;
+
+                const html = `
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h6 class="text-muted">総実行回数</h6>
+                                    <h3 class="mb-0">${stats.total_executions || 0}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center border-success">
+                                <div class="card-body">
+                                    <h6 class="text-muted">成功</h6>
+                                    <h3 class="mb-0 text-success">${stats.successful_executions || 0}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center border-danger">
+                                <div class="card-body">
+                                    <h6 class="text-muted">失敗</h6>
+                                    <h3 class="mb-0 text-danger">${stats.failed_executions || 0}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center border-primary">
+                                <div class="card-body">
+                                    <h6 class="text-muted">成功率</h6>
+                                    <h3 class="mb-0 text-primary">${stats.success_rate || 0}%</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6 class="mb-3">実行履歴チャート（30日間）</h6>
+                            <canvas id="executionHistoryChart" height="80"></canvas>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="mb-3">成功/失敗 割合</h6>
+                            <canvas id="successRateChart"></canvas>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('jobStatisticsContent').innerHTML = html;
+
+                // Destroy existing charts
+                if (executionHistoryChart) {
+                    executionHistoryChart.destroy();
+                }
+                if (successRateChart) {
+                    successRateChart.destroy();
+                }
+
+                // Execution History Chart
+                const historyCtx = document.getElementById('executionHistoryChart').getContext('2d');
+                executionHistoryChart = new Chart(historyCtx, {
+                    type: 'line',
+                    data: {
+                        labels: stats.execution_dates || [],
+                        datasets: [{
+                            label: '成功',
+                            data: stats.success_counts || [],
+                            borderColor: 'rgb(25, 135, 84)',
+                            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                            tension: 0.1
+                        }, {
+                            label: '失敗',
+                            data: stats.failure_counts || [],
+                            borderColor: 'rgb(220, 53, 69)',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Success Rate Chart
+                const rateCtx = document.getElementById('successRateChart').getContext('2d');
+                successRateChart = new Chart(rateCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['成功', '失敗'],
+                        datasets: [{
+                            data: [stats.successful_executions || 0, stats.failed_executions || 0],
+                            backgroundColor: [
+                                'rgb(25, 135, 84)',
+                                'rgb(220, 53, 69)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error loading job statistics:', error);
+                document.getElementById('jobStatisticsContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill"></i> データの読み込みに失敗しました
+                    </div>
+                `;
+            });
+    }
+
+    // Show Edit Modal
+    function showEditModal(jobId) {
+        const modal = new bootstrap.Modal(document.getElementById('editJobModal'));
+        modal.show();
+
+        // Load edit form
+        fetch(`/api/jobs/${jobId}`)
+            .then(response => response.json())
+            .then(data => {
+                const job = data.job;
+                const html = `
+                    <form id="editJobForm" onsubmit="submitEditForm(event, ${jobId})">
+                        <div class="mb-3">
+                            <label for="editJobName" class="form-label">ジョブ名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="editJobName" value="${job.job_name}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editJobType" class="form-label">種別 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="editJobType" required>
+                                <option value="system_image" ${job.job_type === 'system_image' ? 'selected' : ''}>システムイメージ</option>
+                                <option value="file" ${job.job_type === 'file' ? 'selected' : ''}>ファイル</option>
+                                <option value="database" ${job.job_type === 'database' ? 'selected' : ''}>データベース</option>
+                                <option value="vm" ${job.job_type === 'vm' ? 'selected' : ''}>仮想マシン</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTargetServer" class="form-label">対象サーバー <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="editTargetServer" value="${job.target_server}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editSourcePath" class="form-label">ソースパス</label>
+                            <input type="text" class="form-control" id="editSourcePath" value="${job.source_path || ''}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editDestinationPath" class="form-label">保存先パス</label>
+                            <input type="text" class="form-control" id="editDestinationPath" value="${job.destination_path || ''}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editSchedule" class="form-label">スケジュール (cron形式)</label>
+                            <input type="text" class="form-control" id="editSchedule" value="${job.schedule || ''}" placeholder="0 2 * * *">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editRetentionDays" class="form-label">保持期間 (日)</label>
+                            <input type="number" class="form-control" id="editRetentionDays" value="${job.retention_days || 30}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editDescription" class="form-label">説明</label>
+                            <textarea class="form-control" id="editDescription" rows="3">${job.description || ''}</textarea>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="editIsActive" ${job.is_active ? 'checked' : ''}>
+                            <label class="form-check-label" for="editIsActive">有効</label>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> 保存
+                            </button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="bi bi-x-circle"></i> キャンセル
+                            </button>
+                        </div>
+                    </form>
+                `;
+                document.getElementById('editJobFormContent').innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error loading edit form:', error);
+                document.getElementById('editJobFormContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill"></i> フォームの読み込みに失敗しました
+                    </div>
+                `;
+            });
+    }
+
+    // Submit Edit Form
+    function submitEditForm(event, jobId) {
+        event.preventDefault();
+
+        const formData = {
+            job_name: document.getElementById('editJobName').value,
+            job_type: document.getElementById('editJobType').value,
+            target_server: document.getElementById('editTargetServer').value,
+            source_path: document.getElementById('editSourcePath').value,
+            destination_path: document.getElementById('editDestinationPath').value,
+            schedule: document.getElementById('editSchedule').value,
+            retention_days: document.getElementById('editRetentionDays').value,
+            description: document.getElementById('editDescription').value,
+            is_active: document.getElementById('editIsActive').checked
+        };
+
+        fetch(`/api/jobs/${jobId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('editJobModal')).hide();
+                location.reload();
+            } else {
+                alert('更新に失敗しました: ' + (data.error || '不明なエラー'));
+            }
+        })
+        .catch(error => {
+            console.error('Error updating job:', error);
+            alert('更新に失敗しました');
+        });
+    }
+
+    // Show Run Now Modal
+    function showRunNowModal(jobId, jobName) {
+        document.getElementById('runNowJobId').value = jobId;
+        document.getElementById('runNowJobName').textContent = jobName;
+        const modal = new bootstrap.Modal(document.getElementById('runNowModal'));
+        modal.show();
+    }
+
+    // Execute Run Now
+    function executeRunNow() {
+        const jobId = document.getElementById('runNowJobId').value;
+
+        fetch(`/api/jobs/${jobId}/execute`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('runNowModal')).hide();
+                alert('ジョブの実行を開始しました');
+                location.reload();
+            } else {
+                alert('実行に失敗しました: ' + (data.error || '不明なエラー'));
+            }
+        })
+        .catch(error => {
+            console.error('Error executing job:', error);
+            alert('実行に失敗しました');
+        });
+    }
+
+    // Show Delete Modal
+    function showDeleteModal(jobId, jobName) {
+        document.getElementById('deleteJobId').value = jobId;
+        document.getElementById('deleteJobName').textContent = jobName;
+        const modal = new bootstrap.Modal(document.getElementById('deleteJobModal'));
+        modal.show();
+    }
+
+    // Execute Delete
+    function executeDelete() {
+        const jobId = document.getElementById('deleteJobId').value;
+
+        fetch(`/api/jobs/${jobId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('deleteJobModal')).hide();
+                location.reload();
+            } else {
+                alert('削除に失敗しました: ' + (data.error || '不明なエラー'));
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting job:', error);
+            alert('削除に失敗しました');
+        });
+    }
+
+    // Utility function to format bytes
+    function formatBytes(bytes, decimals = 2) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
 </script>
 {% endblock %}
