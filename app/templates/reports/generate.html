@@ -1,5 +1,123 @@
 {% extends "base.html" %}
 {% block title %}レポート生成 - バックアップ管理システム{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/css/bootstrap-datepicker3.min.css">
+<style>
+    .report-type-card {
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        height: 100%;
+        background: white;
+    }
+
+    .report-type-card:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .report-type-card.selected {
+        border-color: #0d6efd;
+        background: linear-gradient(135deg, #f8f9ff 0%, #e7f1ff 100%);
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+    }
+
+    .report-type-card .card-icon {
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+        color: #0d6efd;
+    }
+
+    .report-type-card.selected .card-icon {
+        animation: pulse 1s ease-in-out;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    .format-option {
+        border: 2px solid #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+    }
+
+    .format-option:hover {
+        border-color: #0d6efd;
+        background: #f8f9fa;
+    }
+
+    .format-option.selected {
+        border-color: #0d6efd;
+        background: #e7f1ff;
+    }
+
+    .format-option input[type="radio"] {
+        display: none;
+    }
+
+    .format-icon {
+        font-size: 2rem;
+        margin-bottom: 8px;
+    }
+
+    .preset-btn {
+        margin-bottom: 8px;
+    }
+
+    .date-range-display {
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 6px;
+        border-left: 4px solid #0d6efd;
+    }
+
+    .filter-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .preview-chart {
+        height: 150px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+
+    .estimate-badge {
+        font-size: 0.85rem;
+        padding: 4px 10px;
+    }
+
+    .schedule-section {
+        border-top: 2px dashed #dee2e6;
+        padding-top: 20px;
+        margin-top: 20px;
+    }
+
+    .job-checkbox-group {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 10px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="row mb-4">
@@ -16,71 +134,405 @@
     </div>
 
     <form method="POST" action="{{ url_for('reports.generate') }}" id="report-form">
-        <div class="row">
-            <div class="col-lg-8">
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="bi bi-gear"></i> レポート設定</h5>
+        <!-- Step 1: Report Type Selection -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-1-circle"></i> レポートタイプを選択</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="report-type-card" data-type="daily">
+                            <div class="card-icon text-center">
+                                <i class="bi bi-calendar-day"></i>
+                            </div>
+                            <h5 class="text-center mb-2">日次レポート</h5>
+                            <p class="text-muted small text-center mb-2">
+                                毎日のバックアップ実行状況を確認
+                            </p>
+                            <div class="text-center">
+                                <span class="badge bg-info estimate-badge">
+                                    <i class="bi bi-clock"></i> 約1-2分
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="report_type" class="form-label">レポートタイプ <span class="text-danger">*</span></label>
-                            <select class="form-select" id="report_type" name="report_type" required>
-                                <option value="periodic">定期レポート（日次/週次/月次）</option>
-                                <option value="compliance">コンプライアンスレポート</option>
-                                <option value="custom">カスタムレポート</option>
-                            </select>
-                        </div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="period_start" class="form-label">対象期間（開始） <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="period_start" name="period_start" required>
+                    <div class="col-md-4">
+                        <div class="report-type-card" data-type="weekly">
+                            <div class="card-icon text-center">
+                                <i class="bi bi-calendar-week"></i>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="period_end" class="form-label">対象期間（終了） <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="period_end" name="period_end" required>
+                            <h5 class="text-center mb-2">週次レポート</h5>
+                            <p class="text-muted small text-center mb-2">
+                                1週間の動向と統計分析
+                            </p>
+                            <div class="text-center">
+                                <span class="badge bg-info estimate-badge">
+                                    <i class="bi bi-clock"></i> 約2-3分
+                                </span>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">含める情報</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="include_jobs" name="include_jobs" checked>
-                                <label class="form-check-label" for="include_jobs">バックアップジョブ実行履歴</label>
+                    <div class="col-md-4">
+                        <div class="report-type-card" data-type="monthly">
+                            <div class="card-icon text-center">
+                                <i class="bi bi-calendar-month"></i>
                             </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="include_media" name="include_media" checked>
-                                <label class="form-check-label" for="include_media">メディア使用状況</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="include_verification" name="include_verification" checked>
-                                <label class="form-check-label" for="include_verification">検証テスト結果</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="include_compliance" name="include_compliance">
-                                <label class="form-check-label" for="include_compliance">コンプライアンス準拠状況</label>
+                            <h5 class="text-center mb-2">月次レポート</h5>
+                            <p class="text-muted small text-center mb-2">
+                                月間サマリーとトレンド分析
+                            </p>
+                            <div class="text-center">
+                                <span class="badge bg-info estimate-badge">
+                                    <i class="bi bi-clock"></i> 約3-5分
+                                </span>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="mb-3">
-                            <label for="format" class="form-label">出力形式</label>
-                            <select class="form-select" id="format" name="format">
-                                <option value="pdf">PDF</option>
-                                <option value="excel">Excel (XLSX)</option>
-                                <option value="csv">CSV</option>
-                            </select>
+                    <div class="col-md-4">
+                        <div class="report-type-card" data-type="compliance">
+                            <div class="card-icon text-center">
+                                <i class="bi bi-shield-check"></i>
+                            </div>
+                            <h5 class="text-center mb-2">コンプライアンス</h5>
+                            <p class="text-muted small text-center mb-2">
+                                規制準拠状況の詳細レポート
+                            </p>
+                            <div class="text-center">
+                                <span class="badge bg-info estimate-badge">
+                                    <i class="bi bi-clock"></i> 約4-6分
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="report-type-card" data-type="custom">
+                            <div class="card-icon text-center">
+                                <i class="bi bi-sliders"></i>
+                            </div>
+                            <h5 class="text-center mb-2">カスタムレポート</h5>
+                            <p class="text-muted small text-center mb-2">
+                                自由にカスタマイズ可能
+                            </p>
+                            <div class="text-center">
+                                <span class="badge bg-info estimate-badge">
+                                    <i class="bi bi-clock"></i> 選択により変動
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
+                <input type="hidden" id="report_type" name="report_type" value="daily" required>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Step 2: Date Range Selection -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-2-circle"></i> 対象期間を選択</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Quick Presets -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">クイック選択</label>
+                            <div class="btn-group w-100" role="group">
+                                <button type="button" class="btn btn-outline-primary preset-btn" data-preset="7">
+                                    直近7日間
+                                </button>
+                                <button type="button" class="btn btn-outline-primary preset-btn" data-preset="30">
+                                    直近30日間
+                                </button>
+                                <button type="button" class="btn btn-outline-primary preset-btn" data-preset="this-month">
+                                    今月
+                                </button>
+                                <button type="button" class="btn btn-outline-primary preset-btn" data-preset="last-month">
+                                    先月
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Custom Date Range -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="period_start" class="form-label">開始日 <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                                    <input type="text" class="form-control datepicker" id="period_start" name="period_start" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="period_end" class="form-label">終了日 <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                                    <input type="text" class="form-control datepicker" id="period_end" name="period_end" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date Range Display -->
+                        <div class="date-range-display">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">選択期間:</small>
+                                    <div class="fw-bold" id="date-range-text">期間を選択してください</div>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">日数:</small>
+                                    <div class="fw-bold" id="date-range-days">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Advanced Filters -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-3-circle"></i> フィルタオプション</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="filter-section">
+                            <!-- Job Selection -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-journal-code"></i> バックアップジョブ
+                                </label>
+                                <div class="mb-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="select-all-jobs">
+                                        すべて選択
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="deselect-all-jobs">
+                                        すべて解除
+                                    </button>
+                                </div>
+                                <div class="job-checkbox-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input job-checkbox" type="checkbox" value="all" id="job_all" checked>
+                                        <label class="form-check-label" for="job_all">
+                                            <strong>すべてのジョブ</strong>
+                                        </label>
+                                    </div>
+                                    <hr>
+                                    <div class="form-check">
+                                        <input class="form-check-input job-checkbox" type="checkbox" value="daily-backup" id="job_1" name="jobs[]" checked>
+                                        <label class="form-check-label" for="job_1">
+                                            Daily Backup - Production DB
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input job-checkbox" type="checkbox" value="weekly-full" id="job_2" name="jobs[]" checked>
+                                        <label class="form-check-label" for="job_2">
+                                            Weekly Full Backup - All Servers
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input job-checkbox" type="checkbox" value="file-server" id="job_3" name="jobs[]" checked>
+                                        <label class="form-check-label" for="job_3">
+                                            File Server Incremental
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input job-checkbox" type="checkbox" value="email-archive" id="job_4" name="jobs[]" checked>
+                                        <label class="form-check-label" for="job_4">
+                                            Email Archive Backup
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Status Filter -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-flag"></i> ステータス
+                                </label>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="status_success" name="status[]" value="success" checked>
+                                            <label class="form-check-label" for="status_success">
+                                                <i class="bi bi-check-circle text-success"></i> 成功
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="status_warning" name="status[]" value="warning" checked>
+                                            <label class="form-check-label" for="status_warning">
+                                                <i class="bi bi-exclamation-triangle text-warning"></i> 警告
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="status_failed" name="status[]" value="failed" checked>
+                                            <label class="form-check-label" for="status_failed">
+                                                <i class="bi bi-x-circle text-danger"></i> 失敗
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Media Type Filter -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-hdd"></i> メディアタイプ
+                                </label>
+                                <select class="form-select" id="media_type" name="media_type">
+                                    <option value="all">すべてのメディア</option>
+                                    <option value="hdd">HDD</option>
+                                    <option value="ssd">SSD</option>
+                                    <option value="tape">テープ</option>
+                                    <option value="cloud">クラウド</option>
+                                </select>
+                            </div>
+
+                            <!-- Compliance Status -->
+                            <div class="mb-0">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-shield-check"></i> コンプライアンス状況
+                                </label>
+                                <select class="form-select" id="compliance_status" name="compliance_status">
+                                    <option value="all">すべて</option>
+                                    <option value="compliant">準拠</option>
+                                    <option value="non-compliant">非準拠</option>
+                                    <option value="pending">確認中</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Output Format Selection -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-4-circle"></i> 出力形式を選択</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label class="format-option">
+                                    <input type="radio" name="format" value="html" checked>
+                                    <div class="format-icon text-primary">
+                                        <i class="bi bi-window"></i>
+                                    </div>
+                                    <div class="fw-bold">HTML</div>
+                                    <small class="text-muted">Web プレビュー</small>
+                                </label>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="format-option">
+                                    <input type="radio" name="format" value="pdf">
+                                    <div class="format-icon text-danger">
+                                        <i class="bi bi-file-pdf"></i>
+                                    </div>
+                                    <div class="fw-bold">PDF</div>
+                                    <small class="text-muted">印刷用</small>
+                                </label>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="format-option">
+                                    <input type="radio" name="format" value="csv">
+                                    <div class="format-icon text-success">
+                                        <i class="bi bi-file-excel"></i>
+                                    </div>
+                                    <div class="fw-bold">CSV</div>
+                                    <small class="text-muted">Excel 互換</small>
+                                </label>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="format-option">
+                                    <input type="radio" name="format" value="json">
+                                    <div class="format-icon text-info">
+                                        <i class="bi bi-filetype-json"></i>
+                                    </div>
+                                    <div class="fw-bold">JSON</div>
+                                    <small class="text-muted">API 連携</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Email Delivery Option -->
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="email_delivery" name="email_delivery">
+                            <label class="form-check-label" for="email_delivery">
+                                <i class="bi bi-envelope"></i> レポートをメールで送信
+                            </label>
+                        </div>
+
+                        <div id="email-options" class="mt-3" style="display: none;">
+                            <div class="mb-3">
+                                <label for="email_recipients" class="form-label">送信先メールアドレス</label>
+                                <input type="email" class="form-control" id="email_recipients" name="email_recipients"
+                                       placeholder="example@company.com (複数の場合はカンマ区切り)">
+                                <small class="text-muted">複数のアドレスを指定する場合は、カンマで区切ってください</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5: Schedule Recurring Reports -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-5-circle"></i> スケジュール設定（オプション）</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="enable_schedule" name="enable_schedule">
+                            <label class="form-check-label" for="enable_schedule">
+                                <i class="bi bi-clock-history"></i> 定期レポートを設定
+                            </label>
+                        </div>
+
+                        <div id="schedule-options" class="schedule-section" style="display: none;">
+                            <div class="mb-3">
+                                <label for="schedule_frequency" class="form-label">頻度</label>
+                                <select class="form-select" id="schedule_frequency" name="schedule_frequency">
+                                    <option value="daily">毎日</option>
+                                    <option value="weekly">毎週</option>
+                                    <option value="monthly">毎月</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="schedule_time" class="form-label">実行時刻</label>
+                                <input type="time" class="form-control" id="schedule_time" name="schedule_time" value="09:00">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="schedule_recipients" class="form-label">送信先メールアドレス</label>
+                                <input type="email" class="form-control" id="schedule_recipients" name="schedule_recipients"
+                                       placeholder="example@company.com (複数の場合はカンマ区切り)">
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="auto_cleanup" name="auto_cleanup" checked>
+                                <label class="form-check-label" for="auto_cleanup">
+                                    30日以上前のレポートを自動削除
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <a href="{{ url_for('reports.list') }}" class="btn btn-secondary">
                                 <i class="bi bi-x-circle"></i> キャンセル
                             </a>
-                            <button type="submit" class="btn btn-primary" id="generate-btn">
+                            <button type="submit" class="btn btn-primary btn-lg" id="generate-btn">
                                 <i class="bi bi-file-earmark-arrow-down"></i> レポート生成
                             </button>
                         </div>
@@ -88,24 +540,101 @@
                 </div>
             </div>
 
+            <!-- Right Sidebar: Live Preview -->
             <div class="col-lg-4">
-                <div class="card">
+                <!-- Preview Panel -->
+                <div class="card mb-4">
                     <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> 生成情報</h5>
+                        <h5 class="mb-0"><i class="bi bi-eye"></i> プレビュー</h5>
                     </div>
                     <div class="card-body">
-                        <h6>推定レポートサイズ</h6>
-                        <p class="text-muted">選択内容により変動</p>
+                        <h6 class="mb-3">レポート構成</h6>
+
+                        <!-- Section Preview -->
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-file-text text-primary me-2"></i>
+                                <small class="fw-bold">含まれるセクション</small>
+                            </div>
+                            <ul class="list-unstyled ms-3 small" id="preview-sections">
+                                <li><i class="bi bi-check text-success"></i> サマリー</li>
+                                <li><i class="bi bi-check text-success"></i> バックアップ実行履歴</li>
+                                <li><i class="bi bi-check text-success"></i> 成功率グラフ</li>
+                                <li><i class="bi bi-check text-success"></i> メディア使用状況</li>
+                            </ul>
+                        </div>
+
+                        <!-- Chart Preview -->
+                        <div class="mb-3">
+                            <small class="fw-bold d-block mb-2">グラフプレビュー</small>
+                            <div class="preview-chart">
+                                <canvas id="preview-chart-canvas" width="200" height="100"></canvas>
+                            </div>
+                        </div>
+
                         <hr>
-                        <h6>生成時間（目安）</h6>
-                        <p class="text-muted">1-5分程度</p>
+
+                        <!-- Estimates -->
+                        <h6 class="mb-3">推定情報</h6>
+
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">
+                                <i class="bi bi-file-earmark"></i> ファイルサイズ
+                            </small>
+                            <span class="badge bg-secondary" id="estimate-size">約 2.5 MB</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <small class="text-muted">
+                                <i class="bi bi-clock"></i> 生成時間
+                            </small>
+                            <span class="badge bg-secondary" id="estimate-time">約 2-3分</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <small class="text-muted">
+                                <i class="bi bi-calendar3"></i> データ期間
+                            </small>
+                            <span class="badge bg-secondary" id="estimate-period">-</span>
+                        </div>
+
                         <hr>
-                        <div class="alert alert-info">
+
+                        <!-- Tips -->
+                        <div class="alert alert-info mb-0">
                             <i class="bi bi-lightbulb"></i>
                             <strong>ヒント:</strong>
-                            <p class="mb-0 mt-2 small">
-                                大量のデータを含む場合、レポート生成に時間がかかる場合があります。
+                            <p class="mb-0 mt-2 small" id="dynamic-tip">
+                                フィルタを調整すると、レポート生成が高速化されます。
                             </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0"><i class="bi bi-graph-up"></i> 選択期間の統計</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-2">
+                            <div class="display-6 fw-bold text-success" id="stats-jobs">-</div>
+                            <small class="text-muted">実行ジョブ数</small>
+                        </div>
+                        <hr>
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="h4 text-success mb-0" id="stats-success">-</div>
+                                <small class="text-muted">成功</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="h4 text-warning mb-0" id="stats-warning">-</div>
+                                <small class="text-muted">警告</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="h4 text-danger mb-0" id="stats-failed">-</div>
+                                <small class="text-muted">失敗</small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -114,17 +643,288 @@
     </form>
 </div>
 {% endblock %}
-{% block extra_js %}
-<script>
-document.getElementById('period_end').valueAsDate = new Date();
-const startDate = new Date();
-startDate.setDate(startDate.getDate() - 30);
-document.getElementById('period_start').valueAsDate = startDate;
 
-document.getElementById('report-form').addEventListener('submit', function(e) {
-    const btn = document.getElementById('generate-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>生成中...';
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/locales/bootstrap-datepicker.ja.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize datepickers
+    $('.datepicker').datepicker({
+        format: 'yyyy-mm-dd',
+        language: 'ja',
+        autoclose: true,
+        todayHighlight: true
+    });
+
+    // Set default dates
+    const today = new Date();
+    const lastMonth = new Date();
+    lastMonth.setDate(lastMonth.getDate() - 30);
+
+    $('#period_end').datepicker('setDate', today);
+    $('#period_start').datepicker('setDate', lastMonth);
+    updateDateRangeDisplay();
+
+    // Report Type Card Selection
+    $('.report-type-card').click(function() {
+        $('.report-type-card').removeClass('selected');
+        $(this).addClass('selected');
+        const type = $(this).data('type');
+        $('#report_type').val(type);
+        updatePreview();
+    });
+
+    // Select first card by default
+    $('.report-type-card[data-type="daily"]').addClass('selected');
+
+    // Format Selection
+    $('.format-option').click(function() {
+        $('.format-option').removeClass('selected');
+        $(this).addClass('selected');
+        $(this).find('input[type="radio"]').prop('checked', true);
+        updatePreview();
+    });
+
+    // Select first format by default
+    $('.format-option:first').addClass('selected');
+
+    // Date Preset Buttons
+    $('.preset-btn').click(function() {
+        const preset = $(this).data('preset');
+        const endDate = new Date();
+        let startDate = new Date();
+
+        if (preset === 7) {
+            startDate.setDate(endDate.getDate() - 7);
+        } else if (preset === 30) {
+            startDate.setDate(endDate.getDate() - 30);
+        } else if (preset === 'this-month') {
+            startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+        } else if (preset === 'last-month') {
+            startDate = new Date(endDate.getFullYear(), endDate.getMonth() - 1, 1);
+            endDate = new Date(endDate.getFullYear(), endDate.getMonth(), 0);
+        }
+
+        $('#period_start').datepicker('setDate', startDate);
+        $('#period_end').datepicker('setDate', endDate);
+        updateDateRangeDisplay();
+        updatePreview();
+    });
+
+    // Date change listeners
+    $('#period_start, #period_end').on('changeDate', function() {
+        updateDateRangeDisplay();
+        updatePreview();
+    });
+
+    // Email delivery toggle
+    $('#email_delivery').change(function() {
+        if ($(this).is(':checked')) {
+            $('#email-options').slideDown();
+        } else {
+            $('#email-options').slideUp();
+        }
+    });
+
+    // Schedule toggle
+    $('#enable_schedule').change(function() {
+        if ($(this).is(':checked')) {
+            $('#schedule-options').slideDown();
+        } else {
+            $('#schedule-options').slideUp();
+        }
+    });
+
+    // Job Selection
+    $('#select-all-jobs').click(function() {
+        $('.job-checkbox').prop('checked', true);
+        updatePreview();
+    });
+
+    $('#deselect-all-jobs').click(function() {
+        $('.job-checkbox').prop('checked', false);
+        updatePreview();
+    });
+
+    $('#job_all').change(function() {
+        if ($(this).is(':checked')) {
+            $('.job-checkbox:not(#job_all)').prop('checked', true);
+        } else {
+            $('.job-checkbox:not(#job_all)').prop('checked', false);
+        }
+        updatePreview();
+    });
+
+    // Update preview on any filter change
+    $('input[type="checkbox"], select').change(function() {
+        updatePreview();
+    });
+
+    // Initialize preview chart
+    initPreviewChart();
+    updatePreview();
+
+    // Form submission
+    $('#report-form').submit(function(e) {
+        const btn = $('#generate-btn');
+        btn.prop('disabled', true);
+        btn.html('<span class="spinner-border spinner-border-sm me-2"></span>生成中...');
+    });
 });
+
+function updateDateRangeDisplay() {
+    const startDate = $('#period_start').datepicker('getDate');
+    const endDate = $('#period_end').datepicker('getDate');
+
+    if (startDate && endDate) {
+        const diffTime = Math.abs(endDate - startDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        const formatDate = (date) => {
+            return date.getFullYear() + '年' +
+                   (date.getMonth() + 1) + '月' +
+                   date.getDate() + '日';
+        };
+
+        $('#date-range-text').text(formatDate(startDate) + ' 〜 ' + formatDate(endDate));
+        $('#date-range-days').text(diffDays + '日間');
+        $('#estimate-period').text(diffDays + '日間');
+    }
+}
+
+function initPreviewChart() {
+    const ctx = document.getElementById('preview-chart-canvas');
+    if (!ctx) return;
+
+    window.previewChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['月', '火', '水', '木', '金', '土', '日'],
+            datasets: [{
+                label: '成功率',
+                data: [95, 98, 92, 97, 99, 94, 96],
+                borderColor: 'rgb(13, 110, 253)',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        font: {
+                            size: 8
+                        }
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            size: 8
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updatePreview() {
+    const reportType = $('#report_type').val();
+    const format = $('input[name="format"]:checked').val();
+    const selectedJobs = $('.job-checkbox:checked:not(#job_all)').length;
+    const includeCompliance = $('#include_compliance').is(':checked');
+
+    // Update estimate time based on report type
+    let estimateTime = '約 2-3分';
+    let estimateSize = '約 2.5 MB';
+
+    if (reportType === 'daily') {
+        estimateTime = '約 1-2分';
+        estimateSize = '約 1.5 MB';
+    } else if (reportType === 'weekly') {
+        estimateTime = '約 2-3分';
+        estimateSize = '約 2.5 MB';
+    } else if (reportType === 'monthly') {
+        estimateTime = '約 3-5分';
+        estimateSize = '約 4.0 MB';
+    } else if (reportType === 'compliance') {
+        estimateTime = '約 4-6分';
+        estimateSize = '約 5.5 MB';
+    } else if (reportType === 'custom') {
+        estimateTime = '約 2-5分';
+        estimateSize = '約 3.0 MB';
+    }
+
+    $('#estimate-time').text(estimateTime);
+    $('#estimate-size').text(estimateSize);
+
+    // Update sections preview
+    let sections = ['<li><i class="bi bi-check text-success"></i> サマリー</li>'];
+
+    if ($('#include_jobs').is(':checked')) {
+        sections.push('<li><i class="bi bi-check text-success"></i> バックアップ実行履歴</li>');
+        sections.push('<li><i class="bi bi-check text-success"></i> 成功率グラフ</li>');
+    }
+
+    if ($('#include_media').is(':checked')) {
+        sections.push('<li><i class="bi bi-check text-success"></i> メディア使用状況</li>');
+    }
+
+    if ($('#include_verification').is(':checked')) {
+        sections.push('<li><i class="bi bi-check text-success"></i> 検証テスト結果</li>');
+    }
+
+    if (includeCompliance) {
+        sections.push('<li><i class="bi bi-check text-success"></i> コンプライアンス準拠状況</li>');
+    }
+
+    $('#preview-sections').html(sections.join(''));
+
+    // Update stats (mock data)
+    const startDate = $('#period_start').datepicker('getDate');
+    const endDate = $('#period_end').datepicker('getDate');
+
+    if (startDate && endDate) {
+        const diffTime = Math.abs(endDate - startDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const estimatedJobs = Math.max(1, Math.floor(diffDays * selectedJobs * 1.5));
+
+        $('#stats-jobs').text(estimatedJobs);
+        $('#stats-success').text(Math.floor(estimatedJobs * 0.9));
+        $('#stats-warning').text(Math.floor(estimatedJobs * 0.07));
+        $('#stats-failed').text(Math.floor(estimatedJobs * 0.03));
+    }
+
+    // Update dynamic tip
+    let tip = 'フィルタを調整すると、レポート生成が高速化されます。';
+
+    if (format === 'pdf') {
+        tip = 'PDFフォーマットは印刷やアーカイブに最適です。';
+    } else if (format === 'csv') {
+        tip = 'CSV形式でエクスポートすると、Excelで詳細分析が可能です。';
+    } else if (format === 'json') {
+        tip = 'JSON形式は他のシステムとのAPI連携に使用できます。';
+    } else if (format === 'html') {
+        tip = 'HTMLプレビューでは、インタラクティブなグラフを確認できます。';
+    }
+
+    if (includeCompliance) {
+        tip = 'コンプライアンスレポートには詳細な監査証跡が含まれます。';
+    }
+
+    $('#dynamic-tip').text(tip);
+}
 </script>
 {% endblock %}

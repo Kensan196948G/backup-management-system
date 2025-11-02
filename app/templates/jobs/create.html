@@ -2,6 +2,267 @@
 
 {% block title %}バックアップジョブ作成 - バックアップ管理システム{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Multi-step wizard styles */
+    .wizard-steps {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        position: relative;
+    }
+
+    .wizard-steps::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #dee2e6;
+        z-index: 0;
+    }
+
+    .wizard-step {
+        flex: 1;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+    }
+
+    .wizard-step-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #fff;
+        border: 2px solid #dee2e6;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .wizard-step.active .wizard-step-circle {
+        background: #0d6efd;
+        border-color: #0d6efd;
+        color: white;
+    }
+
+    .wizard-step.completed .wizard-step-circle {
+        background: #198754;
+        border-color: #198754;
+        color: white;
+    }
+
+    .wizard-step-label {
+        display: block;
+        font-size: 0.875rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .wizard-step.active .wizard-step-label {
+        color: #0d6efd;
+        font-weight: 600;
+    }
+
+    .wizard-content {
+        display: none;
+    }
+
+    .wizard-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cron builder styles */
+    .cron-preset-buttons .btn {
+        margin: 0.25rem;
+    }
+
+    .cron-custom-inputs {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.5rem;
+        margin: 1rem 0;
+    }
+
+    .cron-field {
+        text-align: center;
+    }
+
+    .cron-field label {
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-bottom: 0.25rem;
+    }
+
+    .cron-field input {
+        font-family: monospace;
+        font-size: 0.875rem;
+    }
+
+    .next-runs {
+        background: #f8f9fa;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+
+    .next-runs-list {
+        list-style: none;
+        padding: 0;
+        margin: 0.5rem 0 0 0;
+    }
+
+    .next-runs-list li {
+        padding: 0.375rem 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .next-runs-list li:last-child {
+        border-bottom: none;
+    }
+
+    /* Path browser modal */
+    .path-browser {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .path-item {
+        padding: 0.5rem;
+        cursor: pointer;
+        border-radius: 0.25rem;
+        transition: background 0.2s;
+    }
+
+    .path-item:hover {
+        background: #f8f9fa;
+    }
+
+    .path-item.selected {
+        background: #e7f1ff;
+        border-left: 3px solid #0d6efd;
+    }
+
+    .path-breadcrumb {
+        background: #f8f9fa;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+        font-family: monospace;
+        font-size: 0.875rem;
+    }
+
+    /* Preview panel */
+    .preview-panel {
+        position: sticky;
+        top: 20px;
+    }
+
+    .preview-section {
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .preview-section:last-child {
+        border-bottom: none;
+    }
+
+    .preview-label {
+        font-size: 0.75rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .preview-value {
+        font-size: 0.875rem;
+        color: #212529;
+        font-weight: 500;
+    }
+
+    .preview-empty {
+        color: #adb5bd;
+        font-style: italic;
+    }
+
+    /* Validation styles */
+    .field-error {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        display: none;
+    }
+
+    .field-error.show {
+        display: block;
+    }
+
+    .field-success {
+        color: #198754;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .duplicate-warning {
+        background: #fff3cd;
+        border: 1px solid #ffecb5;
+        border-radius: 0.375rem;
+        padding: 0.75rem;
+        margin-top: 0.5rem;
+        display: none;
+    }
+
+    .duplicate-warning.show {
+        display: block;
+    }
+
+    /* Schedule visualization */
+    .schedule-visual {
+        height: 200px;
+        margin-top: 1rem;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .cron-custom-inputs {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .wizard-steps {
+            flex-direction: column;
+        }
+
+        .wizard-steps::before {
+            display: none;
+        }
+
+        .wizard-step {
+            display: flex;
+            align-items: center;
+            text-align: left;
+            margin-bottom: 1rem;
+        }
+
+        .wizard-step-circle {
+            margin-right: 1rem;
+            margin-bottom: 0;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="row mb-4">
@@ -25,140 +286,548 @@
                     <h5 class="mb-0">ジョブ情報</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('jobs.create') }}" class="needs-validation" novalidate>
-                        <!-- Job Name -->
-                        <div class="mb-3">
-                            <label for="job_name" class="form-label">ジョブ名 <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="job_name" name="job_name" required>
-                            <div class="invalid-feedback">ジョブ名を入力してください</div>
+                    <!-- Multi-step Wizard Navigation -->
+                    <div class="wizard-steps">
+                        <div class="wizard-step active" data-step="1">
+                            <div class="wizard-step-circle">1</div>
+                            <span class="wizard-step-label">基本情報</span>
+                        </div>
+                        <div class="wizard-step" data-step="2">
+                            <div class="wizard-step-circle">2</div>
+                            <span class="wizard-step-label">バックアップ設定</span>
+                        </div>
+                        <div class="wizard-step" data-step="3">
+                            <div class="wizard-step-circle">3</div>
+                            <span class="wizard-step-label">詳細オプション</span>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('jobs.create') }}" id="jobCreateForm" class="needs-validation" novalidate>
+                        <!-- Step 1: Basic Information -->
+                        <div class="wizard-content active" data-step="1">
+                            <h5 class="mb-3">基本情報</h5>
+
+                            <!-- Job Name -->
+                            <div class="mb-3">
+                                <label for="job_name" class="form-label">
+                                    ジョブ名 <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="job_name" name="job_name" required>
+                                <div class="invalid-feedback">ジョブ名を入力してください</div>
+                                <div class="duplicate-warning" id="duplicateWarning">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    このジョブ名は既に使用されています
+                                </div>
+                                <div class="field-success" id="nameSuccess" style="display: none;">
+                                    <i class="bi bi-check-circle"></i> このジョブ名は使用可能です
+                                </div>
+                            </div>
+
+                            <!-- Job Type -->
+                            <div class="mb-3">
+                                <label for="job_type" class="form-label">
+                                    バックアップ種別 <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="job_type" name="job_type" required>
+                                    <option value="">選択してください</option>
+                                    <option value="system_image">システムイメージ</option>
+                                    <option value="file">ファイル</option>
+                                    <option value="database">データベース</option>
+                                    <option value="vm">仮想マシン</option>
+                                </select>
+                                <div class="invalid-feedback">バックアップ種別を選択してください</div>
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle"></i>
+                                    <span id="typeDescription"></span>
+                                </div>
+                            </div>
+
+                            <!-- Target Server -->
+                            <div class="mb-3">
+                                <label for="target_server" class="form-label">
+                                    対象サーバー <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="target_server" name="target_server"
+                                       placeholder="例: SERVER01 または 192.168.1.100" required>
+                                <div class="invalid-feedback">対象サーバーを入力してください</div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="mb-3">
+                                <label for="description" class="form-label">説明</label>
+                                <textarea class="form-control" id="description" name="description" rows="3"
+                                          placeholder="このバックアップジョブの目的や特記事項を入力してください"></textarea>
+                            </div>
+
+                            <!-- Active Status -->
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
+                                <label class="form-check-label" for="is_active">
+                                    ジョブを有効にする
+                                </label>
+                                <div class="form-text">
+                                    無効にすると、スケジュール実行されません
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Job Type -->
-                        <div class="mb-3">
-                            <label for="job_type" class="form-label">種別 <span class="text-danger">*</span></label>
-                            <select class="form-select" id="job_type" name="job_type" required>
-                                <option value="">選択してください</option>
-                                <option value="system_image">システムイメージ</option>
-                                <option value="file">ファイル</option>
-                                <option value="database">データベース</option>
-                                <option value="vm">仮想マシン</option>
-                            </select>
-                            <div class="invalid-feedback">種別を選択してください</div>
+                        <!-- Step 2: Backup Configuration -->
+                        <div class="wizard-content" data-step="2">
+                            <h5 class="mb-3">バックアップ設定</h5>
+
+                            <!-- Source Path -->
+                            <div class="mb-3">
+                                <label for="source_path" class="form-label">
+                                    バックアップ元パス <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="source_path" name="source_path"
+                                           placeholder="C:\Data または /data" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="browseSource">
+                                        <i class="bi bi-folder2-open"></i> 参照
+                                    </button>
+                                </div>
+                                <div class="invalid-feedback">バックアップ元パスを入力してください</div>
+                            </div>
+
+                            <!-- Destination Path -->
+                            <div class="mb-3">
+                                <label for="destination_path" class="form-label">
+                                    バックアップ先パス <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="destination_path" name="destination_path"
+                                           placeholder="\\NAS\Backup または /mnt/backup" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="browseDestination">
+                                        <i class="bi bi-folder2-open"></i> 参照
+                                    </button>
+                                </div>
+                                <div class="invalid-feedback">バックアップ先パスを入力してください</div>
+                            </div>
+
+                            <!-- Backup Tool -->
+                            <div class="mb-3">
+                                <label for="backup_tool" class="form-label">
+                                    バックアップツール <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="backup_tool" name="backup_tool" required>
+                                    <option value="">選択してください</option>
+                                    <option value="veeam">Veeam Backup & Replication</option>
+                                    <option value="wsb">Windows Server Backup</option>
+                                    <option value="aomei">AOMEI Backupper</option>
+                                    <option value="robocopy">Robocopy</option>
+                                    <option value="rsync">Rsync</option>
+                                    <option value="custom">カスタム</option>
+                                </select>
+                                <div class="invalid-feedback">バックアップツールを選択してください</div>
+                            </div>
+
+                            <!-- Schedule Configuration -->
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    スケジュール設定 <span class="text-danger">*</span>
+                                </label>
+
+                                <!-- Preset Buttons -->
+                                <div class="cron-preset-buttons mb-3">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" data-cron="0 3 * * *" data-label="毎日 3:00">
+                                        <i class="bi bi-calendar-day"></i> 毎日 3:00
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" data-cron="0 2 * * 0" data-label="毎週日曜 2:00">
+                                        <i class="bi bi-calendar-week"></i> 毎週日曜 2:00
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" data-cron="0 1 1 * *" data-label="毎月1日 1:00">
+                                        <i class="bi bi-calendar-month"></i> 毎月1日 1:00
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" data-cron="0 */6 * * *" data-label="6時間毎">
+                                        <i class="bi bi-arrow-repeat"></i> 6時間毎
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="customCronToggle">
+                                        <i class="bi bi-gear"></i> カスタム
+                                    </button>
+                                </div>
+
+                                <!-- Custom Cron Builder -->
+                                <div id="customCronBuilder" style="display: none;">
+                                    <div class="cron-custom-inputs">
+                                        <div class="cron-field">
+                                            <label>分</label>
+                                            <input type="text" class="form-control form-control-sm" id="cron_minute"
+                                                   placeholder="0-59" value="0">
+                                            <small class="text-muted">0-59</small>
+                                        </div>
+                                        <div class="cron-field">
+                                            <label>時</label>
+                                            <input type="text" class="form-control form-control-sm" id="cron_hour"
+                                                   placeholder="0-23" value="3">
+                                            <small class="text-muted">0-23</small>
+                                        </div>
+                                        <div class="cron-field">
+                                            <label>日</label>
+                                            <input type="text" class="form-control form-control-sm" id="cron_day"
+                                                   placeholder="1-31" value="*">
+                                            <small class="text-muted">1-31</small>
+                                        </div>
+                                        <div class="cron-field">
+                                            <label>月</label>
+                                            <input type="text" class="form-control form-control-sm" id="cron_month"
+                                                   placeholder="1-12" value="*">
+                                            <small class="text-muted">1-12</small>
+                                        </div>
+                                        <div class="cron-field">
+                                            <label>曜日</label>
+                                            <input type="text" class="form-control form-control-sm" id="cron_weekday"
+                                                   placeholder="0-6" value="*">
+                                            <small class="text-muted">0-6</small>
+                                        </div>
+                                    </div>
+                                    <div class="form-text mb-2">
+                                        <i class="bi bi-info-circle"></i>
+                                        * = 毎回、*/n = n毎、n,m = nとm、n-m = nからm
+                                    </div>
+                                </div>
+
+                                <!-- Cron Expression Display -->
+                                <div class="mb-2">
+                                    <label class="form-label small">Cron式:</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control form-control-sm font-monospace"
+                                               id="schedule_cron" name="schedule_cron" value="0 3 * * *" readonly>
+                                        <button class="btn btn-outline-secondary btn-sm" type="button" id="validateCron">
+                                            <i class="bi bi-check2-circle"></i> 検証
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Schedule Description -->
+                                <div class="alert alert-info py-2 px-3 mb-2" id="scheduleDescription">
+                                    <i class="bi bi-clock"></i> <span id="scheduleDescriptionText">毎日 午前3:00に実行</span>
+                                </div>
+
+                                <!-- Next 5 Runs Preview -->
+                                <div class="next-runs">
+                                    <h6 class="mb-2">
+                                        <i class="bi bi-calendar-event"></i> 次回の実行予定 (5回)
+                                    </h6>
+                                    <ul class="next-runs-list" id="nextRunsList">
+                                        <li><i class="bi bi-circle-fill text-primary" style="font-size: 0.5rem;"></i> 計算中...</li>
+                                    </ul>
+                                </div>
+
+                                <!-- Schedule Visualization -->
+                                <div class="schedule-visual mt-3">
+                                    <canvas id="scheduleChart"></canvas>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Target Server -->
-                        <div class="mb-3">
-                            <label for="target_server" class="form-label">対象サーバー <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="target_server" name="target_server" required>
-                            <div class="invalid-feedback">対象サーバーを入力してください</div>
+                        <!-- Step 3: Advanced Options -->
+                        <div class="wizard-content" data-step="3">
+                            <h5 class="mb-3">詳細オプション</h5>
+
+                            <!-- Retention Policy -->
+                            <div class="mb-3">
+                                <label for="retention_days" class="form-label">
+                                    保持期間 (日) <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" class="form-control" id="retention_days" name="retention_days"
+                                       value="30" min="1" max="3650" required>
+                                <div class="invalid-feedback">1〜3650日の範囲で入力してください</div>
+                                <div class="form-text">
+                                    バックアップデータの保持期間を指定してください (推奨: 30〜90日)
+                                </div>
+                                <div class="mt-2">
+                                    <input type="range" class="form-range" min="1" max="365" value="30" id="retentionSlider">
+                                    <div class="d-flex justify-content-between small text-muted">
+                                        <span>1日</span>
+                                        <span>6ヶ月</span>
+                                        <span>1年</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Retention Copies -->
+                            <div class="mb-3">
+                                <label for="retention_copies" class="form-label">保持世代数</label>
+                                <input type="number" class="form-control" id="retention_copies" name="retention_copies"
+                                       value="7" min="1" max="100">
+                                <div class="form-text">
+                                    保持するバックアップの世代数 (フルバックアップのみ)
+                                </div>
+                            </div>
+
+                            <!-- Compression -->
+                            <div class="mb-3">
+                                <label for="compression" class="form-label">圧縮レベル</label>
+                                <select class="form-select" id="compression" name="compression">
+                                    <option value="none">圧縮なし</option>
+                                    <option value="fast">高速 (低圧縮率)</option>
+                                    <option value="normal" selected>標準</option>
+                                    <option value="high">高圧縮 (低速)</option>
+                                    <option value="maximum">最大圧縮 (最遅)</option>
+                                </select>
+                                <div class="form-text">
+                                    圧縮レベルが高いほど、バックアップ時間が長くなります
+                                </div>
+                            </div>
+
+                            <!-- Encryption -->
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="enable_encryption" name="enable_encryption">
+                                    <label class="form-check-label" for="enable_encryption">
+                                        暗号化を有効にする (AES-256)
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div id="encryptionOptions" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="encryption_password" class="form-label">暗号化パスワード</label>
+                                    <input type="password" class="form-control" id="encryption_password" name="encryption_password">
+                                    <div class="form-text">
+                                        <i class="bi bi-shield-lock"></i>
+                                        強力なパスワードを設定してください (紛失注意!)
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="encryption_password_confirm" class="form-label">パスワード確認</label>
+                                    <input type="password" class="form-control" id="encryption_password_confirm">
+                                    <div class="field-error" id="passwordMismatch">
+                                        パスワードが一致しません
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Verification -->
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="enable_verification" name="enable_verification" checked>
+                                    <label class="form-check-label" for="enable_verification">
+                                        バックアップ後に検証を実行
+                                    </label>
+                                </div>
+                                <div class="form-text">
+                                    推奨: バックアップデータの整合性を確認します
+                                </div>
+                            </div>
+
+                            <!-- Email Notifications -->
+                            <div class="mb-3">
+                                <label class="form-label">通知設定</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="notify_success" name="notify_success">
+                                    <label class="form-check-label" for="notify_success">
+                                        成功時にメール通知
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="notify_failure" name="notify_failure" checked>
+                                    <label class="form-check-label" for="notify_failure">
+                                        失敗時にメール通知
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Email Recipients -->
+                            <div class="mb-3">
+                                <label for="notification_emails" class="form-label">通知先メールアドレス</label>
+                                <input type="text" class="form-control" id="notification_emails" name="notification_emails"
+                                       placeholder="admin@example.com, backup-team@example.com">
+                                <div class="form-text">
+                                    複数のアドレスはカンマ区切りで入力してください
+                                </div>
+                            </div>
+
+                            <!-- Pre/Post Scripts -->
+                            <div class="mb-3">
+                                <label for="pre_script" class="form-label">実行前スクリプト</label>
+                                <textarea class="form-control font-monospace" id="pre_script" name="pre_script" rows="2"
+                                          placeholder="バックアップ実行前に実行するコマンド"></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="post_script" class="form-label">実行後スクリプト</label>
+                                <textarea class="form-control font-monospace" id="post_script" name="post_script" rows="2"
+                                          placeholder="バックアップ実行後に実行するコマンド"></textarea>
+                            </div>
+
+                            <!-- Priority -->
+                            <div class="mb-3">
+                                <label for="priority" class="form-label">優先度</label>
+                                <select class="form-select" id="priority" name="priority">
+                                    <option value="low">低</option>
+                                    <option value="normal" selected>標準</option>
+                                    <option value="high">高</option>
+                                    <option value="critical">重要</option>
+                                </select>
+                            </div>
                         </div>
 
-                        <!-- Target Path -->
-                        <div class="mb-3">
-                            <label for="target_path" class="form-label">対象パス</label>
-                            <input type="text" class="form-control" id="target_path" name="target_path"
-                                   placeholder="C:\Data または /data">
-                        </div>
-
-                        <!-- Backup Tool -->
-                        <div class="mb-3">
-                            <label for="backup_tool" class="form-label">バックアップツール</label>
-                            <select class="form-select" id="backup_tool" name="backup_tool">
-                                <option value="veeam">Veeam Backup & Replication</option>
-                                <option value="wsb">Windows Server Backup</option>
-                                <option value="aomei">AOMEI Backupper</option>
-                                <option value="robocopy">Robocopy</option>
-                                <option value="custom">カスタム</option>
-                            </select>
-                        </div>
-
-                        <!-- Schedule Type -->
-                        <div class="mb-3">
-                            <label for="schedule_type" class="form-label">スケジュール種別</label>
-                            <select class="form-select" id="schedule_type" name="schedule_type">
-                                <option value="daily">毎日</option>
-                                <option value="weekly">毎週</option>
-                                <option value="monthly">毎月</option>
-                                <option value="manual">手動</option>
-                            </select>
-                        </div>
-
-                        <!-- Schedule Time -->
-                        <div class="mb-3">
-                            <label for="schedule_time" class="form-label">実行時刻</label>
-                            <input type="time" class="form-control" id="schedule_time" name="schedule_time" value="03:00">
-                        </div>
-
-                        <!-- Retention Days -->
-                        <div class="mb-3">
-                            <label for="retention_days" class="form-label">保持期間 (日)</label>
-                            <input type="number" class="form-control" id="retention_days" name="retention_days"
-                                   value="30" min="1" max="3650">
-                            <div class="form-text">バックアップデータの保持期間を指定してください</div>
-                        </div>
-
-                        <!-- Description -->
-                        <div class="mb-3">
-                            <label for="description" class="form-label">説明</label>
-                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
-                        </div>
-
-                        <!-- Active Status -->
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
-                            <label class="form-check-label" for="is_active">
-                                ジョブを有効にする
-                            </label>
-                        </div>
-
-                        <!-- Buttons -->
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('jobs.list') }}" class="btn btn-secondary">
-                                <i class="bi bi-x-circle"></i> キャンセル
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i> 作成
-                            </button>
+                        <!-- Navigation Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <div>
+                                <button type="button" class="btn btn-secondary" id="prevBtn" style="display: none;">
+                                    <i class="bi bi-arrow-left"></i> 前へ
+                                </button>
+                            </div>
+                            <div>
+                                <a href="{{ url_for('jobs.list') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> キャンセル
+                                </a>
+                                <button type="button" class="btn btn-primary" id="nextBtn">
+                                    次へ <i class="bi bi-arrow-right"></i>
+                                </button>
+                                <button type="submit" class="btn btn-success" id="submitBtn" style="display: none;">
+                                    <i class="bi bi-check-circle"></i> ジョブを作成
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
 
-        <!-- Help Panel -->
+        <!-- Preview Panel -->
         <div class="col-lg-4">
-            <div class="card shadow">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> ヘルプ</h5>
-                </div>
-                <div class="card-body">
-                    <h6>ジョブ作成のガイド</h6>
-                    <ul class="small">
-                        <li><strong>ジョブ名:</strong> わかりやすい名前をつけてください</li>
-                        <li><strong>種別:</strong> バックアップ対象の種類を選択</li>
-                        <li><strong>対象サーバー:</strong> バックアップ対象のサーバー名またはIP</li>
-                        <li><strong>スケジュール:</strong> バックアップの実行頻度と時刻</li>
-                        <li><strong>保持期間:</strong> バックアップデータを保管する日数</li>
-                    </ul>
+            <div class="preview-panel">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-eye"></i> プレビュー</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="preview-section">
+                            <div class="preview-label">ジョブ名</div>
+                            <div class="preview-value" id="preview_job_name">
+                                <span class="preview-empty">未入力</span>
+                            </div>
+                        </div>
 
-                    <hr>
+                        <div class="preview-section">
+                            <div class="preview-label">バックアップ種別</div>
+                            <div class="preview-value" id="preview_job_type">
+                                <span class="preview-empty">未選択</span>
+                            </div>
+                        </div>
 
-                    <h6>3-2-1-1-0ルール</h6>
-                    <ul class="small">
-                        <li><strong>3:</strong> データのコピーを3つ以上</li>
-                        <li><strong>2:</strong> 2種類の異なるメディアに保存</li>
-                        <li><strong>1:</strong> 1つはオフサイトに保管</li>
-                        <li><strong>1:</strong> 1つはオフライン(エアギャップ)</li>
-                        <li><strong>0:</strong> エラーなしで検証済み</li>
-                    </ul>
+                        <div class="preview-section">
+                            <div class="preview-label">対象サーバー</div>
+                            <div class="preview-value" id="preview_target_server">
+                                <span class="preview-empty">未入力</span>
+                            </div>
+                        </div>
 
-                    <div class="alert alert-warning alert-sm mt-3">
-                        <small>
-                            <i class="bi bi-lightbulb"></i>
-                            ジョブ作成後、バックアップコピーを追加してルール準拠を達成してください
-                        </small>
+                        <div class="preview-section">
+                            <div class="preview-label">バックアップ元</div>
+                            <div class="preview-value font-monospace small" id="preview_source_path">
+                                <span class="preview-empty">未入力</span>
+                            </div>
+                        </div>
+
+                        <div class="preview-section">
+                            <div class="preview-label">バックアップ先</div>
+                            <div class="preview-value font-monospace small" id="preview_destination_path">
+                                <span class="preview-empty">未入力</span>
+                            </div>
+                        </div>
+
+                        <div class="preview-section">
+                            <div class="preview-label">バックアップツール</div>
+                            <div class="preview-value" id="preview_backup_tool">
+                                <span class="preview-empty">未選択</span>
+                            </div>
+                        </div>
+
+                        <div class="preview-section">
+                            <div class="preview-label">スケジュール</div>
+                            <div class="preview-value" id="preview_schedule">
+                                <span class="preview-empty">未設定</span>
+                            </div>
+                        </div>
+
+                        <div class="preview-section">
+                            <div class="preview-label">保持期間</div>
+                            <div class="preview-value" id="preview_retention">
+                                <span class="preview-empty">30日</span>
+                            </div>
+                        </div>
+
+                        <div class="preview-section">
+                            <div class="preview-label">圧縮</div>
+                            <div class="preview-value" id="preview_compression">
+                                <span>標準</span>
+                            </div>
+                        </div>
+
+                        <div class="preview-section">
+                            <div class="preview-label">暗号化</div>
+                            <div class="preview-value" id="preview_encryption">
+                                <span class="text-muted">無効</span>
+                            </div>
+                        </div>
+
+                        <div class="preview-section">
+                            <div class="preview-label">ステータス</div>
+                            <div class="preview-value" id="preview_status">
+                                <span class="badge bg-success">有効</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Help Card -->
+                <div class="card shadow mt-3">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> ヘルプ</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>3-2-1-1-0ルール</h6>
+                        <ul class="small">
+                            <li><strong>3:</strong> データのコピーを3つ以上</li>
+                            <li><strong>2:</strong> 2種類の異なるメディアに保存</li>
+                            <li><strong>1:</strong> 1つはオフサイトに保管</li>
+                            <li><strong>1:</strong> 1つはオフライン(エアギャップ)</li>
+                            <li><strong>0:</strong> エラーなしで検証済み</li>
+                        </ul>
+
+                        <div class="alert alert-warning alert-sm mt-3 py-2 px-3">
+                            <small>
+                                <i class="bi bi-lightbulb"></i>
+                                ジョブ作成後、バックアップコピーを追加してルール準拠を達成してください
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Path Browser Modal -->
+<div class="modal fade" id="pathBrowserModal" tabindex="-1" aria-labelledby="pathBrowserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pathBrowserModalLabel">
+                    <i class="bi bi-folder2-open"></i> パス選択
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="path-breadcrumb" id="currentPath">
+                    C:\
+                </div>
+                <div class="path-browser" id="pathBrowserContent">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">読み込み中...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" id="selectPath">選択</button>
             </div>
         </div>
     </div>
@@ -167,19 +836,569 @@
 
 {% block extra_js %}
 <script>
-    // Form validation
-    (function () {
-        'use strict'
-        const forms = document.querySelectorAll('.needs-validation')
-        Array.from(forms).forEach(function (form) {
-            form.addEventListener('submit', function (event) {
-                if (!form.checkValidity()) {
-                    event.preventDefault()
-                    event.stopPropagation()
+// Global state
+let currentStep = 1;
+let totalSteps = 3;
+let selectedPath = '';
+let pathBrowserTarget = '';
+let scheduleChart = null;
+
+// Existing job names for duplicate checking (would be loaded from API)
+const existingJobNames = ['Daily_Backup', 'Weekly_Full', 'Database_Backup'];
+
+// ============================================================================
+// Multi-step Wizard
+// ============================================================================
+function showStep(step) {
+    // Hide all wizard contents
+    document.querySelectorAll('.wizard-content').forEach(content => {
+        content.classList.remove('active');
+    });
+
+    // Show current step content
+    document.querySelector(`.wizard-content[data-step="${step}"]`).classList.add('active');
+
+    // Update wizard step indicators
+    document.querySelectorAll('.wizard-step').forEach(stepEl => {
+        const stepNum = parseInt(stepEl.getAttribute('data-step'));
+        stepEl.classList.remove('active', 'completed');
+
+        if (stepNum === step) {
+            stepEl.classList.add('active');
+        } else if (stepNum < step) {
+            stepEl.classList.add('completed');
+        }
+    });
+
+    // Update button visibility
+    document.getElementById('prevBtn').style.display = step === 1 ? 'none' : 'inline-block';
+    document.getElementById('nextBtn').style.display = step === totalSteps ? 'none' : 'inline-block';
+    document.getElementById('submitBtn').style.display = step === totalSteps ? 'inline-block' : 'none';
+
+    currentStep = step;
+}
+
+document.getElementById('nextBtn').addEventListener('click', function() {
+    if (validateCurrentStep()) {
+        showStep(currentStep + 1);
+    }
+});
+
+document.getElementById('prevBtn').addEventListener('click', function() {
+    showStep(currentStep - 1);
+});
+
+function validateCurrentStep() {
+    const currentContent = document.querySelector(`.wizard-content[data-step="${currentStep}"]`);
+    const inputs = currentContent.querySelectorAll('input[required], select[required], textarea[required]');
+    let isValid = true;
+
+    inputs.forEach(input => {
+        if (!input.checkValidity()) {
+            input.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            input.classList.remove('is-invalid');
+        }
+    });
+
+    return isValid;
+}
+
+// ============================================================================
+// Real-time Preview Updates
+// ============================================================================
+function updatePreview() {
+    // Job Name
+    const jobName = document.getElementById('job_name').value;
+    updatePreviewField('preview_job_name', jobName);
+
+    // Job Type
+    const jobType = document.getElementById('job_type');
+    const jobTypeText = jobType.options[jobType.selectedIndex]?.text || '';
+    updatePreviewField('preview_job_type', jobTypeText);
+
+    // Target Server
+    const targetServer = document.getElementById('target_server').value;
+    updatePreviewField('preview_target_server', targetServer);
+
+    // Source Path
+    const sourcePath = document.getElementById('source_path').value;
+    updatePreviewField('preview_source_path', sourcePath);
+
+    // Destination Path
+    const destPath = document.getElementById('destination_path').value;
+    updatePreviewField('preview_destination_path', destPath);
+
+    // Backup Tool
+    const backupTool = document.getElementById('backup_tool');
+    const backupToolText = backupTool.options[backupTool.selectedIndex]?.text || '';
+    updatePreviewField('preview_backup_tool', backupToolText);
+
+    // Schedule
+    const scheduleDesc = document.getElementById('scheduleDescriptionText').textContent;
+    updatePreviewField('preview_schedule', scheduleDesc);
+
+    // Retention
+    const retentionDays = document.getElementById('retention_days').value;
+    updatePreviewField('preview_retention', retentionDays ? `${retentionDays}日` : '30日');
+
+    // Compression
+    const compression = document.getElementById('compression');
+    const compressionText = compression.options[compression.selectedIndex].text;
+    updatePreviewField('preview_compression', compressionText);
+
+    // Encryption
+    const encryptionEnabled = document.getElementById('enable_encryption').checked;
+    const encryptionEl = document.getElementById('preview_encryption');
+    encryptionEl.innerHTML = encryptionEnabled ?
+        '<span class="badge bg-success"><i class="bi bi-shield-lock"></i> AES-256</span>' :
+        '<span class="text-muted">無効</span>';
+
+    // Status
+    const isActive = document.getElementById('is_active').checked;
+    const statusEl = document.getElementById('preview_status');
+    statusEl.innerHTML = isActive ?
+        '<span class="badge bg-success">有効</span>' :
+        '<span class="badge bg-secondary">無効</span>';
+}
+
+function updatePreviewField(elementId, value) {
+    const el = document.getElementById(elementId);
+    if (value && value.trim() !== '') {
+        el.innerHTML = value;
+    } else {
+        el.innerHTML = '<span class="preview-empty">未入力</span>';
+    }
+}
+
+// Add event listeners for real-time preview
+document.addEventListener('DOMContentLoaded', function() {
+    const formInputs = document.querySelectorAll('#jobCreateForm input, #jobCreateForm select, #jobCreateForm textarea');
+    formInputs.forEach(input => {
+        input.addEventListener('input', updatePreview);
+        input.addEventListener('change', updatePreview);
+    });
+
+    // Initial preview update
+    updatePreview();
+});
+
+// ============================================================================
+// Duplicate Name Checking
+// ============================================================================
+let nameCheckTimeout;
+document.getElementById('job_name').addEventListener('input', function() {
+    clearTimeout(nameCheckTimeout);
+    const jobName = this.value.trim();
+
+    if (jobName === '') {
+        document.getElementById('duplicateWarning').classList.remove('show');
+        document.getElementById('nameSuccess').style.display = 'none';
+        return;
+    }
+
+    nameCheckTimeout = setTimeout(() => {
+        // In production, this would be an API call
+        const isDuplicate = existingJobNames.some(name =>
+            name.toLowerCase() === jobName.toLowerCase()
+        );
+
+        if (isDuplicate) {
+            document.getElementById('duplicateWarning').classList.add('show');
+            document.getElementById('nameSuccess').style.display = 'none';
+        } else {
+            document.getElementById('duplicateWarning').classList.remove('show');
+            document.getElementById('nameSuccess').style.display = 'block';
+        }
+    }, 500);
+});
+
+// ============================================================================
+// Job Type Description
+// ============================================================================
+const jobTypeDescriptions = {
+    'system_image': 'OSを含むシステム全体のイメージバックアップを作成します',
+    'file': 'ファイルやフォルダを個別にバックアップします',
+    'database': 'データベース(SQL Server, MySQL等)のバックアップを作成します',
+    'vm': '仮想マシン全体をバックアップします'
+};
+
+document.getElementById('job_type').addEventListener('change', function() {
+    const description = jobTypeDescriptions[this.value] || '';
+    document.getElementById('typeDescription').textContent = description;
+});
+
+// ============================================================================
+// Cron Schedule Builder
+// ============================================================================
+const cronPresets = document.querySelectorAll('.cron-preset-buttons .btn[data-cron]');
+cronPresets.forEach(btn => {
+    btn.addEventListener('click', function() {
+        const cronExpression = this.getAttribute('data-cron');
+        const label = this.getAttribute('data-label');
+
+        document.getElementById('schedule_cron').value = cronExpression;
+        updateCronFields(cronExpression);
+        updateScheduleDescription(label);
+        calculateNextRuns(cronExpression);
+
+        // Hide custom builder
+        document.getElementById('customCronBuilder').style.display = 'none';
+
+        // Update button states
+        cronPresets.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
+document.getElementById('customCronToggle').addEventListener('click', function() {
+    const builder = document.getElementById('customCronBuilder');
+    builder.style.display = builder.style.display === 'none' ? 'block' : 'none';
+
+    if (builder.style.display === 'block') {
+        cronPresets.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+    }
+});
+
+// Update cron expression when custom fields change
+const cronFields = ['cron_minute', 'cron_hour', 'cron_day', 'cron_month', 'cron_weekday'];
+cronFields.forEach(fieldId => {
+    document.getElementById(fieldId).addEventListener('input', function() {
+        const expression = buildCronExpression();
+        document.getElementById('schedule_cron').value = expression;
+        calculateNextRuns(expression);
+    });
+});
+
+function buildCronExpression() {
+    const minute = document.getElementById('cron_minute').value || '*';
+    const hour = document.getElementById('cron_hour').value || '*';
+    const day = document.getElementById('cron_day').value || '*';
+    const month = document.getElementById('cron_month').value || '*';
+    const weekday = document.getElementById('cron_weekday').value || '*';
+
+    return `${minute} ${hour} ${day} ${month} ${weekday}`;
+}
+
+function updateCronFields(expression) {
+    const parts = expression.split(' ');
+    if (parts.length === 5) {
+        document.getElementById('cron_minute').value = parts[0];
+        document.getElementById('cron_hour').value = parts[1];
+        document.getElementById('cron_day').value = parts[2];
+        document.getElementById('cron_month').value = parts[3];
+        document.getElementById('cron_weekday').value = parts[4];
+    }
+}
+
+function updateScheduleDescription(description) {
+    document.getElementById('scheduleDescriptionText').textContent = description;
+}
+
+// Validate cron expression
+document.getElementById('validateCron').addEventListener('click', function() {
+    const expression = document.getElementById('schedule_cron').value;
+    const parts = expression.split(' ');
+
+    if (parts.length !== 5) {
+        alert('無効なCron式です。5つのフィールドが必要です。');
+        return;
+    }
+
+    // Basic validation (in production, use a proper cron parser)
+    alert('Cron式は有効です: ' + expression);
+    calculateNextRuns(expression);
+});
+
+// ============================================================================
+// Calculate Next 5 Runs
+// ============================================================================
+function calculateNextRuns(cronExpression) {
+    // This is a simplified calculation. In production, use a proper cron parser library
+    const nextRuns = [];
+    const now = new Date();
+
+    // Parse cron expression
+    const [minute, hour, day, month, weekday] = cronExpression.split(' ');
+
+    // Generate next 5 runs (simplified logic)
+    for (let i = 0; i < 5; i++) {
+        const nextRun = new Date(now);
+        nextRun.setDate(now.getDate() + i + 1);
+
+        // Set time based on cron
+        if (hour !== '*') {
+            nextRun.setHours(parseInt(hour));
+        }
+        if (minute !== '*') {
+            nextRun.setMinutes(parseInt(minute));
+        }
+        nextRun.setSeconds(0);
+
+        nextRuns.push(nextRun);
+    }
+
+    // Display next runs
+    const listEl = document.getElementById('nextRunsList');
+    listEl.innerHTML = nextRuns.map(date => `
+        <li>
+            <i class="bi bi-circle-fill text-primary" style="font-size: 0.5rem;"></i>
+            ${formatDateTime(date)}
+        </li>
+    `).join('');
+
+    // Update schedule visualization
+    updateScheduleChart(nextRuns);
+}
+
+function formatDateTime(date) {
+    const options = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        weekday: 'short'
+    };
+    return date.toLocaleDateString('ja-JP', options);
+}
+
+// ============================================================================
+// Schedule Visualization Chart
+// ============================================================================
+function updateScheduleChart(nextRuns) {
+    const ctx = document.getElementById('scheduleChart');
+    if (!ctx) return;
+
+    // Destroy existing chart
+    if (scheduleChart) {
+        scheduleChart.destroy();
+    }
+
+    // Create new chart
+    scheduleChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: nextRuns.map((date, i) => `実行 ${i + 1}`),
+            datasets: [{
+                label: '予定時刻 (時)',
+                data: nextRuns.map(date => date.getHours()),
+                backgroundColor: 'rgba(13, 110, 253, 0.5)',
+                borderColor: 'rgba(13, 110, 253, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: '実行時刻分布'
                 }
-                form.classList.add('was-validated')
-            }, false)
-        })
-    })()
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 24,
+                    ticks: {
+                        stepSize: 6,
+                        callback: function(value) {
+                            return value + '時';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Initialize with default cron
+document.addEventListener('DOMContentLoaded', function() {
+    calculateNextRuns('0 3 * * *');
+});
+
+// ============================================================================
+// Retention Slider
+// ============================================================================
+document.getElementById('retentionSlider').addEventListener('input', function() {
+    document.getElementById('retention_days').value = this.value;
+    updatePreview();
+});
+
+document.getElementById('retention_days').addEventListener('input', function() {
+    const value = Math.min(365, Math.max(1, parseInt(this.value) || 30));
+    document.getElementById('retentionSlider').value = value;
+    updatePreview();
+});
+
+// ============================================================================
+// Encryption Options
+// ============================================================================
+document.getElementById('enable_encryption').addEventListener('change', function() {
+    const options = document.getElementById('encryptionOptions');
+    options.style.display = this.checked ? 'block' : 'none';
+
+    if (this.checked) {
+        document.getElementById('encryption_password').required = true;
+    } else {
+        document.getElementById('encryption_password').required = false;
+    }
+});
+
+// Password confirmation validation
+document.getElementById('encryption_password_confirm').addEventListener('input', function() {
+    const password = document.getElementById('encryption_password').value;
+    const confirm = this.value;
+    const errorEl = document.getElementById('passwordMismatch');
+
+    if (password !== confirm && confirm !== '') {
+        errorEl.classList.add('show');
+    } else {
+        errorEl.classList.remove('show');
+    }
+});
+
+// ============================================================================
+// Path Browser
+// ============================================================================
+let currentBrowserPath = 'C:\\';
+const mockFileSystem = {
+    'C:\\': ['Windows', 'Program Files', 'Program Files (x86)', 'Users', 'Data'],
+    'C:\\Data': ['Documents', 'Projects', 'Backups', 'Archive'],
+    'C:\\Users': ['Administrator', 'Public', 'DefaultUser'],
+    '/': ['home', 'var', 'etc', 'usr', 'opt', 'data'],
+    '/data': ['backups', 'databases', 'files', 'media'],
+    '/home': ['admin', 'user', 'backup']
+};
+
+document.getElementById('browseSource').addEventListener('click', function() {
+    pathBrowserTarget = 'source';
+    openPathBrowser();
+});
+
+document.getElementById('browseDestination').addEventListener('click', function() {
+    pathBrowserTarget = 'destination';
+    openPathBrowser();
+});
+
+function openPathBrowser() {
+    const modal = new bootstrap.Modal(document.getElementById('pathBrowserModal'));
+    loadPathBrowser(currentBrowserPath);
+    modal.show();
+}
+
+function loadPathBrowser(path) {
+    currentBrowserPath = path;
+    document.getElementById('currentPath').textContent = path;
+
+    const content = document.getElementById('pathBrowserContent');
+    const items = mockFileSystem[path] || [];
+
+    if (items.length === 0) {
+        content.innerHTML = '<div class="text-muted text-center py-4">フォルダが空です</div>';
+        return;
+    }
+
+    content.innerHTML = items.map(item => `
+        <div class="path-item" data-path="${path}${path.endsWith('\\') || path.endsWith('/') ? '' : path.includes('\\') ? '\\' : '/'}${item}">
+            <i class="bi bi-folder-fill text-warning"></i> ${item}
+        </div>
+    `).join('');
+
+    // Add click handlers
+    content.querySelectorAll('.path-item').forEach(item => {
+        item.addEventListener('click', function() {
+            content.querySelectorAll('.path-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedPath = this.getAttribute('data-path');
+        });
+
+        item.addEventListener('dblclick', function() {
+            const newPath = this.getAttribute('data-path');
+            if (mockFileSystem[newPath]) {
+                loadPathBrowser(newPath);
+            }
+        });
+    });
+}
+
+document.getElementById('selectPath').addEventListener('click', function() {
+    if (selectedPath) {
+        const targetField = pathBrowserTarget === 'source' ? 'source_path' : 'destination_path';
+        document.getElementById(targetField).value = selectedPath;
+        updatePreview();
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('pathBrowserModal'));
+        modal.hide();
+    }
+});
+
+// ============================================================================
+// Form Validation
+// ============================================================================
+(function () {
+    'use strict'
+    const forms = document.querySelectorAll('.needs-validation')
+    Array.from(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+
+// Custom validation for email list
+document.getElementById('notification_emails').addEventListener('blur', function() {
+    const emails = this.value.split(',').map(e => e.trim()).filter(e => e !== '');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const allValid = emails.every(email => emailRegex.test(email));
+
+    if (emails.length > 0 && !allValid) {
+        this.setCustomValidity('無効なメールアドレスが含まれています');
+        this.classList.add('is-invalid');
+    } else {
+        this.setCustomValidity('');
+        this.classList.remove('is-invalid');
+    }
+});
+
+// ============================================================================
+// Form Submission
+// ============================================================================
+document.getElementById('jobCreateForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    if (!this.checkValidity()) {
+        e.stopPropagation();
+        this.classList.add('was-validated');
+        return;
+    }
+
+    // Check password match if encryption is enabled
+    const encryptionEnabled = document.getElementById('enable_encryption').checked;
+    if (encryptionEnabled) {
+        const password = document.getElementById('encryption_password').value;
+        const confirm = document.getElementById('encryption_password_confirm').value;
+
+        if (password !== confirm) {
+            alert('暗号化パスワードが一致しません');
+            return;
+        }
+    }
+
+    // Show confirmation
+    if (confirm('バックアップジョブを作成しますか?')) {
+        this.submit();
+    }
+});
 </script>
 {% endblock %}

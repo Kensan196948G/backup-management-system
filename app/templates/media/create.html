@@ -22,6 +22,111 @@
         align-items: center;
         justify-content: center;
         background: white;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+    .qr-actions {
+        display: none;
+        gap: 8px;
+    }
+    .qr-actions.show {
+        display: flex;
+    }
+    .capacity-bar {
+        height: 30px;
+        background: linear-gradient(90deg, #28a745 0%, #ffc107 70%, #dc3545 100%);
+        border-radius: 5px;
+        position: relative;
+        overflow: hidden;
+    }
+    .capacity-indicator {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.2);
+        border-right: 3px solid #fff;
+        transition: width 0.3s ease;
+    }
+    .capacity-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+    .location-map {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        background: #f8f9fa;
+        margin-top: 10px;
+    }
+    .rack-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-top: 10px;
+    }
+    .rack-slot {
+        padding: 8px;
+        border: 2px solid #dee2e6;
+        border-radius: 4px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: white;
+    }
+    .rack-slot:hover {
+        border-color: #0d6efd;
+        background: #e7f1ff;
+    }
+    .rack-slot.selected {
+        border-color: #0d6efd;
+        background: #0d6efd;
+        color: white;
+    }
+    .rack-slot.occupied {
+        background: #f8d7da;
+        border-color: #dc3545;
+        cursor: not-allowed;
+    }
+    .type-specific-fields {
+        display: none;
+        animation: fadeIn 0.3s;
+    }
+    .type-specific-fields.show {
+        display: block;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .media-preview-card {
+        border: 2px solid #0d6efd;
+        border-radius: 8px;
+        padding: 15px;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .preview-qr {
+        width: 80px;
+        height: 80px;
+        border: 1px solid #dee2e6;
+    }
+    .unit-converter {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    .unit-btn {
+        min-width: 50px;
+    }
+    .wizard-step {
+        display: none;
+    }
+    .wizard-step.active {
+        display: block;
     }
 </style>
 {% endblock %}
@@ -86,10 +191,35 @@
                                 <div class="invalid-feedback">メディアタイプを選択してください</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="capacity_gb" class="form-label required-field">容量 (GB)</label>
-                                <input type="number" class="form-control" id="capacity_gb" name="capacity_gb"
-                                       min="1" step="1" required placeholder="例: 1000">
+                                <label for="capacity_gb" class="form-label required-field">容量</label>
+                                <div class="unit-converter mb-2">
+                                    <input type="number" class="form-control" id="capacity_value"
+                                           min="1" step="1" required placeholder="例: 1000">
+                                    <select class="form-select unit-btn" id="capacity_unit">
+                                        <option value="gb" selected>GB</option>
+                                        <option value="tb">TB</option>
+                                    </select>
+                                </div>
+                                <input type="hidden" id="capacity_gb" name="capacity_gb">
                                 <div class="invalid-feedback">容量を入力してください</div>
+
+                                <!-- Capacity slider -->
+                                <input type="range" class="form-range" id="capacity_slider"
+                                       min="0" max="20000" step="100" value="1000">
+
+                                <!-- Visual capacity bar -->
+                                <div class="capacity-bar mt-2">
+                                    <div class="capacity-indicator" id="capacity_indicator" style="width: 5%;">
+                                    </div>
+                                </div>
+                                <div class="capacity-labels">
+                                    <span>0 GB</span>
+                                    <span>10 TB</span>
+                                    <span>20 TB</span>
+                                </div>
+                                <small class="form-text text-muted d-block mt-1">
+                                    スライダーまたは入力欄で容量を設定
+                                </small>
                             </div>
                         </div>
 
@@ -105,18 +235,54 @@
                                 </select>
                                 <div class="invalid-feedback">ステータスを選択してください</div>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-12 mb-3">
                                 <label for="location" class="form-label required-field">保管場所</label>
+
+                                <!-- Interactive location picker -->
+                                <div class="row g-2 mb-2">
+                                    <div class="col-md-4">
+                                        <select class="form-select" id="building_select">
+                                            <option value="">建物を選択</option>
+                                            <option value="本社ビル">本社ビル</option>
+                                            <option value="データセンター">データセンター</option>
+                                            <option value="倉庫A">倉庫A</option>
+                                            <option value="倉庫B">倉庫B</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-select" id="floor_select" disabled>
+                                            <option value="">フロアを選択</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-select" id="rack_select" disabled>
+                                            <option value="">ラックを選択</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <input type="text" class="form-control" id="location" name="location" required
-                                       placeholder="例: 倉庫A-1" list="location-list">
+                                       placeholder="または直接入力: 例: 倉庫A-1" list="location-list">
                                 <datalist id="location-list">
-                                    <option value="倉庫A-1">
-                                    <option value="倉庫A-2">
-                                    <option value="倉庫B-1">
+                                    <option value="本社ビル-1F-R1">
+                                    <option value="データセンター-B1F-R1">
+                                    <option value="倉庫A-1F-R1">
                                     <option value="サーバールーム">
                                     <option value="オフィス金庫">
                                 </datalist>
                                 <div class="invalid-feedback">保管場所を入力してください</div>
+
+                                <!-- Visual layout map -->
+                                <div class="location-map" id="location_map" style="display: none;">
+                                    <h6 class="text-muted mb-2">ラック配置図</h6>
+                                    <div class="rack-grid" id="rack_grid">
+                                        <!-- Dynamically populated -->
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">
+                                        <i class="bi bi-info-circle"></i>
+                                        緑: 空き / 赤: 使用中
+                                    </small>
+                                </div>
                             </div>
                         </div>
 
@@ -162,6 +328,171 @@
                             <div class="col-md-6 mb-3">
                                 <label for="firmware_version" class="form-label">ファームウェアバージョン</label>
                                 <input type="text" class="form-control" id="firmware_version" name="firmware_version">
+                            </div>
+                        </div>
+
+                        <!-- Type-specific fields: Tape -->
+                        <div id="tape_fields" class="type-specific-fields">
+                            <hr class="my-3">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-cassette"></i> テープ専用設定
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="tape_type" class="form-label">テープタイプ</label>
+                                    <select class="form-select" id="tape_type" name="tape_type">
+                                        <option value="">選択してください</option>
+                                        <option value="linear">リニアテープ</option>
+                                        <option value="lto">LTO (Linear Tape-Open)</option>
+                                        <option value="dat">DAT (Digital Audio Tape)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="lto_generation" class="form-label">LTO世代</label>
+                                    <select class="form-select" id="lto_generation" name="lto_generation">
+                                        <option value="">選択してください</option>
+                                        <option value="lto-5">LTO-5 (1.5TB/3.0TB)</option>
+                                        <option value="lto-6">LTO-6 (2.5TB/6.25TB)</option>
+                                        <option value="lto-7">LTO-7 (6TB/15TB)</option>
+                                        <option value="lto-8">LTO-8 (12TB/30TB)</option>
+                                        <option value="lto-9">LTO-9 (18TB/45TB)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="write_count" class="form-label">書き込み回数</label>
+                                    <input type="number" class="form-control" id="write_count" name="write_count"
+                                           min="0" placeholder="0">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="tape_compression" class="form-label">圧縮</label>
+                                    <select class="form-select" id="tape_compression" name="tape_compression">
+                                        <option value="none">なし</option>
+                                        <option value="hardware" selected>ハードウェア圧縮</option>
+                                        <option value="software">ソフトウェア圧縮</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Type-specific fields: HDD -->
+                        <div id="disk_fields" class="type-specific-fields">
+                            <hr class="my-3">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-device-hdd"></i> ディスク専用設定
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="interface_type" class="form-label">インターフェース</label>
+                                    <select class="form-select" id="interface_type" name="interface_type">
+                                        <option value="">選択してください</option>
+                                        <option value="sata">SATA</option>
+                                        <option value="sas">SAS</option>
+                                        <option value="nvme">NVMe</option>
+                                        <option value="usb">USB</option>
+                                        <option value="thunderbolt">Thunderbolt</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="rpm" class="form-label">回転数 (RPM)</label>
+                                    <select class="form-select" id="rpm" name="rpm">
+                                        <option value="">選択してください</option>
+                                        <option value="ssd">SSD (該当なし)</option>
+                                        <option value="5400">5,400 RPM</option>
+                                        <option value="7200">7,200 RPM</option>
+                                        <option value="10000">10,000 RPM</option>
+                                        <option value="15000">15,000 RPM</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="form_factor" class="form-label">フォームファクター</label>
+                                    <select class="form-select" id="form_factor" name="form_factor">
+                                        <option value="">選択してください</option>
+                                        <option value="2.5">2.5インチ</option>
+                                        <option value="3.5">3.5インチ</option>
+                                        <option value="m.2">M.2</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="raid_support" class="form-label">RAID対応</label>
+                                    <select class="form-select" id="raid_support" name="raid_support">
+                                        <option value="no">なし</option>
+                                        <option value="yes">あり</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Type-specific fields: Optical -->
+                        <div id="optical_fields" class="type-specific-fields">
+                            <hr class="my-3">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-disc"></i> 光学メディア専用設定
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="optical_type" class="form-label">メディアタイプ</label>
+                                    <select class="form-select" id="optical_type" name="optical_type">
+                                        <option value="">選択してください</option>
+                                        <option value="dvd-r">DVD-R</option>
+                                        <option value="dvd-rw">DVD-RW</option>
+                                        <option value="bd-r">BD-R</option>
+                                        <option value="bd-re">BD-RE</option>
+                                        <option value="bd-xl">BD-XL</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="write_speed" class="form-label">書き込み速度</label>
+                                    <input type="text" class="form-control" id="write_speed" name="write_speed"
+                                           placeholder="例: 16x">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Type-specific fields: Cloud -->
+                        <div id="cloud_fields" class="type-specific-fields">
+                            <hr class="my-3">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-cloud"></i> クラウド専用設定
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="cloud_provider" class="form-label">プロバイダー</label>
+                                    <select class="form-select" id="cloud_provider" name="cloud_provider">
+                                        <option value="">選択してください</option>
+                                        <option value="aws-s3">AWS S3</option>
+                                        <option value="azure-blob">Azure Blob Storage</option>
+                                        <option value="gcp-storage">Google Cloud Storage</option>
+                                        <option value="wasabi">Wasabi</option>
+                                        <option value="backblaze">Backblaze B2</option>
+                                        <option value="other">その他</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="storage_class" class="form-label">ストレージクラス</label>
+                                    <select class="form-select" id="storage_class" name="storage_class">
+                                        <option value="">選択してください</option>
+                                        <option value="standard">Standard</option>
+                                        <option value="infrequent">Infrequent Access</option>
+                                        <option value="glacier">Glacier/Archive</option>
+                                        <option value="deep-archive">Deep Archive</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="region" class="form-label">リージョン</label>
+                                    <input type="text" class="form-control" id="region" name="region"
+                                           placeholder="例: ap-northeast-1">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="bucket_name" class="form-label">バケット/コンテナ名</label>
+                                    <input type="text" class="form-control" id="bucket_name" name="bucket_name"
+                                           placeholder="例: backup-storage-prod">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -227,6 +558,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
+                    <!-- QR Code Section -->
                     <div class="mb-3">
                         <h6 class="text-muted">QRコードプレビュー</h6>
                         <div class="qr-preview mx-auto" id="qr-preview">
@@ -234,8 +566,43 @@
                                 <i class="bi bi-qr-code fs-1"></i>
                             </span>
                         </div>
+                        <div class="qr-actions justify-content-center" id="qr-actions">
+                            <button type="button" class="btn btn-sm btn-primary" id="download-qr">
+                                <i class="bi bi-download"></i> ダウンロード
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary" id="print-qr">
+                                <i class="bi bi-printer"></i> 印刷
+                            </button>
+                        </div>
                     </div>
 
+                    <!-- Media Label Preview Card -->
+                    <div class="mb-3">
+                        <h6 class="text-muted">メディアラベルプレビュー</h6>
+                        <div class="media-preview-card">
+                            <div class="row align-items-center">
+                                <div class="col-4">
+                                    <canvas id="preview-qr-small" class="preview-qr"></canvas>
+                                </div>
+                                <div class="col-8">
+                                    <div style="font-size: 0.85rem;">
+                                        <div class="fw-bold text-primary" id="label-preview-id">---</div>
+                                        <div class="text-truncate" id="label-preview-name">メディア名</div>
+                                        <div class="text-muted small" id="label-preview-type">タイプ</div>
+                                        <div class="text-muted small" id="label-preview-capacity">容量</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2 pt-2 border-top">
+                                <small class="text-muted d-flex justify-content-between">
+                                    <span id="label-preview-location">保管場所</span>
+                                    <span id="label-preview-date">---</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Summary -->
                     <div class="mb-3">
                         <h6 class="text-muted">入力サマリー</h6>
                         <div class="card bg-light">
@@ -270,7 +637,8 @@
                         <ul class="mb-0 mt-2">
                             <li>必須項目は * マークで表示されています</li>
                             <li>メディアIDは一意である必要があります</li>
-                            <li>QRコードは登録後に自動生成されます</li>
+                            <li>QRコードはメディアID入力で自動生成されます</li>
+                            <li>メディアタイプに応じた専用フィールドが表示されます</li>
                         </ul>
                     </div>
                 </div>
@@ -281,41 +649,398 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- QRCode.js Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
 <script>
-// Form validation
+// Enhanced Form Functionality
 (function() {
     'use strict';
 
     const form = document.getElementById('media-form');
+    let qrCode = null;
+    let qrCodeSmall = null;
 
-    // Live preview updates
-    document.getElementById('media_id').addEventListener('input', function(e) {
-        document.getElementById('preview-media-id').textContent = e.target.value || '未入力';
+    // ========================================
+    // 1. QR CODE GENERATOR
+    // ========================================
+    function generateQRCode(text) {
+        const qrPreview = document.getElementById('qr-preview');
+        const qrActions = document.getElementById('qr-actions');
+
+        if (!text) {
+            qrPreview.innerHTML = '<span class="text-muted"><i class="bi bi-qr-code fs-1"></i></span>';
+            qrActions.classList.remove('show');
+            return;
+        }
+
+        // Clear existing QR code
+        qrPreview.innerHTML = '';
+
+        // Generate new QR code
+        qrCode = new QRCode(qrPreview, {
+            text: text,
+            width: 180,
+            height: 180,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        // Generate small QR for label preview
+        const canvas = document.getElementById('preview-qr-small');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 80;
+        canvas.height = 80;
+
+        // Wait for QR code to generate, then copy to small canvas
+        setTimeout(() => {
+            const img = qrPreview.querySelector('img');
+            if (img) {
+                ctx.drawImage(img, 0, 0, 80, 80);
+            }
+        }, 100);
+
+        qrActions.classList.add('show');
+    }
+
+    // QR Code download
+    document.getElementById('download-qr').addEventListener('click', function() {
+        const qrPreview = document.getElementById('qr-preview');
+        const canvas = qrPreview.querySelector('canvas');
+        const img = qrPreview.querySelector('img');
+
+        const downloadCanvas = canvas || img;
+        if (downloadCanvas) {
+            const link = document.createElement('a');
+            if (canvas) {
+                link.download = 'qrcode-' + document.getElementById('media_id').value + '.png';
+                link.href = canvas.toDataURL();
+            } else {
+                link.download = 'qrcode-' + document.getElementById('media_id').value + '.png';
+                link.href = img.src;
+            }
+            link.click();
+        }
     });
 
-    document.getElementById('label_name').addEventListener('input', function(e) {
-        document.getElementById('preview-label').textContent = e.target.value || '未入力';
+    // QR Code print
+    document.getElementById('print-qr').addEventListener('click', function() {
+        const qrPreview = document.getElementById('qr-preview');
+        const img = qrPreview.querySelector('img');
+
+        if (img) {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write('<html><head><title>QR Code Print</title></head><body>');
+            printWindow.document.write('<div style="text-align:center;">');
+            printWindow.document.write('<h2>' + document.getElementById('media_id').value + '</h2>');
+            printWindow.document.write('<img src="' + img.src + '" style="width:300px;height:300px;">');
+            printWindow.document.write('<p>' + document.getElementById('label_name').value + '</p>');
+            printWindow.document.write('</div></body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        }
     });
 
-    document.getElementById('media_type').addEventListener('change', function(e) {
+    // ========================================
+    // 2. CAPACITY CALCULATOR
+    // ========================================
+    function updateCapacity() {
+        const capacityValue = parseFloat(document.getElementById('capacity_value').value) || 0;
+        const unit = document.getElementById('capacity_unit').value;
+
+        // Convert to GB
+        const capacityGB = unit === 'tb' ? capacityValue * 1024 : capacityValue;
+        document.getElementById('capacity_gb').value = capacityGB;
+
+        // Update slider
+        document.getElementById('capacity_slider').value = capacityGB;
+
+        // Update visual bar (max 20TB = 20480GB)
+        const percentage = Math.min((capacityGB / 20480) * 100, 100);
+        document.getElementById('capacity_indicator').style.width = percentage + '%';
+
+        // Update preview
+        const displayValue = unit === 'tb' ? capacityValue + ' TB' : capacityValue + ' GB';
+        document.getElementById('preview-capacity').textContent = displayValue;
+        document.getElementById('label-preview-capacity').textContent = displayValue;
+    }
+
+    document.getElementById('capacity_value').addEventListener('input', updateCapacity);
+    document.getElementById('capacity_unit').addEventListener('change', function() {
+        const currentValue = parseFloat(document.getElementById('capacity_value').value) || 0;
+        const currentUnit = this.value;
+        const previousUnit = this.value === 'gb' ? 'tb' : 'gb';
+
+        // Convert value when switching units
+        if (currentValue > 0) {
+            if (currentUnit === 'tb' && previousUnit === 'gb') {
+                document.getElementById('capacity_value').value = (currentValue / 1024).toFixed(2);
+            } else if (currentUnit === 'gb' && previousUnit === 'tb') {
+                document.getElementById('capacity_value').value = Math.round(currentValue * 1024);
+            }
+        }
+        updateCapacity();
+    });
+
+    document.getElementById('capacity_slider').addEventListener('input', function() {
+        const capacityGB = parseInt(this.value);
+        const unit = document.getElementById('capacity_unit').value;
+
+        if (unit === 'tb') {
+            document.getElementById('capacity_value').value = (capacityGB / 1024).toFixed(2);
+        } else {
+            document.getElementById('capacity_value').value = capacityGB;
+        }
+        updateCapacity();
+    });
+
+    // ========================================
+    // 3. LOCATION PICKER
+    // ========================================
+    const locationData = {
+        '本社ビル': {
+            floors: ['1F', '2F', '3F', 'B1F'],
+            racks: {
+                '1F': ['R1', 'R2', 'R3', 'R4'],
+                '2F': ['R1', 'R2'],
+                '3F': ['R1'],
+                'B1F': ['R1', 'R2', 'R3', 'R4', 'R5', 'R6']
+            }
+        },
+        'データセンター': {
+            floors: ['A棟', 'B棟', 'C棟'],
+            racks: {
+                'A棟': ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8'],
+                'B棟': ['R1', 'R2', 'R3', 'R4'],
+                'C棟': ['R1', 'R2']
+            }
+        },
+        '倉庫A': {
+            floors: ['1F', '2F'],
+            racks: {
+                '1F': ['R1', 'R2', 'R3', 'R4', 'R5', 'R6'],
+                '2F': ['R1', 'R2', 'R3', 'R4']
+            }
+        },
+        '倉庫B': {
+            floors: ['1F'],
+            racks: {
+                '1F': ['R1', 'R2', 'R3', 'R4']
+            }
+        }
+    };
+
+    // Building selection
+    document.getElementById('building_select').addEventListener('change', function() {
+        const building = this.value;
+        const floorSelect = document.getElementById('floor_select');
+        const rackSelect = document.getElementById('rack_select');
+
+        floorSelect.innerHTML = '<option value="">フロアを選択</option>';
+        rackSelect.innerHTML = '<option value="">ラックを選択</option>';
+
+        if (building && locationData[building]) {
+            floorSelect.disabled = false;
+            locationData[building].floors.forEach(floor => {
+                const option = document.createElement('option');
+                option.value = floor;
+                option.textContent = floor;
+                floorSelect.appendChild(option);
+            });
+        } else {
+            floorSelect.disabled = true;
+            rackSelect.disabled = true;
+            document.getElementById('location_map').style.display = 'none';
+        }
+    });
+
+    // Floor selection
+    document.getElementById('floor_select').addEventListener('change', function() {
+        const building = document.getElementById('building_select').value;
+        const floor = this.value;
+        const rackSelect = document.getElementById('rack_select');
+
+        rackSelect.innerHTML = '<option value="">ラックを選択</option>';
+
+        if (building && floor && locationData[building]) {
+            rackSelect.disabled = false;
+            const racks = locationData[building].racks[floor] || [];
+            racks.forEach(rack => {
+                const option = document.createElement('option');
+                option.value = rack;
+                option.textContent = rack;
+                rackSelect.appendChild(option);
+            });
+
+            // Show visual map
+            showRackMap(building, floor);
+        } else {
+            rackSelect.disabled = true;
+            document.getElementById('location_map').style.display = 'none';
+        }
+    });
+
+    // Rack selection
+    document.getElementById('rack_select').addEventListener('change', function() {
+        const building = document.getElementById('building_select').value;
+        const floor = document.getElementById('floor_select').value;
+        const rack = this.value;
+
+        if (building && floor && rack) {
+            const location = building + '-' + floor + '-' + rack;
+            document.getElementById('location').value = location;
+            document.getElementById('preview-location').textContent = location;
+            document.getElementById('label-preview-location').textContent = location;
+
+            // Highlight selected rack in map
+            updateRackMapSelection(rack);
+        }
+    });
+
+    function showRackMap(building, floor) {
+        const locationMap = document.getElementById('location_map');
+        const rackGrid = document.getElementById('rack_grid');
+        const racks = locationData[building].racks[floor] || [];
+
+        rackGrid.innerHTML = '';
+
+        // Simulate occupied racks (you can replace with actual data)
+        const occupiedRacks = ['R2', 'R4'];
+
+        racks.forEach(rack => {
+            const slot = document.createElement('div');
+            slot.className = 'rack-slot';
+            slot.textContent = rack;
+            slot.dataset.rack = rack;
+
+            if (occupiedRacks.includes(rack)) {
+                slot.classList.add('occupied');
+                slot.title = '使用中';
+            } else {
+                slot.addEventListener('click', function() {
+                    document.getElementById('rack_select').value = rack;
+                    document.getElementById('rack_select').dispatchEvent(new Event('change'));
+                });
+            }
+
+            rackGrid.appendChild(slot);
+        });
+
+        locationMap.style.display = 'block';
+    }
+
+    function updateRackMapSelection(selectedRack) {
+        const slots = document.querySelectorAll('.rack-slot');
+        slots.forEach(slot => {
+            if (slot.dataset.rack === selectedRack) {
+                slot.classList.add('selected');
+            } else {
+                slot.classList.remove('selected');
+            }
+        });
+    }
+
+    // ========================================
+    // 4. MEDIA TYPE WIZARD
+    // ========================================
+    document.getElementById('media_type').addEventListener('change', function() {
+        const mediaType = this.value;
+
+        // Hide all type-specific fields
+        document.querySelectorAll('.type-specific-fields').forEach(el => {
+            el.classList.remove('show');
+        });
+
+        // Show relevant fields
+        const fieldMap = {
+            'tape': 'tape_fields',
+            'disk': 'disk_fields',
+            'optical': 'optical_fields',
+            'cloud': 'cloud_fields'
+        };
+
+        if (fieldMap[mediaType]) {
+            document.getElementById(fieldMap[mediaType]).classList.add('show');
+        }
+
+        // Update preview
         const typeMap = {
             'tape': 'テープ (LTO)',
             'disk': 'ディスク (HDD/SSD)',
             'optical': '光学メディア',
             'cloud': 'クラウドストレージ'
         };
-        document.getElementById('preview-type').textContent = typeMap[e.target.value] || '未選択';
+        document.getElementById('preview-type').textContent = typeMap[mediaType] || '未選択';
+        document.getElementById('label-preview-type').textContent = typeMap[mediaType] || 'タイプ';
+
+        // Auto-generate media ID suggestion
+        const mediaIdInput = document.getElementById('media_id');
+        if (!mediaIdInput.value) {
+            const typePrefix = {
+                'tape': 'LTO',
+                'disk': 'HDD',
+                'optical': 'DVD',
+                'cloud': 'CLD'
+            };
+            const prefix = typePrefix[mediaType];
+            if (prefix) {
+                const timestamp = new Date().getTime().toString().slice(-6);
+                mediaIdInput.value = prefix + '-' + timestamp;
+                mediaIdInput.dispatchEvent(new Event('input'));
+            }
+        }
+
+        // Capacity suggestions
+        const capacityInput = document.getElementById('capacity_value');
+        const suggestions = {
+            'tape': 12000,
+            'disk': 2000,
+            'optical': 50,
+            'cloud': 1000
+        };
+
+        if (suggestions[mediaType] && !capacityInput.value) {
+            capacityInput.value = suggestions[mediaType];
+            updateCapacity();
+        }
     });
 
-    document.getElementById('capacity_gb').addEventListener('input', function(e) {
-        document.getElementById('preview-capacity').textContent = e.target.value ? e.target.value + ' GB' : '未入力';
+    // ========================================
+    // 5. LIVE PREVIEW UPDATES
+    // ========================================
+    document.getElementById('media_id').addEventListener('input', function(e) {
+        const value = e.target.value;
+        document.getElementById('preview-media-id').textContent = value || '未入力';
+        document.getElementById('label-preview-id').textContent = value || '---';
+
+        // Generate QR code
+        if (value) {
+            generateQRCode(value);
+        } else {
+            generateQRCode('');
+        }
+    });
+
+    document.getElementById('label_name').addEventListener('input', function(e) {
+        const value = e.target.value;
+        document.getElementById('preview-label').textContent = value || '未入力';
+        document.getElementById('label-preview-name').textContent = value || 'メディア名';
     });
 
     document.getElementById('location').addEventListener('input', function(e) {
-        document.getElementById('preview-location').textContent = e.target.value || '未入力';
+        const value = e.target.value;
+        document.getElementById('preview-location').textContent = value || '未入力';
+        document.getElementById('label-preview-location').textContent = value || '保管場所';
     });
 
-    // Form submission
+    // Update date on load
+    const today = new Date().toLocaleDateString('ja-JP');
+    document.getElementById('label-preview-date').textContent = today;
+
+    // ========================================
+    // 6. FORM VALIDATION & SUBMISSION
+    // ========================================
     form.addEventListener('submit', function(event) {
         if (!form.checkValidity()) {
             event.preventDefault();
@@ -330,41 +1055,6 @@
         form.classList.add('was-validated');
     }, false);
 
-    // Auto-generate media ID suggestion
-    document.getElementById('media_type').addEventListener('change', function(e) {
-        const mediaIdInput = document.getElementById('media_id');
-        if (!mediaIdInput.value) {
-            const typePrefix = {
-                'tape': 'LTO',
-                'disk': 'HDD',
-                'optical': 'DVD',
-                'cloud': 'CLD'
-            };
-            const prefix = typePrefix[e.target.value];
-            if (prefix) {
-                const timestamp = new Date().getTime().toString().slice(-6);
-                mediaIdInput.value = prefix + '-' + timestamp;
-                document.getElementById('preview-media-id').textContent = mediaIdInput.value;
-            }
-        }
-    });
-
-    // Capacity suggestions based on media type
-    document.getElementById('media_type').addEventListener('change', function(e) {
-        const capacityInput = document.getElementById('capacity_gb');
-        const suggestions = {
-            'tape': [1000, 2000, 5000, 12000],
-            'disk': [500, 1000, 2000, 4000],
-            'optical': [25, 50, 100, 128],
-            'cloud': [100, 500, 1000, 5000]
-        };
-
-        const capacities = suggestions[e.target.value];
-        if (capacities && !capacityInput.value) {
-            // You could show suggestions in a dropdown
-            console.log('Suggested capacities:', capacities);
-        }
-    });
 })();
 </script>
 {% endblock %}
