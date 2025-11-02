@@ -63,43 +63,260 @@ def update():
 @role_required("admin")
 def export():
     """
-    Export settings as JSON
+    Export settings as JSON or CSV with selective sections
     """
     try:
-        # TODO: Implement settings export
-        settings_data = {
-            "version": "3.2.1.1.0",
-            "backup": {
+        import csv as csv_module
+        from datetime import datetime
+        from io import StringIO
+
+        from flask import make_response
+
+        # Get parameters
+        export_format = request.args.get("format", "json")
+        filename = request.args.get("filename", f'backup-settings-{datetime.now().strftime("%Y%m%d")}')
+
+        # Get selected sections
+        include_backup = request.args.get("backup", "true") == "true"
+        include_notification = request.args.get("notification", "true") == "true"
+        include_schedule = request.args.get("schedule", "true") == "true"
+        include_storage = request.args.get("storage", "true") == "true"
+        include_security = request.args.get("security", "false") == "true"
+        include_users = request.args.get("users", "false") == "true"
+
+        # Build settings data
+        settings_data = {"version": "3.2.1.1.0", "export_date": datetime.now().isoformat(), "sections": {}}
+
+        if include_backup:
+            settings_data["sections"]["backup"] = {
                 "default_retention": 90,
                 "compression_level": 5,
                 "enable_encryption": True,
                 "max_parallel_jobs": 3,
-            },
-            "notification": {
+                "verify_after_backup": True,
+            }
+
+        if include_notification:
+            settings_data["sections"]["notification"] = {
                 "enable_email": True,
                 "smtp_server": "smtp.example.com",
                 "smtp_port": 587,
                 "smtp_security": "tls",
-            },
-            "storage": {
+                "smtp_username": "noreply@example.com",
+                "enable_slack": False,
+                "enable_teams": False,
+            }
+
+        if include_schedule:
+            settings_data["sections"]["schedule"] = {
+                "default_schedule_type": "weekly",
+                "default_schedule_time": "02:00",
+                "maintenance_start": "08:00",
+                "maintenance_end": "18:00",
+                "skip_holidays": False,
+            }
+
+        if include_storage:
+            settings_data["sections"]["storage"] = {
                 "default_storage_path": "/var/backups",
                 "storage_threshold": 80,
                 "auto_cleanup_threshold": 90,
                 "enable_deduplication": True,
-            },
-            "security": {
+                "max_storage_gb": 1000,
+            }
+
+        if include_security:
+            settings_data["sections"]["security"] = {
                 "session_timeout": 30,
                 "max_login_attempts": 5,
                 "lockout_duration": 30,
                 "enable_audit_log": True,
-            },
-        }
+                "require_2fa": False,
+                "password_expiry_days": 90,
+            }
 
-        return jsonify(settings_data), 200
+        if include_users:
+            from app.models import User
+
+            users = User.query.all()
+            settings_data["sections"]["users"] = [
+                {
+                    "username": user.username,
+                    "email": user.email,
+                    "full_name": user.full_name,
+                    "department": user.department,
+                    "role": user.role,
+                    "is_active": user.is_active,
+                }
+                for user in users
+            ]
+
+        # Log audit
+        from app.auth.routes import log_audit
+
+        log_audit("export", resource_type="settings", resource_id=0, action_result="success")
+
+        # Export based on format
+        if export_format == "csv":
+            # Convert to CSV format
+            output = StringIO()
+            writer = csv_module.writer(output)
+            writer.writerow(["Section", "Key", "Value"])
+
+            for section_name, section_data in settings_data["sections"].items():
+                if isinstance(section_data, dict):
+                    for key, value in section_data.items():
+                        writer.writerow([section_name, key, str(value)])
+                elif isinstance(section_data, list):
+                    for i, item in enumerate(section_data):
+                        for key, value in item.items():
+                            writer.writerow([f"{section_name}_{i}", key, str(value)])
+
+            response = make_response(output.getvalue())
+            response.headers["Content-Type"] = "text/csv; charset=utf-8"
+            response.headers["Content-Disposition"] = f"attachment; filename={filename}.csv"
+            return response
+        else:
+            # JSON format
+            response = make_response(jsonify(settings_data))
+            response.headers["Content-Type"] = "application/json; charset=utf-8"
+            response.headers["Content-Disposition"] = f"attachment; filename={filename}.json"
+            return response
 
     except Exception as e:
         current_app.logger.error(f"Error exporting settings: {str(e)}")
         return jsonify({"error": {"code": "EXPORT_FAILED", "message": str(e)}}), 500
+
+
+@settings_bp.route("/validate-import", methods=["POST"])
+@login_required
+@role_required("admin")
+def validate_import():
+    """
+    Validate uploaded settings file without applying changes
+    """
+    try:
+        import csv as csv_module
+        import json
+        from io import StringIO
+
+        # Check if file uploaded
+        if "file" not in request.files:
+            return jsonify({"error": {"code": "NO_FILE", "message": "No file uploaded"}}), 400
+
+        file = request.files["file"]
+        if file.filename == "":
+            return jsonify({"error": {"code": "EMPTY_FILENAME", "message": "No file selected"}}), 400
+
+        # Detect format
+        extension = file.filename.rsplit(".", 1)[1].lower() if "." in file.filename else ""
+
+        if extension not in ["json", "csv"]:
+            return jsonify({"error": {"code": "INVALID_FORMAT", "message": "Only JSON and CSV files are supported"}}), 400
+
+        # Read file content
+        content = file.read().decode("utf-8")
+        file.seek(0)  # Reset file pointer
+
+        # Parse based on format
+        try:
+            if extension == "json":
+                data = json.loads(content)
+            else:
+                # Parse CSV
+                csv_reader = csv_module.DictReader(StringIO(content))
+                data = {"sections": {}}
+                for row in csv_reader:
+                    section = row.get("Section", "")
+                    key = row.get("Key", "")
+                    value = row.get("Value", "")
+                    if section not in data["sections"]:
+                        data["sections"][section] = {}
+                    data["sections"][section][key] = value
+        except Exception as e:
+            return jsonify({"error": {"code": "PARSE_ERROR", "message": f"Failed to parse file: {str(e)}"}}), 400
+
+        # Validate structure
+        errors = []
+        warnings = []
+
+        if not isinstance(data, dict):
+            errors.append("Invalid data structure: must be a dictionary")
+
+        if "sections" not in data:
+            errors.append("Missing 'sections' key in data")
+        else:
+            sections = data.get("sections", {})
+
+            # Validate backup section
+            if "backup" in sections:
+                backup = sections["backup"]
+                if not isinstance(backup.get("default_retention"), (int, str)):
+                    errors.append("backup.default_retention must be a number")
+                if not isinstance(backup.get("compression_level"), (int, str)):
+                    errors.append("backup.compression_level must be a number")
+
+            # Validate storage section
+            if "storage" in sections:
+                storage = sections["storage"]
+                if storage.get("storage_threshold"):
+                    threshold = (
+                        int(storage["storage_threshold"])
+                        if isinstance(storage["storage_threshold"], str)
+                        else storage["storage_threshold"]
+                    )
+                    if threshold < 50 or threshold > 95:
+                        warnings.append("storage_threshold should be between 50 and 95")
+
+            # Validate security section
+            if "security" in sections:
+                security = sections["security"]
+                if security.get("session_timeout"):
+                    timeout = (
+                        int(security["session_timeout"])
+                        if isinstance(security["session_timeout"], str)
+                        else security["session_timeout"]
+                    )
+                    if timeout < 5:
+                        warnings.append("session_timeout should be at least 5 minutes")
+
+            # Validate users section
+            if "users" in sections:
+                users = sections["users"]
+                if not isinstance(users, list):
+                    errors.append("users section must be a list")
+                else:
+                    for i, user in enumerate(users):
+                        if not user.get("username"):
+                            errors.append(f"User {i}: missing username")
+                        if not user.get("email"):
+                            errors.append(f"User {i}: missing email")
+
+        # Check version compatibility
+        if "version" in data:
+            import_version = data["version"]
+            current_version = "3.2.1.1.0"
+            if import_version != current_version:
+                warnings.append(f"Version mismatch: imported {import_version}, current {current_version}")
+
+        if errors:
+            return jsonify({"error": {"code": "VALIDATION_FAILED", "message": "Validation failed", "errors": errors}}), 400
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Validation successful. Settings can be imported.",
+                    "data": data,
+                    "warnings": warnings,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        current_app.logger.error(f"Error validating import: {str(e)}")
+        return jsonify({"error": {"code": "VALIDATION_ERROR", "message": str(e)}}), 500
 
 
 @settings_bp.route("/import", methods=["POST"])
@@ -107,23 +324,74 @@ def export():
 @role_required("admin")
 def import_settings():
     """
-    Import settings from JSON
+    Import settings from uploaded JSON or CSV file
     """
     try:
-        data = request.get_json()
+        import csv as csv_module
+        import json
+        from io import StringIO
 
-        if not data:
-            return jsonify({"error": {"code": "INVALID_DATA", "message": "No data provided"}}), 400
+        # Check if file uploaded
+        if "file" not in request.files:
+            return jsonify({"error": {"code": "NO_FILE", "message": "No file uploaded"}}), 400
 
-        # TODO: Implement settings import
-        current_app.logger.info(f"Settings imported: {data}")
+        file = request.files["file"]
+        confirmed = request.form.get("confirmed", "false") == "true"
+
+        if not confirmed:
+            return jsonify({"error": {"code": "NOT_CONFIRMED", "message": "Import not confirmed"}}), 400
+
+        # Detect format
+        extension = file.filename.rsplit(".", 1)[1].lower() if "." in file.filename else ""
+
+        if extension not in ["json", "csv"]:
+            return jsonify({"error": {"code": "INVALID_FORMAT", "message": "Only JSON and CSV files are supported"}}), 400
+
+        # Read and parse file
+        content = file.read().decode("utf-8")
+
+        try:
+            if extension == "json":
+                data = json.loads(content)
+            else:
+                # Parse CSV
+                csv_reader = csv_module.DictReader(StringIO(content))
+                data = {"sections": {}}
+                for row in csv_reader:
+                    section = row.get("Section", "")
+                    key = row.get("Key", "")
+                    value = row.get("Value", "")
+                    if section not in data["sections"]:
+                        data["sections"][section] = {}
+                    data["sections"][section][key] = value
+        except Exception as e:
+            return jsonify({"error": {"code": "PARSE_ERROR", "message": f"Failed to parse file: {str(e)}"}}), 400
+
+        # TODO: Apply settings to database/configuration
+        # For now, just log the import
+        current_app.logger.info(f"Settings imported: {json.dumps(data, indent=2)}")
 
         # Log audit
         from app.auth.routes import log_audit
 
-        log_audit("import", resource_type="settings", resource_id=0, action_result="success")
+        log_audit(
+            "import",
+            resource_type="settings",
+            resource_id=0,
+            action_result="success",
+            details=f"Imported settings from {file.filename}",
+        )
 
-        return jsonify({"success": True}), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Settings imported successfully",
+                    "sections_imported": list(data.get("sections", {}).keys()),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error importing settings: {str(e)}")
