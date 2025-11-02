@@ -8,6 +8,7 @@ Blueprints:
 - media: Offline media management
 - verification: Verification test management
 - reports: Report viewing and generation
+- settings: System settings and configuration
 """
 from flask import Blueprint
 
@@ -17,9 +18,10 @@ jobs_bp = Blueprint("jobs", __name__, url_prefix="/jobs")
 media_bp = Blueprint("media", __name__, url_prefix="/media")
 verification_bp = Blueprint("verification", __name__, url_prefix="/verification")
 reports_bp = Blueprint("reports", __name__, url_prefix="/reports")
+settings_bp = Blueprint("settings", __name__, url_prefix="/settings")
 
 # Import routes after blueprint creation to avoid circular imports
-from app.views import dashboard, jobs, media, reports, verification
+from app.views import dashboard, jobs, media, reports, settings, verification
 
 
 def register_blueprints(app):
@@ -37,3 +39,4 @@ def register_blueprints(app):
     app.register_blueprint(media_bp)
     app.register_blueprint(verification_bp)
     app.register_blueprint(reports_bp)
+    app.register_blueprint(settings_bp)

@@ -1,0 +1,979 @@
+{% extends "base.html" %}
+{% block title %}システム設定 - バックアップ管理システム{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }
+
+    .nav-pills .nav-link {
+        color: #495057;
+        border-radius: 8px;
+        padding: 0.75rem 1.25rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .nav-pills .nav-link:hover {
+        background-color: #f8f9fa;
+        color: #0d6efd;
+    }
+
+    .nav-pills .nav-link.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .nav-pills .nav-link i {
+        width: 20px;
+        margin-right: 8px;
+    }
+
+    .settings-card {
+        border: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-radius: 10px;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+
+    .settings-card .card-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 2px solid #dee2e6;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+    }
+
+    .settings-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .setting-item {
+        padding: 1rem 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .setting-item:last-child {
+        border-bottom: none;
+    }
+
+    .setting-label {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+
+    .setting-description {
+        font-size: 0.875rem;
+        color: #718096;
+        margin-bottom: 0.75rem;
+    }
+
+    .info-box {
+        background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+        border-left: 4px solid #0ea5e9;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+    }
+
+    .warning-box {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 4px solid #f59e0b;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+    }
+
+    .danger-box {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        border-left: 4px solid #ef4444;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+    }
+
+    .system-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .info-stat {
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .info-stat:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .info-stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 0.25rem;
+    }
+
+    .info-stat-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .btn-save {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .form-check-input:checked {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+
+    .input-group-text {
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+    }
+
+    .tab-content {
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .badge-version {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="settings-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-2"><i class="bi bi-gear"></i> システム設定</h1>
+                <p class="mb-0 opacity-75">バックアップ管理システムの各種設定を管理</p>
+            </div>
+            <div>
+                <span class="badge badge-version">v3.2.1.1.0</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        <div class="col-lg-3 col-md-4 mb-4">
+            <div class="card settings-card">
+                <div class="card-body">
+                    <div class="nav flex-column nav-pills" id="settings-tabs" role="tablist">
+                        <a class="nav-link active" id="backup-tab" data-bs-toggle="pill" href="#backup" role="tab">
+                            <i class="bi bi-hdd-stack"></i> バックアップ設定
+                        </a>
+                        <a class="nav-link" id="notification-tab" data-bs-toggle="pill" href="#notification" role="tab">
+                            <i class="bi bi-bell"></i> 通知設定
+                        </a>
+                        <a class="nav-link" id="schedule-tab" data-bs-toggle="pill" href="#schedule" role="tab">
+                            <i class="bi bi-clock-history"></i> スケジュール設定
+                        </a>
+                        <a class="nav-link" id="storage-tab" data-bs-toggle="pill" href="#storage" role="tab">
+                            <i class="bi bi-database"></i> ストレージ設定
+                        </a>
+                        <a class="nav-link" id="security-tab" data-bs-toggle="pill" href="#security" role="tab">
+                            <i class="bi bi-shield-lock"></i> セキュリティ設定
+                        </a>
+                        <a class="nav-link" id="system-tab" data-bs-toggle="pill" href="#system" role="tab">
+                            <i class="bi bi-info-circle"></i> システム情報
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card settings-card">
+                <div class="card-header">
+                    <i class="bi bi-lightning"></i> クイックアクション
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary btn-sm" onclick="exportSettings()">
+                            <i class="bi bi-download"></i> 設定をエクスポート
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="importSettings()">
+                            <i class="bi bi-upload"></i> 設定をインポート
+                        </button>
+                        <button class="btn btn-outline-warning btn-sm" onclick="resetToDefaults()">
+                            <i class="bi bi-arrow-counterclockwise"></i> デフォルトに戻す
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9 col-md-8">
+            <form method="POST" action="{{ url_for('settings.update') }}" id="settings-form">
+                <div class="tab-content" id="settings-tabContent">
+                    <!-- Backup Settings -->
+                    <div class="tab-pane fade show active" id="backup" role="tabpanel">
+                        <div class="settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-hdd-stack"></i> バックアップ設定
+                            </div>
+                            <div class="card-body">
+                                <div class="info-box">
+                                    <i class="bi bi-info-circle"></i>
+                                    <strong>情報:</strong> これらの設定は新規バックアップジョブのデフォルト値として使用されます。
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label" for="default_retention">デフォルト保持期間</label>
+                                    <div class="setting-description">バックアップファイルを保持する日数</div>
+                                    <div class="input-group" style="max-width: 300px;">
+                                        <input type="number" class="form-control" id="default_retention" name="default_retention" value="90" min="1">
+                                        <span class="input-group-text">日</span>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label" for="compression_level">圧縮レベル</label>
+                                    <div class="setting-description">バックアップファイルの圧縮率（高いほど時間がかかります）</div>
+                                    <div style="max-width: 400px;">
+                                        <select class="form-select" id="compression_level" name="compression_level">
+                                            <option value="0">なし (最速)</option>
+                                            <option value="1">低</option>
+                                            <option value="5" selected>中 (推奨)</option>
+                                            <option value="9">高 (最小サイズ)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label">暗号化設定</label>
+                                    <div class="setting-description">バックアップファイルの暗号化を有効にします</div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable_encryption" name="enable_encryption" checked>
+                                        <label class="form-check-label" for="enable_encryption">
+                                            暗号化を有効にする (AES-256)
+                                        </label>
+                                    </div>
+                                    <div id="encryption-options">
+                                        <label class="form-label" for="encryption_key">暗号化キー</label>
+                                        <div class="input-group mb-2" style="max-width: 500px;">
+                                            <input type="password" class="form-control" id="encryption_key" name="encryption_key" placeholder="既存のキーは変更されません">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="generateKey()">
+                                                <i class="bi bi-key"></i> 生成
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">キーを変更すると既存のバックアップが復元できなくなる可能性があります</small>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label" for="max_parallel_jobs">最大並列実行数</label>
+                                    <div class="setting-description">同時に実行できるバックアップジョブの最大数</div>
+                                    <div class="input-group" style="max-width: 300px;">
+                                        <input type="number" class="form-control" id="max_parallel_jobs" name="max_parallel_jobs" value="3" min="1" max="10">
+                                        <span class="input-group-text">ジョブ</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notification Settings -->
+                    <div class="tab-pane fade" id="notification" role="tabpanel">
+                        <div class="settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-envelope"></i> メール通知設定
+                            </div>
+                            <div class="card-body">
+                                <div class="setting-item">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable_email" name="enable_email" checked>
+                                        <label class="form-check-label fw-bold" for="enable_email">
+                                            メール通知を有効にする
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div id="email-settings">
+                                    <div class="setting-item">
+                                        <label class="setting-label" for="smtp_server">SMTPサーバー</label>
+                                        <input type="text" class="form-control" id="smtp_server" name="smtp_server" value="smtp.example.com" placeholder="smtp.example.com">
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="setting-item">
+                                                <label class="setting-label" for="smtp_port">SMTPポート</label>
+                                                <input type="number" class="form-control" id="smtp_port" name="smtp_port" value="587">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="setting-item">
+                                                <label class="setting-label" for="smtp_security">セキュリティ</label>
+                                                <select class="form-select" id="smtp_security" name="smtp_security">
+                                                    <option value="none">なし</option>
+                                                    <option value="tls" selected>TLS</option>
+                                                    <option value="ssl">SSL</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="setting-item">
+                                        <label class="setting-label" for="smtp_username">ユーザー名</label>
+                                        <input type="text" class="form-control" id="smtp_username" name="smtp_username" value="noreply@example.com">
+                                    </div>
+
+                                    <div class="setting-item">
+                                        <label class="setting-label" for="smtp_password">パスワード</label>
+                                        <input type="password" class="form-control" id="smtp_password" name="smtp_password" placeholder="既存のパスワードは変更されません">
+                                    </div>
+
+                                    <div class="setting-item">
+                                        <label class="setting-label" for="notification_recipients">デフォルト送信先</label>
+                                        <input type="text" class="form-control" id="notification_recipients" name="notification_recipients" value="admin@example.com" placeholder="複数の場合はカンマ区切り">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-slack"></i> Slack通知設定
+                            </div>
+                            <div class="card-body">
+                                <div class="setting-item">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable_slack" name="enable_slack">
+                                        <label class="form-check-label fw-bold" for="enable_slack">
+                                            Slack通知を有効にする
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div id="slack-settings">
+                                    <div class="setting-item">
+                                        <label class="setting-label" for="slack_webhook">Webhook URL</label>
+                                        <input type="url" class="form-control" id="slack_webhook" name="slack_webhook" placeholder="https://hooks.slack.com/services/...">
+                                    </div>
+
+                                    <div class="setting-item">
+                                        <label class="setting-label" for="slack_channel">チャンネル</label>
+                                        <input type="text" class="form-control" id="slack_channel" name="slack_channel" placeholder="#backup-alerts">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-microsoft-teams"></i> Microsoft Teams通知設定
+                            </div>
+                            <div class="card-body">
+                                <div class="setting-item">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable_teams" name="enable_teams">
+                                        <label class="form-check-label fw-bold" for="enable_teams">
+                                            Teams通知を有効にする
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div id="teams-settings">
+                                    <div class="setting-item">
+                                        <label class="setting-label" for="teams_webhook">Webhook URL</label>
+                                        <input type="url" class="form-control" id="teams_webhook" name="teams_webhook" placeholder="https://outlook.office.com/webhook/...">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Schedule Settings -->
+                    <div class="tab-pane fade" id="schedule" role="tabpanel">
+                        <div class="settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-clock-history"></i> デフォルトスケジュール設定
+                            </div>
+                            <div class="card-body">
+                                <div class="info-box">
+                                    <i class="bi bi-info-circle"></i>
+                                    <strong>情報:</strong> 新規ジョブ作成時のデフォルトスケジュール設定です。
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label" for="default_schedule_type">デフォルトスケジュールタイプ</label>
+                                    <select class="form-select" id="default_schedule_type" name="default_schedule_type" style="max-width: 400px;">
+                                        <option value="daily">毎日</option>
+                                        <option value="weekly" selected>毎週</option>
+                                        <option value="monthly">毎月</option>
+                                        <option value="custom">カスタム</option>
+                                    </select>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label" for="default_schedule_time">デフォルト実行時刻</label>
+                                    <input type="time" class="form-control" id="default_schedule_time" name="default_schedule_time" value="02:00" style="max-width: 200px;">
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label">メンテナンスウィンドウ</label>
+                                    <div class="setting-description">この時間帯は新規バックアップを開始しません</div>
+                                    <div class="row" style="max-width: 500px;">
+                                        <div class="col-6">
+                                            <label class="form-label small">開始時刻</label>
+                                            <input type="time" class="form-control" id="maintenance_start" name="maintenance_start" value="08:00">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small">終了時刻</label>
+                                            <input type="time" class="form-control" id="maintenance_end" name="maintenance_end" value="18:00">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="skip_holidays" name="skip_holidays">
+                                        <label class="form-check-label" for="skip_holidays">
+                                            祝日はスキップする
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Storage Settings -->
+                    <div class="tab-pane fade" id="storage" role="tabpanel">
+                        <div class="settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-database"></i> ストレージ設定
+                            </div>
+                            <div class="card-body">
+                                <div class="warning-box">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <strong>警告:</strong> ストレージパスを変更すると、既存のバックアップにアクセスできなくなる可能性があります。
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label" for="default_storage_path">デフォルトストレージパス</label>
+                                    <div class="setting-description">バックアップファイルの保存先ディレクトリ</div>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="default_storage_path" name="default_storage_path" value="/var/backups">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="browseFolder()">
+                                            <i class="bi bi-folder"></i> 参照
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label" for="storage_threshold">ストレージ容量閾値</label>
+                                    <div class="setting-description">この使用率を超えるとアラートを発生します</div>
+                                    <div class="input-group" style="max-width: 300px;">
+                                        <input type="number" class="form-control" id="storage_threshold" name="storage_threshold" value="80" min="50" max="95">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label" for="auto_cleanup_threshold">自動クリーンアップ閾値</label>
+                                    <div class="setting-description">この使用率を超えると古いバックアップを自動削除します</div>
+                                    <div class="input-group" style="max-width: 300px;">
+                                        <input type="number" class="form-control" id="auto_cleanup_threshold" name="auto_cleanup_threshold" value="90" min="80" max="99">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enable_deduplication" name="enable_deduplication" checked>
+                                        <label class="form-check-label" for="enable_deduplication">
+                                            重複排除を有効にする
+                                        </label>
+                                    </div>
+                                    <small class="text-muted d-block mt-2">
+                                        同一ファイルのハッシュを比較してストレージ容量を節約します
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security Settings -->
+                    <div class="tab-pane fade" id="security" role="tabpanel">
+                        <div class="settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-shield-lock"></i> セキュリティ設定
+                            </div>
+                            <div class="card-body">
+                                <div class="danger-box">
+                                    <i class="bi bi-shield-exclamation"></i>
+                                    <strong>重要:</strong> セキュリティ設定を変更すると、ユーザーのアクセスに影響を与える可能性があります。
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label" for="session_timeout">セッションタイムアウト</label>
+                                    <div class="setting-description">ユーザーが自動的にログアウトされるまでの時間</div>
+                                    <div class="input-group" style="max-width: 300px;">
+                                        <input type="number" class="form-control" id="session_timeout" name="session_timeout" value="30" min="5" max="1440">
+                                        <span class="input-group-text">分</span>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label">パスワードポリシー</label>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="require_uppercase" name="require_uppercase" checked>
+                                        <label class="form-check-label" for="require_uppercase">
+                                            大文字を必須とする
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="require_lowercase" name="require_lowercase" checked>
+                                        <label class="form-check-label" for="require_lowercase">
+                                            小文字を必須とする
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="require_numbers" name="require_numbers" checked>
+                                        <label class="form-check-label" for="require_numbers">
+                                            数字を必須とする
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="require_special" name="require_special" checked>
+                                        <label class="form-check-label" for="require_special">
+                                            特殊文字を必須とする
+                                        </label>
+                                    </div>
+                                    <div class="row" style="max-width: 400px;">
+                                        <div class="col-12">
+                                            <label class="form-label small">最小文字数</label>
+                                            <input type="number" class="form-control" id="min_password_length" name="min_password_length" value="8" min="6" max="32">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label" for="max_login_attempts">最大ログイン試行回数</label>
+                                    <div class="setting-description">アカウントロックまでの失敗回数</div>
+                                    <div class="input-group" style="max-width: 300px;">
+                                        <input type="number" class="form-control" id="max_login_attempts" name="max_login_attempts" value="5" min="3" max="10">
+                                        <span class="input-group-text">回</span>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label" for="lockout_duration">ロックアウト期間</label>
+                                    <div class="setting-description">ログイン失敗後のロック時間</div>
+                                    <div class="input-group" style="max-width: 300px;">
+                                        <input type="number" class="form-control" id="lockout_duration" name="lockout_duration" value="30" min="5" max="120">
+                                        <span class="input-group-text">分</span>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enable_2fa" name="enable_2fa">
+                                        <label class="form-check-label" for="enable_2fa">
+                                            二要素認証を有効にする
+                                        </label>
+                                    </div>
+                                    <small class="text-muted d-block mt-2">
+                                        全ユーザーに二要素認証の設定を要求します
+                                    </small>
+                                </div>
+
+                                <div class="setting-item">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enable_audit_log" name="enable_audit_log" checked>
+                                        <label class="form-check-label" for="enable_audit_log">
+                                            監査ログを有効にする
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Info -->
+                    <div class="tab-pane fade" id="system" role="tabpanel">
+                        <div class="settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-info-circle"></i> システム情報
+                            </div>
+                            <div class="card-body">
+                                <div class="system-info-grid mb-4">
+                                    <div class="info-stat">
+                                        <div class="info-stat-value">v3.2.1.1.0</div>
+                                        <div class="info-stat-label">バージョン</div>
+                                    </div>
+                                    <div class="info-stat">
+                                        <div class="info-stat-value">PostgreSQL 14.5</div>
+                                        <div class="info-stat-label">データベース</div>
+                                    </div>
+                                    <div class="info-stat">
+                                        <div class="info-stat-value">512 MB</div>
+                                        <div class="info-stat-label">DB容量</div>
+                                    </div>
+                                    <div class="info-stat">
+                                        <div class="info-stat-value">2.4 GB</div>
+                                        <div class="info-stat-label">ログ容量</div>
+                                    </div>
+                                    <div class="info-stat">
+                                        <div class="info-stat-value">99.8%</div>
+                                        <div class="info-stat-label">稼働率</div>
+                                    </div>
+                                    <div class="info-stat">
+                                        <div class="info-stat-value">42日</div>
+                                        <div class="info-stat-label">起動時間</div>
+                                    </div>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label">システムパス</label>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td class="text-muted" style="width: 200px;">アプリケーションルート</td>
+                                            <td><code>/opt/backup-management-system</code></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">ログディレクトリ</td>
+                                            <td><code>/var/log/backup-system</code></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">設定ファイル</td>
+                                            <td><code>/etc/backup-system/config.yaml</code></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">データベース</td>
+                                            <td><code>postgresql://localhost/backup_management</code></td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label">依存パッケージ</label>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td class="text-muted" style="width: 200px;">Python</td>
+                                            <td>3.10.12</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Flask</td>
+                                            <td>3.0.0</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">SQLAlchemy</td>
+                                            <td>2.0.23</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">WeasyPrint</td>
+                                            <td>60.1</td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <div class="setting-item">
+                                    <label class="setting-label">システムヘルス</label>
+                                    <div class="progress mb-2" style="height: 25px;">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: 75%;">
+                                            CPU: 75%
+                                        </div>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 25px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: 82%;">
+                                            メモリ: 82%
+                                        </div>
+                                    </div>
+                                    <div class="progress" style="height: 25px;">
+                                        <div class="progress-bar bg-info" role="progressbar" style="width: 45%;">
+                                            ディスク: 45%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-tools"></i> メンテナンス操作
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-outline-primary" onclick="optimizeDatabase()">
+                                        <i class="bi bi-gear"></i> データベースを最適化
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="clearCache()">
+                                        <i class="bi bi-trash"></i> キャッシュをクリア
+                                    </button>
+                                    <button type="button" class="btn btn-outline-info" onclick="rotateLogs()">
+                                        <i class="bi bi-arrow-repeat"></i> ログローテーション
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning" onclick="testConnections()">
+                                        <i class="bi bi-plug"></i> 接続テスト
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="settings-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock"></i> 最終更新: 2025-11-02 14:30:00
+                                </small>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary me-2" onclick="resetForm()">
+                                    <i class="bi bi-arrow-counterclockwise"></i> リセット
+                                </button>
+                                <button type="submit" class="btn btn-primary btn-save">
+                                    <i class="bi bi-check-circle"></i> 設定を保存
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Enable/disable encryption options
+    document.getElementById('enable_encryption').addEventListener('change', function() {
+        document.getElementById('encryption-options').style.display = this.checked ? 'block' : 'none';
+    });
+
+    // Enable/disable email settings
+    document.getElementById('enable_email').addEventListener('change', function() {
+        document.getElementById('email-settings').style.display = this.checked ? 'block' : 'none';
+    });
+
+    // Enable/disable Slack settings
+    document.getElementById('enable_slack').addEventListener('change', function() {
+        document.getElementById('slack-settings').style.display = this.checked ? 'block' : 'none';
+    });
+
+    // Enable/disable Teams settings
+    document.getElementById('enable_teams').addEventListener('change', function() {
+        document.getElementById('teams-settings').style.display = this.checked ? 'block' : 'none';
+    });
+
+    // Generate encryption key
+    function generateKey() {
+        const key = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
+        document.getElementById('encryption_key').value = key;
+    }
+
+    // Export settings
+    function exportSettings() {
+        if (confirm('現在の設定をJSONファイルとしてエクスポートしますか?')) {
+            window.location.href = '/settings/export';
+        }
+    }
+
+    // Import settings
+    function importSettings() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const settings = JSON.parse(event.target.result);
+                        if (confirm('設定をインポートしますか? 現在の設定は上書きされます。')) {
+                            // Send to server
+                            fetch('/settings/import', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(settings)
+                            }).then(response => {
+                                if (response.ok) {
+                                    alert('設定をインポートしました');
+                                    location.reload();
+                                } else {
+                                    alert('インポートに失敗しました');
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        alert('無効な設定ファイルです');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+        input.click();
+    }
+
+    // Reset to defaults
+    function resetToDefaults() {
+        if (confirm('すべての設定をデフォルト値に戻しますか? この操作は取り消せません。')) {
+            fetch('/settings/reset', {
+                method: 'POST'
+            }).then(response => {
+                if (response.ok) {
+                    alert('設定をリセットしました');
+                    location.reload();
+                } else {
+                    alert('リセットに失敗しました');
+                }
+            });
+        }
+    }
+
+    // Browse folder
+    function browseFolder() {
+        alert('フォルダブラウザは開発中です。パスを直接入力してください。');
+    }
+
+    // Optimize database
+    function optimizeDatabase() {
+        if (confirm('データベースを最適化しますか? この操作には数分かかる場合があります。')) {
+            fetch('/settings/optimize-db', {
+                method: 'POST'
+            }).then(response => {
+                if (response.ok) {
+                    alert('データベースの最適化が完了しました');
+                } else {
+                    alert('最適化に失敗しました');
+                }
+            });
+        }
+    }
+
+    // Clear cache
+    function clearCache() {
+        if (confirm('キャッシュをクリアしますか?')) {
+            fetch('/settings/clear-cache', {
+                method: 'POST'
+            }).then(response => {
+                if (response.ok) {
+                    alert('キャッシュをクリアしました');
+                } else {
+                    alert('クリアに失敗しました');
+                }
+            });
+        }
+    }
+
+    // Rotate logs
+    function rotateLogs() {
+        if (confirm('ログローテーションを実行しますか?')) {
+            fetch('/settings/rotate-logs', {
+                method: 'POST'
+            }).then(response => {
+                if (response.ok) {
+                    alert('ログローテーションが完了しました');
+                } else {
+                    alert('実行に失敗しました');
+                }
+            });
+        }
+    }
+
+    // Test connections
+    function testConnections() {
+        alert('接続テストを開始します...');
+        fetch('/settings/test-connections', {
+            method: 'POST'
+        }).then(response => response.json())
+        .then(data => {
+            let message = '接続テスト結果:\n\n';
+            message += `データベース: ${data.database ? '✓ 成功' : '✗ 失敗'}\n`;
+            message += `メール: ${data.email ? '✓ 成功' : '✗ 失敗'}\n`;
+            message += `ストレージ: ${data.storage ? '✓ 成功' : '✗ 失敗'}`;
+            alert(message);
+        });
+    }
+
+    // Reset form
+    function resetForm() {
+        if (confirm('フォームをリセットしますか? 未保存の変更は失われます。')) {
+            document.getElementById('settings-form').reset();
+        }
+    }
+
+    // Form validation
+    document.getElementById('settings-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        if (confirm('設定を保存しますか?')) {
+            // Show loading
+            const btn = document.querySelector('.btn-save');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>保存中...';
+            btn.disabled = true;
+
+            // Submit form
+            const formData = new FormData(this);
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    alert('設定を保存しました');
+                    location.reload();
+                } else {
+                    alert('保存に失敗しました');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            }).catch(error => {
+                alert('エラーが発生しました: ' + error);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
+    });
+</script>
+{% endblock %}

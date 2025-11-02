@@ -79,6 +79,13 @@ def generate():
     """
     Generate new report
     """
+    # Get report type from query parameter
+    report_type_param = request.args.get("type", "")
+
+    # Set page title based on type
+    page_titles = {"periodic": "定期レポート生成", "compliance": "コンプライアンスレポート生成", "custom": "カスタムレポート生成"}
+    page_title = page_titles.get(report_type_param, "レポート生成")
+
     if request.method == "POST":
         try:
             # Get form data
@@ -128,7 +135,8 @@ def generate():
     # Get jobs for job detail report
     jobs = BackupJob.query.filter_by(is_active=True).all()
 
-    return render_template("reports/generate.html", jobs=jobs)
+    # Pass page_title to template
+    return render_template("reports/generate.html", page_title=page_title, report_type=report_type_param, jobs=jobs)
 
 
 @reports_bp.route("/<int:report_id>/download")
