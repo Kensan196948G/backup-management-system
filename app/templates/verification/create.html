@@ -1,114 +1,784 @@
 {% extends "base.html" %}
-{% block title %}検証テスト記録 - バックアップ管理システム{% endblock %}
+{% block title %}検証テスト作成 - バックアップ管理システム{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Test Type Cards */
+.test-type-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid #e0e0e0;
+    height: 100%;
+    position: relative;
+}
+
+.test-type-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-color: #007bff;
+}
+
+.test-type-card.selected {
+    border-color: #007bff;
+    background-color: #e7f3ff;
+    box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+}
+
+.test-type-card .card-body {
+    padding: 1.5rem;
+}
+
+.test-type-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.test-type-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.test-type-description {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 0.75rem;
+}
+
+.test-type-duration {
+    font-size: 0.85rem;
+    color: #28a745;
+    font-weight: 500;
+}
+
+.test-type-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: none;
+}
+
+.test-type-card.selected .test-type-badge {
+    display: block;
+}
+
+/* Job Selector */
+.job-search-wrapper {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.job-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+}
+
+.job-item {
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.job-item:hover {
+    background-color: #f8f9fa;
+}
+
+.job-item.selected {
+    background-color: #e7f3ff;
+    border-left: 4px solid #007bff;
+}
+
+.job-item:last-child {
+    border-bottom: none;
+}
+
+.job-name {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.job-details {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.success-rate {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.success-rate.high {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.success-rate.medium {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.success-rate.low {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* File Tree */
+.file-tree {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.tree-node {
+    padding: 0.5rem;
+    margin-left: 1.5rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.tree-node:hover {
+    background-color: #e9ecef;
+    border-radius: 0.25rem;
+}
+
+.tree-node input[type="checkbox"] {
+    margin-right: 0.5rem;
+}
+
+.tree-toggle {
+    cursor: pointer;
+    margin-right: 0.5rem;
+    color: #6c757d;
+}
+
+.tree-children {
+    margin-left: 1.5rem;
+}
+
+.tree-children.collapsed {
+    display: none;
+}
+
+/* Schedule Options */
+.schedule-option {
+    padding: 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+}
+
+.schedule-option:hover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.schedule-option.selected {
+    border-color: #007bff;
+    background-color: #e7f3ff;
+}
+
+.schedule-details {
+    margin-top: 1rem;
+    display: none;
+}
+
+.schedule-option.selected .schedule-details {
+    display: block;
+}
+
+/* Pre-flight Check */
+.check-item {
+    padding: 0.75rem;
+    border-left: 4px solid #e0e0e0;
+    margin-bottom: 0.5rem;
+    background-color: #f8f9fa;
+}
+
+.check-item.checking {
+    border-left-color: #ffc107;
+}
+
+.check-item.success {
+    border-left-color: #28a745;
+    background-color: #d4edda;
+}
+
+.check-item.warning {
+    border-left-color: #ffc107;
+    background-color: #fff3cd;
+}
+
+.check-item.error {
+    border-left-color: #dc3545;
+    background-color: #f8d7da;
+}
+
+.check-status {
+    float: right;
+    font-weight: 600;
+}
+
+/* Progress Steps */
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #e0e0e0;
+    z-index: 0;
+}
+
+.progress-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.progress-step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    color: #6c757d;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.progress-step.active .progress-step-circle {
+    background-color: #007bff;
+    color: white;
+}
+
+.progress-step.completed .progress-step-circle {
+    background-color: #28a745;
+    color: white;
+}
+
+.progress-step-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.progress-step.active .progress-step-label {
+    color: #007bff;
+    font-weight: 600;
+}
+
+/* Step Content */
+.step-content {
+    display: none;
+}
+
+.step-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Conflict Resolution Options */
+.conflict-option {
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.conflict-option:hover {
+    background-color: #f8f9fa;
+}
+
+.conflict-option input[type="radio"] {
+    margin-right: 0.5rem;
+}
+
+/* Loading Spinner */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col-12">
-            <h1 class="h3"><i class="bi bi-plus-circle"></i> 検証テスト記録</h1>
+            <h1 class="h3"><i class="bi bi-plus-circle"></i> 検証テスト作成</h1>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">ホーム</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('verification.list') }}">検証テスト一覧</a></li>
-                    <li class="breadcrumb-item active">新規記録</li>
+                    <li class="breadcrumb-item active">新規作成</li>
                 </ol>
             </nav>
         </div>
     </div>
 
-    <form method="POST" action="{{ url_for('verification.create') }}" novalidate>
+    <!-- Progress Steps -->
+    <div class="progress-steps mb-4">
+        <div class="progress-step active" data-step="1">
+            <div class="progress-step-circle">1</div>
+            <div class="progress-step-label">テスト種類</div>
+        </div>
+        <div class="progress-step" data-step="2">
+            <div class="progress-step-circle">2</div>
+            <div class="progress-step-label">ジョブ選択</div>
+        </div>
+        <div class="progress-step" data-step="3">
+            <div class="progress-step-circle">3</div>
+            <div class="progress-step-label">復元設定</div>
+        </div>
+        <div class="progress-step" data-step="4">
+            <div class="progress-step-circle">4</div>
+            <div class="progress-step-label">スケジュール</div>
+        </div>
+        <div class="progress-step" data-step="5">
+            <div class="progress-step-circle">5</div>
+            <div class="progress-step-label">確認</div>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('verification.create') }}" id="verificationForm" novalidate>
         <div class="row">
-            <div class="col-lg-8">
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> テスト基本情報</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="job_id" class="form-label">バックアップジョブ <span class="text-danger">*</span></label>
-                                <select class="form-select" id="job_id" name="job_id" required>
-                                    <option value="">選択してください</option>
-                                    {% for job in jobs %}
-                                    <option value="{{ job.id }}">{{ job.job_name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="media_id" class="form-label">対象メディア</label>
-                                <select class="form-select" id="media_id" name="media_id">
-                                    <option value="">選択してください</option>
-                                    {% for media in media_list %}
-                                    <option value="{{ media.id }}">{{ media.media_id }} - {{ media.label_name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+            <div class="col-lg-10">
+                <!-- Step 1: Test Type Selection -->
+                <div class="step-content active" data-step="1">
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="bi bi-diagram-3"></i> テスト種類の選択</h5>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="test_type" class="form-label">テストタイプ <span class="text-danger">*</span></label>
-                                <select class="form-select" id="test_type" name="test_type" required>
-                                    <option value="full">完全検証（全ファイル）</option>
-                                    <option value="partial">部分検証（サンプリング）</option>
-                                    <option value="quick">クイック検証（メタデータのみ）</option>
-                                </select>
+                        <div class="card-body">
+                            <p class="text-muted mb-4">実施する検証テストの種類を選択してください。</p>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="test-type-card card" data-type="full" onclick="selectTestType('full')">
+                                        <span class="badge bg-success test-type-badge">
+                                            <i class="bi bi-check-lg"></i> 選択中
+                                        </span>
+                                        <div class="card-body text-center">
+                                            <div class="test-type-icon text-primary">
+                                                <i class="bi bi-hdd-stack"></i>
+                                            </div>
+                                            <div class="test-type-title">完全復元テスト</div>
+                                            <div class="test-type-description">
+                                                全ファイルを実際に復元して完全性を検証します。最も信頼性の高いテストです。
+                                            </div>
+                                            <div class="test-type-duration">
+                                                <i class="bi bi-clock"></i> 推定時間: 2-4時間
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="test-type-card card" data-type="partial" onclick="selectTestType('partial')">
+                                        <span class="badge bg-success test-type-badge">
+                                            <i class="bi bi-check-lg"></i> 選択中
+                                        </span>
+                                        <div class="card-body text-center">
+                                            <div class="test-type-icon text-info">
+                                                <i class="bi bi-file-earmark-check"></i>
+                                            </div>
+                                            <div class="test-type-title">部分復元テスト</div>
+                                            <div class="test-type-description">
+                                                選択したファイル・フォルダのみを復元して検証します。バランスの取れたアプローチです。
+                                            </div>
+                                            <div class="test-type-duration">
+                                                <i class="bi bi-clock"></i> 推定時間: 30分-1時間
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="test-type-card card" data-type="quick" onclick="selectTestType('quick')">
+                                        <span class="badge bg-success test-type-badge">
+                                            <i class="bi bi-check-lg"></i> 選択中
+                                        </span>
+                                        <div class="card-body text-center">
+                                            <div class="test-type-icon text-warning">
+                                                <i class="bi bi-lightning"></i>
+                                            </div>
+                                            <div class="test-type-title">整合性チェックのみ</div>
+                                            <div class="test-type-description">
+                                                実際の復元は行わず、メタデータとチェックサムのみを検証します。高速です。
+                                            </div>
+                                            <div class="test-type-duration">
+                                                <i class="bi bi-clock"></i> 推定時間: 5-15分
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="test_date" class="form-label">実施日時 <span class="text-danger">*</span></label>
-                                <input type="datetime-local" class="form-control" id="test_date" name="test_date" required>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="notes" class="form-label">備考</label>
-                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> テスト結果</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label for="result" class="form-label">結果 <span class="text-danger">*</span></label>
-                                <select class="form-select" id="result" name="result" required>
-                                    <option value="passed">成功</option>
-                                    <option value="failed">失敗</option>
-                                    <option value="warning">警告あり</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="total_files" class="form-label">総ファイル数</label>
-                                <input type="number" class="form-control" id="total_files" name="total_files" min="0">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="files_verified" class="form-label">検証済ファイル数</label>
-                                <input type="number" class="form-control" id="files_verified" name="files_verified" min="0">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="errors_found" class="form-label">検出エラー数</label>
-                                <input type="number" class="form-control" id="errors_found" name="errors_found" min="0" value="0">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="duration_minutes" class="form-label">所要時間（分）</label>
-                                <input type="number" class="form-control" id="duration_minutes" name="duration_minutes" min="0">
-                            </div>
+                            <input type="hidden" id="test_type" name="test_type" value="full" required>
                         </div>
                     </div>
                 </div>
 
+                <!-- Step 2: Backup Job Selection -->
+                <div class="step-content" data-step="2">
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="bi bi-folder2-open"></i> バックアップジョブの選択</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="job-search-wrapper">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" id="jobSearch" placeholder="ジョブ名で検索...">
+                                </div>
+                            </div>
+
+                            <div class="job-list" id="jobList">
+                                {% for job in jobs %}
+                                <div class="job-item" data-job-id="{{ job.id }}" onclick="selectJob({{ job.id }})">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="job-name">
+                                                <i class="bi bi-briefcase"></i> {{ job.job_name }}
+                                            </div>
+                                            <div class="job-details mt-2">
+                                                <span class="badge bg-secondary me-2">
+                                                    <i class="bi bi-hdd"></i> {{ job.source_path or 'N/A' }}
+                                                </span>
+                                                <span class="badge bg-info me-2">
+                                                    <i class="bi bi-calendar"></i> 最終バックアップ: {{ job.last_backup_date.strftime('%Y-%m-%d %H:%M') if job.last_backup_date else '未実行' }}
+                                                </span>
+                                                {% set success_rate = ((job.successful_backups / job.total_backups * 100) if job.total_backups else 0) | round(1) %}
+                                                <span class="success-rate {% if success_rate >= 90 %}high{% elif success_rate >= 70 %}medium{% else %}low{% endif %}">
+                                                    <i class="bi bi-graph-up"></i> 成功率: {{ success_rate }}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-{{ 'success' if job.is_active else 'secondary' }}">
+                                                {{ 'アクティブ' if job.is_active else '非アクティブ' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <input type="hidden" id="job_id" name="job_id" required>
+
+                            <div class="alert alert-info mt-3" id="jobPreview" style="display: none;">
+                                <h6><i class="bi bi-info-circle"></i> 選択中のジョブ詳細</h6>
+                                <div id="jobPreviewContent"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Restore Target Configuration -->
+                <div class="step-content" data-step="3">
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="bi bi-gear"></i> 復元ターゲット設定</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="restore_path" class="form-label">復元先パス</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="restore_path" name="restore_path"
+                                               placeholder="C:\Restore\Test" value="C:\Restore\VerificationTest">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="browseRestorePath()">
+                                            <i class="bi bi-folder"></i> 参照
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">テスト復元を行うターゲットディレクトリを指定</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="media_id" class="form-label">対象メディア (オプション)</label>
+                                    <select class="form-select" id="media_id" name="media_id">
+                                        <option value="">最新のバックアップ</option>
+                                        {% for media in media_list %}
+                                        <option value="{{ media.id }}">{{ media.media_id }} - {{ media.label_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div id="fileSelectionSection" style="display: none;">
+                                <h6 class="mb-3">復元するファイル・フォルダの選択</h6>
+                                <div class="file-tree" id="fileTree">
+                                    <div class="tree-node">
+                                        <input type="checkbox" id="root" checked>
+                                        <span class="tree-toggle" onclick="toggleNode(this)">
+                                            <i class="bi bi-chevron-down"></i>
+                                        </span>
+                                        <i class="bi bi-folder-fill text-warning"></i>
+                                        <strong>バックアップルート</strong>
+                                        <div class="tree-children">
+                                            <div class="tree-node">
+                                                <input type="checkbox" checked>
+                                                <span class="tree-toggle" onclick="toggleNode(this)">
+                                                    <i class="bi bi-chevron-down"></i>
+                                                </span>
+                                                <i class="bi bi-folder text-warning"></i> Documents
+                                                <div class="tree-children">
+                                                    <div class="tree-node">
+                                                        <input type="checkbox" checked>
+                                                        <i class="bi bi-file-earmark-text"></i> report.docx
+                                                    </div>
+                                                    <div class="tree-node">
+                                                        <input type="checkbox" checked>
+                                                        <i class="bi bi-file-earmark-text"></i> presentation.pptx
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="tree-node">
+                                                <input type="checkbox" checked>
+                                                <span class="tree-toggle" onclick="toggleNode(this)">
+                                                    <i class="bi bi-chevron-down"></i>
+                                                </span>
+                                                <i class="bi bi-folder text-warning"></i> Images
+                                                <div class="tree-children">
+                                                    <div class="tree-node">
+                                                        <input type="checkbox" checked>
+                                                        <i class="bi bi-file-image"></i> photo1.jpg
+                                                    </div>
+                                                    <div class="tree-node">
+                                                        <input type="checkbox" checked>
+                                                        <i class="bi bi-file-image"></i> photo2.png
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="tree-node">
+                                                <input type="checkbox" checked>
+                                                <i class="bi bi-folder text-warning"></i> Database
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="text-muted d-block mt-2">
+                                    <i class="bi bi-info-circle"></i> 部分復元テストの場合、検証するファイル・フォルダを選択してください
+                                </small>
+                            </div>
+
+                            <h6 class="mt-4 mb-3">競合解決オプション</h6>
+                            <div class="conflict-option">
+                                <label>
+                                    <input type="radio" name="conflict_resolution" value="overwrite" checked>
+                                    <strong>上書き</strong> - 既存ファイルを上書きする
+                                </label>
+                            </div>
+                            <div class="conflict-option">
+                                <label>
+                                    <input type="radio" name="conflict_resolution" value="skip">
+                                    <strong>スキップ</strong> - 既存ファイルがある場合はスキップ
+                                </label>
+                            </div>
+                            <div class="conflict-option">
+                                <label>
+                                    <input type="radio" name="conflict_resolution" value="rename">
+                                    <strong>リネーム</strong> - 既存ファイルがある場合は別名で保存
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Schedule Test -->
+                <div class="step-content" data-step="4">
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="bi bi-calendar-check"></i> テストスケジュール</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="schedule-option selected" data-schedule="immediate" onclick="selectSchedule('immediate')">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-play-circle fs-3 text-success me-3"></i>
+                                    <div>
+                                        <strong>即時実行</strong>
+                                        <p class="mb-0 text-muted">テストを今すぐ開始します</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="schedule-option" data-schedule="scheduled" onclick="selectSchedule('scheduled')">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-calendar3 fs-3 text-primary me-3"></i>
+                                    <div class="flex-grow-1">
+                                        <strong>スケジュール実行</strong>
+                                        <p class="mb-0 text-muted">特定の日時にテストを実行</p>
+                                    </div>
+                                </div>
+                                <div class="schedule-details">
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <label for="scheduled_date" class="form-label">実行日時</label>
+                                            <input type="datetime-local" class="form-control" id="scheduled_date" name="scheduled_date">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">通知設定</label>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="notify_before" name="notify_before" checked>
+                                                <label class="form-check-label" for="notify_before">
+                                                    実行30分前に通知
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="notify_complete" name="notify_complete" checked>
+                                                <label class="form-check-label" for="notify_complete">
+                                                    完了時に通知
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="schedule-option" data-schedule="recurring" onclick="selectSchedule('recurring')">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-arrow-repeat fs-3 text-info me-3"></i>
+                                    <div class="flex-grow-1">
+                                        <strong>定期実行</strong>
+                                        <p class="mb-0 text-muted">定期的にテストを自動実行</p>
+                                    </div>
+                                </div>
+                                <div class="schedule-details">
+                                    <div class="row mt-3">
+                                        <div class="col-md-4">
+                                            <label for="recurrence_pattern" class="form-label">実行頻度</label>
+                                            <select class="form-select" id="recurrence_pattern" name="recurrence_pattern">
+                                                <option value="daily">毎日</option>
+                                                <option value="weekly" selected>毎週</option>
+                                                <option value="monthly">毎月</option>
+                                                <option value="quarterly">四半期ごと</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="recurrence_time" class="form-label">実行時刻</label>
+                                            <input type="time" class="form-control" id="recurrence_time" name="recurrence_time" value="02:00">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="recurrence_start" class="form-label">開始日</label>
+                                            <input type="date" class="form-control" id="recurrence_start" name="recurrence_start">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <input type="hidden" id="schedule_type" name="schedule_type" value="immediate">
+                            <input type="hidden" id="test_date" name="test_date">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5: Pre-flight Check & Confirmation -->
+                <div class="step-content" data-step="5">
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="bi bi-shield-check"></i> プリフライトチェック</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-3">テスト実行前の検証を行っています...</p>
+
+                            <div class="check-item" id="checkStorage">
+                                <i class="bi bi-hdd"></i> ストレージ容量チェック
+                                <span class="check-status">
+                                    <span class="spinner-border spinner-border-sm" role="status"></span> チェック中...
+                                </span>
+                            </div>
+
+                            <div class="check-item" id="checkIntegrity">
+                                <i class="bi bi-file-check"></i> バックアップ整合性チェック
+                                <span class="check-status">
+                                    <span class="spinner-border spinner-border-sm" role="status"></span> チェック中...
+                                </span>
+                            </div>
+
+                            <div class="check-item" id="checkPermissions">
+                                <i class="bi bi-shield-lock"></i> アクセス権限チェック
+                                <span class="check-status">
+                                    <span class="spinner-border spinner-border-sm" role="status"></span> チェック中...
+                                </span>
+                            </div>
+
+                            <div class="check-item" id="checkDuration">
+                                <i class="bi bi-clock-history"></i> 推定実行時間
+                                <span class="check-status">
+                                    <span class="spinner-border spinner-border-sm" role="status"></span> 計算中...
+                                </span>
+                            </div>
+
+                            <div class="alert alert-info mt-4" id="summaryBox" style="display: none;">
+                                <h6><i class="bi bi-clipboard-check"></i> テスト概要</h6>
+                                <div id="testSummary"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="bi bi-pencil-square"></i> 追加情報 (オプション)</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="notes" class="form-label">備考・メモ</label>
+                                <textarea class="form-control" id="notes" name="notes" rows="3"
+                                          placeholder="テストに関する補足情報や特記事項を入力してください"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('verification.list') }}" class="btn btn-secondary">
-                                <i class="bi bi-x-circle"></i> キャンセル
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i> 登録
-                            </button>
+                            <div>
+                                <a href="{{ url_for('verification.list') }}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> キャンセル
+                                </a>
+                                <button type="button" class="btn btn-outline-secondary ms-2" id="btnPrevious" onclick="previousStep()" style="display: none;">
+                                    <i class="bi bi-arrow-left"></i> 前へ
+                                </button>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-primary" id="btnNext" onclick="nextStep()">
+                                    次へ <i class="bi bi-arrow-right"></i>
+                                </button>
+                                <button type="submit" class="btn btn-success" id="btnSubmit" style="display: none;">
+                                    <i class="bi bi-check-circle"></i> テスト作成
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -117,8 +787,269 @@
     </form>
 </div>
 {% endblock %}
+
 {% block extra_js %}
 <script>
-document.getElementById('test_date').value = new Date().toISOString().slice(0, 16);
+let currentStep = 1;
+const totalSteps = 5;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateStepDisplay();
+    selectTestType('full');
+
+    // Set default scheduled date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(2, 0, 0, 0);
+    document.getElementById('scheduled_date').value = tomorrow.toISOString().slice(0, 16);
+
+    // Set recurrence start date
+    document.getElementById('recurrence_start').value = tomorrow.toISOString().slice(0, 10);
+
+    // Set immediate test date
+    document.getElementById('test_date').value = new Date().toISOString().slice(0, 16);
+
+    // Job search functionality
+    document.getElementById('jobSearch').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const jobItems = document.querySelectorAll('.job-item');
+
+        jobItems.forEach(item => {
+            const jobName = item.querySelector('.job-name').textContent.toLowerCase();
+            if (jobName.includes(searchTerm)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    });
+});
+
+// Test Type Selection
+function selectTestType(type) {
+    document.querySelectorAll('.test-type-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+
+    const selectedCard = document.querySelector(`.test-type-card[data-type="${type}"]`);
+    selectedCard.classList.add('selected');
+    document.getElementById('test_type').value = type;
+
+    // Show/hide file selection based on test type
+    const fileSelection = document.getElementById('fileSelectionSection');
+    if (type === 'partial') {
+        fileSelection.style.display = 'block';
+    } else {
+        fileSelection.style.display = 'none';
+    }
+}
+
+// Job Selection
+function selectJob(jobId) {
+    document.querySelectorAll('.job-item').forEach(item => {
+        item.classList.remove('selected');
+    });
+
+    const selectedItem = document.querySelector(`.job-item[data-job-id="${jobId}"]`);
+    selectedItem.classList.add('selected');
+    document.getElementById('job_id').value = jobId;
+
+    // Show job preview
+    const jobName = selectedItem.querySelector('.job-name').textContent;
+    const jobDetails = selectedItem.querySelector('.job-details').innerHTML;
+
+    document.getElementById('jobPreview').style.display = 'block';
+    document.getElementById('jobPreviewContent').innerHTML = `
+        <div><strong>${jobName}</strong></div>
+        <div class="mt-2">${jobDetails}</div>
+    `;
+}
+
+// File Tree Functions
+function toggleNode(element) {
+    const children = element.parentElement.querySelector('.tree-children');
+    const icon = element.querySelector('i');
+
+    if (children) {
+        children.classList.toggle('collapsed');
+        icon.classList.toggle('bi-chevron-down');
+        icon.classList.toggle('bi-chevron-right');
+    }
+}
+
+// Schedule Selection
+function selectSchedule(type) {
+    document.querySelectorAll('.schedule-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+
+    const selectedOption = document.querySelector(`.schedule-option[data-schedule="${type}"]`);
+    selectedOption.classList.add('selected');
+    document.getElementById('schedule_type').value = type;
+
+    // Update test_date based on schedule type
+    if (type === 'immediate') {
+        document.getElementById('test_date').value = new Date().toISOString().slice(0, 16);
+    } else if (type === 'scheduled') {
+        const scheduledDate = document.getElementById('scheduled_date').value;
+        if (scheduledDate) {
+            document.getElementById('test_date').value = scheduledDate;
+        }
+    }
+}
+
+// Browse Restore Path
+function browseRestorePath() {
+    // In a real implementation, this would open a file browser dialog
+    alert('ファイルブラウザ機能は実装中です。直接パスを入力してください。');
+}
+
+// Step Navigation
+function nextStep() {
+    if (currentStep < totalSteps) {
+        if (validateStep(currentStep)) {
+            currentStep++;
+            updateStepDisplay();
+
+            // Run pre-flight checks when reaching step 5
+            if (currentStep === 5) {
+                runPreflightChecks();
+            }
+        }
+    }
+}
+
+function previousStep() {
+    if (currentStep > 1) {
+        currentStep--;
+        updateStepDisplay();
+    }
+}
+
+function updateStepDisplay() {
+    // Update progress steps
+    document.querySelectorAll('.progress-step').forEach((step, index) => {
+        const stepNum = index + 1;
+        step.classList.remove('active', 'completed');
+
+        if (stepNum === currentStep) {
+            step.classList.add('active');
+        } else if (stepNum < currentStep) {
+            step.classList.add('completed');
+        }
+    });
+
+    // Update step content
+    document.querySelectorAll('.step-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.querySelector(`.step-content[data-step="${currentStep}"]`).classList.add('active');
+
+    // Update buttons
+    document.getElementById('btnPrevious').style.display = currentStep > 1 ? 'inline-block' : 'none';
+    document.getElementById('btnNext').style.display = currentStep < totalSteps ? 'inline-block' : 'none';
+    document.getElementById('btnSubmit').style.display = currentStep === totalSteps ? 'inline-block' : 'none';
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function validateStep(step) {
+    switch(step) {
+        case 1:
+            if (!document.getElementById('test_type').value) {
+                alert('テスト種類を選択してください');
+                return false;
+            }
+            return true;
+        case 2:
+            if (!document.getElementById('job_id').value) {
+                alert('バックアップジョブを選択してください');
+                return false;
+            }
+            return true;
+        case 3:
+            const restorePath = document.getElementById('restore_path').value;
+            if (!restorePath || restorePath.trim() === '') {
+                alert('復元先パスを入力してください');
+                return false;
+            }
+            return true;
+        case 4:
+            const scheduleType = document.getElementById('schedule_type').value;
+            if (scheduleType === 'scheduled') {
+                const scheduledDate = document.getElementById('scheduled_date').value;
+                if (!scheduledDate) {
+                    alert('実行日時を入力してください');
+                    return false;
+                }
+            }
+            return true;
+        default:
+            return true;
+    }
+}
+
+// Pre-flight Checks
+function runPreflightChecks() {
+    const checks = [
+        { id: 'checkStorage', delay: 800, result: 'success', message: '十分な空き容量があります (250 GB利用可能)' },
+        { id: 'checkIntegrity', delay: 1200, result: 'success', message: 'バックアップデータは正常です' },
+        { id: 'checkPermissions', delay: 600, result: 'success', message: 'アクセス権限は正常です' },
+        { id: 'checkDuration', delay: 1000, result: 'success', message: '推定実行時間: 約45分' }
+    ];
+
+    checks.forEach(check => {
+        setTimeout(() => {
+            const element = document.getElementById(check.id);
+            element.classList.remove('checking');
+            element.classList.add(check.result);
+
+            const statusSpan = element.querySelector('.check-status');
+            statusSpan.innerHTML = `<i class="bi bi-check-circle"></i> ${check.message}`;
+        }, check.delay);
+    });
+
+    // Show summary after all checks
+    setTimeout(() => {
+        showTestSummary();
+    }, 1500);
+}
+
+function showTestSummary() {
+    const testType = document.querySelector('.test-type-card.selected .test-type-title').textContent;
+    const jobName = document.querySelector('.job-item.selected .job-name').textContent.replace(/\s+/g, ' ').trim();
+    const scheduleType = document.querySelector('.schedule-option.selected strong').textContent;
+    const restorePath = document.getElementById('restore_path').value;
+
+    const summary = `
+        <ul class="mb-0">
+            <li><strong>テスト種類:</strong> ${testType}</li>
+            <li><strong>バックアップジョブ:</strong> ${jobName}</li>
+            <li><strong>復元先:</strong> ${restorePath}</li>
+            <li><strong>スケジュール:</strong> ${scheduleType}</li>
+        </ul>
+    `;
+
+    document.getElementById('testSummary').innerHTML = summary;
+    document.getElementById('summaryBox').style.display = 'block';
+}
+
+// Form Submission
+document.getElementById('verificationForm').addEventListener('submit', function(e) {
+    if (currentStep !== totalSteps) {
+        e.preventDefault();
+        alert('全てのステップを完了してください');
+        return false;
+    }
+
+    // Update test_date based on schedule
+    const scheduleType = document.getElementById('schedule_type').value;
+    if (scheduleType === 'scheduled') {
+        const scheduledDate = document.getElementById('scheduled_date').value;
+        document.getElementById('test_date').value = scheduledDate;
+    }
+});
 </script>
 {% endblock %}
